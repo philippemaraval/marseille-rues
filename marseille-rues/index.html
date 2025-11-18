@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu des rues de Marseille</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+</head>
+
+<body>
+  <div id="app">
+    <div id="sidebar">
+      <h1>Rues de Marseille</h1>
+
+      <div class="info-block">
+        <div>Rue à trouver :</div>
+        <div id="target-street" class="value"></div>
+      </div>
+
+      <div class="info-block">
+        <div>Temps total :</div>
+        <div id="total-time" class="value">0.0 s</div>
+      </div>
+
+      <div class="info-block">
+        <div>Temps sur cette rue :</div>
+        <div id="street-time" class="value">0.0 s</div>
+      </div>
+
+      <div class="info-block">
+        <div>Score :</div>
+        <div id="score" class="value">0 / 0 (0 %)</div>
+      </div>
+
+      <button id="restart-btn">Commencer la session</button>
+
+      <div id="message"></div>
+      <div id="summary" class="hidden"></div>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
