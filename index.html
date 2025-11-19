@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Jeu des rues de Marseille</title>
+
+  <!-- Google Fonts : Montserrat (titres), Nunito (texte) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Nunito:wght@400;600&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="style.css">
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+</head>
+
+<body>
+  <div id="app">
+    <div id="sidebar">
+      <!-- Bandeau titre -->
+      <header class="panel header-panel">
+        <h1 class="header-title">Rues de Marseille</h1>
+        <p class="header-subtitle">Cliquez sur la rue demandée sur la carte.</p>
+      </header>
+
+      <!-- Panneau paramètres -->
+      <section class="panel panel-params">
+        <div class="panel-title">Paramètres</div>
+
+        <div class="info-block">
+          <label for="mode-select">Zone de jeu :</label>
+          <select id="mode-select">
+            <option value="ville">Ville entière</option>
+            <option value="quartier">Par quartier</option>
+          </select>
+        </div>
+
+        <div class="info-block" id="quartier-block" style="display:none;">
+          <label for="quartier-select">Quartier :</label>
+          <select id="quartier-select"></select>
+        </div>
+
+        <div class="info-block">
+          <label for="game-mode-select">Type de partie :</label>
+          <select id="game-mode-select">
+            <option value="classique">Classique (20 rues)</option>
+            <option value="marathon">Marathon (3 erreurs max)</option>
+          </select>
+        </div>
+
+        <button id="restart-btn" class="btn-primary">Commencer la session</button>
+      </section>
+
+      <!-- Panneau Rue à trouver -->
+      <section class="panel target-panel">
+        <div class="panel-title">Rue à trouver</div>
+        <div id="target-street" class="target-name">—</div>
+      </section>
+
+      <!-- Panneau chronos -->
+      <section class="panel timers-panel">
+        <div class="panel-title">⏱ Chronos</div>
+        <div class="timers-row">
+          <div class="timer-block">
+            <div class="timer-label">Session</div>
+            <div id="total-time" class="timer-value">0.0 s</div>
+          </div>
+          <div class="timer-block">
+            <div class="timer-label">Rue</div>
+            <div id="street-time" class="timer-value">0.0 s</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panneau score -->
+      <section class="panel score-panel">
+        <div class="panel-title">★ Score</div>
+
+        <div class="info-block score-block">
+          <div class="info-label">Score :</div>
+          <div class="info-value">
+            <span id="score-pill" class="score-pill score-pill--neutral">
+              <span id="score">0 / 0 (0 %)</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="info-block">
+          <div class="info-label">Score pondéré :</div>
+          <div class="info-value">
+            <span id="weighted-score" class="weighted-score">0.0</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panneau messages + récap -->
+      <section class="panel panel-feedback">
+        <div id="message" class="message"></div>
+        <div id="summary" class="summary hidden"></div>
+      </section>
+    </div>
+
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
