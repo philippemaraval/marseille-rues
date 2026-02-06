@@ -578,7 +578,7 @@ const MONUMENT_NAMES_NORMALIZED = [
   "grande synagogue de marseille",
   "temple reforme grignan",
   "monument à gyptis et protis"
-];
+]);
 
 function normalizeName(name) {
   return (name || '').trim().toLowerCase();
