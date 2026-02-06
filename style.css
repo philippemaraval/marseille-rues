@@ -127,13 +127,17 @@ body {
   padding: 0 0 8px 0;
   box-shadow: none;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  /* Center horizontally */
+  justify-content: center;
+  /* Center horizontally */
+  text-align: center;
 }
 
 .header-main {
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .header-title {
@@ -370,6 +374,21 @@ input:focus {
 .panel-params .info-block:nth-child(4) {
   z-index: 70 !important;
 }
+
+/* Target panel stacking: ensure it sits below dropdowns */
+.target-panel {
+  position: relative;
+  z-index: 10 !important;
+  /* Low enough to be behind dropdown lists (which have z-index 100+) */
+}
+
+
+/* Target panel stacking: ensure it sits below dropdowns */
+.target-panel {
+  position: relative;
+  z-index: 50 !important;
+}
+
 
 /* Ensure the panels themselves don't clip the dropdowns or tooltips */
 .panel {

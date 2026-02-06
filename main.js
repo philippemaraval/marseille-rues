@@ -2988,14 +2988,28 @@ function startDailySession(data) {
   // Setup UI for Daily Mode
   currentZoneMode = 'ville'; // Force full map context
 
+  // 1. Update Game Zone Dropdown
+  const modeSelect = document.getElementById('mode-select');
+  const modeBtn = document.getElementById('mode-select-button');
+  if (modeSelect) {
+    modeSelect.value = 'ville';
+    if (modeBtn) {
+      modeBtn.innerHTML = '<span class="custom-select-label">Ville entière</span><span class="difficulty-pill difficulty-pill--hard">Difficile</span>';
+    }
+  }
+
+  // 2. Update Game Type Dropdown
+  const gameModeSelect = document.getElementById('game-mode-select');
+  const gameModeBtn = document.getElementById('game-mode-select-button');
+  if (gameModeSelect) {
+    gameModeSelect.value = 'daily';
+    if (gameModeBtn) {
+      gameModeBtn.innerHTML = '<span class="custom-select-label">Daily (5 essais)</span><span class="difficulty-pill gamepill--marathon">Défi</span>';
+    }
+  }
+
   // Custom cleanup
   if (isSessionRunning) endSession();
-
-  // Reset UI
-  const modeBtn = document.getElementById('mode-select-button');
-  if (modeBtn) {
-    modeBtn.innerHTML = '<span class="custom-select-label">Défi Quotidien</span><span class="difficulty-pill difficulty-pill--hard">5 essais</span>';
-  }
 
   // Hide panels we don't need or adapt them
   const targetEl = document.getElementById('target-street');
