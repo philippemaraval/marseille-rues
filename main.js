@@ -1,5 +1,6 @@
 // ------------------------
 // Paramètres du jeu
+// (Updated)
 // ------------------------
 
 // *** CONFIGURATION: Set this to your Render backend URL after deployment ***
