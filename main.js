@@ -2298,6 +2298,7 @@ function startNewSession() {
     sessionStartTime = null;
     streetStartTime = null;
     currentTarget = null;
+    setLectureTooltipsEnabled(true);
     currentMonumentTarget = null;
     isPaused = false;
     pauseStartTime = null;
@@ -2489,6 +2490,13 @@ function getCurrentZoneStreets() {
     return allStreetFeatures.filter(f => {
       const nm = normalizeName(f.properties && f.properties.name);
       return MAIN_STREET_NAMES.has(nm);
+    });
+  }
+
+  if (zoneMode === 'rues-celebres') {
+    return allStreetFeatures.filter(f => {
+      const nm = normalizeName(f.properties && f.properties.name);
+      return FAMOUS_STREET_NAMES.has(nm);
     });
   }
 
