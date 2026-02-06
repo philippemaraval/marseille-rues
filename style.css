@@ -607,6 +607,13 @@ body.app-ready:not(.session-running) #map {
   color: #b71c1c;
 }
 
+/* Très Facile = bleu */
+.difficulty-pill--very-easy {
+  background: #e3f2fd;
+  border-color: #1565c0;
+  color: #0d47a1;
+}
+
 /* Ajustement mobile : éviter que ça déborde */
 @media (max-width: 600px) {
   .mode-select-row {

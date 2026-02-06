@@ -1560,6 +1560,13 @@ function getBaseStreetStyleFromName(name) {
     }
   }
 
+  if (zoneMode === 'rues-celebres') {
+    if (!FAMOUS_STREET_NAMES.has(nameNorm)) {
+      color = '#00000000';
+      weight = 0;
+    }
+  }
+
   return { color, weight };
 }
 
@@ -3494,16 +3501,28 @@ function loadCurrentUserFromStorage() {
 }
 
 function saveCurrentUserToStorage(user) {
+  if (!user) return;
   try {
-    window.localStorage.setItem('marseille-quiz-user', JSON.stringify(user));
+    window.localStorage.setItem('camino_user', JSON.stringify(user));
   } catch (e) {
     console.warn('Impossible de sauvegarder l’utilisateur.', e);
   }
 }
 
+function loadCurrentUserFromStorage() {
+  const raw = window.localStorage.getItem('camino_user');
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Erreur parsing user storage', e);
+    return null;
+  }
+}
+
 function clearCurrentUserFromStorage() {
   try {
-    window.localStorage.removeItem('marseille-quiz-user');
+    window.localStorage.removeItem('camino_user');
   } catch (e) {
     console.warn('Impossible de supprimer l’utilisateur stocké.', e);
   }
@@ -3511,15 +3530,34 @@ function clearCurrentUserFromStorage() {
 
 function updateUserUI() {
   const label = document.getElementById('current-user-label');
+  const authBlock = document.querySelector('.auth-block');
   const logoutBtn = document.getElementById('logout-btn');
-  if (!label) return;
+  const dailyBtn = document.getElementById('daily-mode-btn');
 
   if (currentUser && currentUser.username) {
-    label.textContent = `Connecté : ${currentUser.username}`;
+    if (label) label.textContent = `Connecté en tant que ${currentUser.username}`;
+
+    // Masquer les champs de connexion
+    if (authBlock) {
+      authBlock.querySelectorAll('input').forEach(i => i.style.display = 'none');
+      const buttons = authBlock.querySelectorAll('button:not(#logout-btn)');
+      buttons.forEach(b => b.style.display = 'none');
+    }
+
     if (logoutBtn) logoutBtn.style.display = 'inline-block';
+    if (dailyBtn) dailyBtn.style.display = 'inline-block';
   } else {
-    label.textContent = 'Non connecté.';
+    if (label) label.textContent = 'Non connecté.';
+
+    // Afficher les champs
+    if (authBlock) {
+      authBlock.querySelectorAll('input').forEach(i => i.style.display = '');
+      const buttons = authBlock.querySelectorAll('button:not(#logout-btn)');
+      buttons.forEach(b => b.style.display = '');
+    }
+
     if (logoutBtn) logoutBtn.style.display = 'none';
+    if (dailyBtn) dailyBtn.style.display = 'none';
   }
 }
 
@@ -3616,60 +3654,7 @@ function loadLeaderboard(zoneMode, quartierName, gameMode) {
     });
 }
 
-// ------------------------
-// Helpers Storage Auth
-// ------------------------
 
-function saveCurrentUserToStorage(user) {
-  if (!user) return;
-  localStorage.setItem('camino_user', JSON.stringify(user));
-}
-
-function loadCurrentUserFromStorage() {
-  const raw = localStorage.getItem('camino_user');
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Erreur parsing user storage', e);
-    return null;
-  }
-}
-
-function clearCurrentUserFromStorage() {
-  localStorage.removeItem('camino_user');
-}
-
-function updateUserUI() {
-  const label = document.getElementById('current-user-label');
-  const authBlock = document.querySelector('.auth-block');
-  const logoutBtn = document.getElementById('logout-btn');
-  const dailyBtn = document.getElementById('daily-mode-btn');
-
-  if (currentUser) {
-    if (label) label.textContent = `Connecté en tant que ${currentUser.username}`;
-    if (authBlock) {
-      // Masquer les champs input
-      const inputs = authBlock.querySelectorAll('input');
-      inputs.forEach(i => i.style.display = 'none');
-      const buttons = authBlock.querySelectorAll('button:not(#logout-btn)');
-      buttons.forEach(b => b.style.display = 'none');
-    }
-    if (logoutBtn) logoutBtn.style.display = 'inline-block';
-    if (dailyBtn) dailyBtn.style.display = 'inline-block';
-  } else {
-    if (label) label.textContent = 'Non connecté.';
-    if (authBlock) {
-      // Réafficher
-      const inputs = authBlock.querySelectorAll('input');
-      inputs.forEach(i => i.style.display = '');
-      const buttons = authBlock.querySelectorAll('button:not(#logout-btn)');
-      buttons.forEach(b => b.style.display = '');
-    }
-    if (logoutBtn) logoutBtn.style.display = 'none';
-    if (dailyBtn) dailyBtn.style.display = 'none';
-  }
-}
 
 // ------------------------
 // Daily Challenge Logic

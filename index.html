@@ -58,7 +58,12 @@
 
         <!-- Panneau paramètres -->
         <section class="panel panel-params">
-          <div class="panel-title">Paramètres</div>
+          <div class="panel-title-row"
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div class="panel-title" style="margin-bottom: 0;">Paramètres</div>
+            <button id="daily-mode-btn" class="btn-emphasis"
+              style="display:none; padding: 4px 8px; font-size: 12px; margin: 0;">🏆 Défi Quotidien</button>
+          </div>
 
           <div class="info-block">
             <label>Zone de jeu :</label>
@@ -66,20 +71,20 @@
             <div id="mode-select-wrapper" class="custom-select">
               <!-- Affichage sélectionné -->
               <button id="mode-select-button" class="custom-select-button">
-                <span class="custom-select-label">Rues principales</span>
-                <span class="difficulty-pill difficulty-pill--easy">Facile</span>
+                <span class="custom-select-label">Rues célèbres</span>
+                <span class="difficulty-pill difficulty-pill--very-easy">Très Facile</span>
               </button>
 
               <!-- Liste déroulante -->
               <ul id="mode-select-list" class="custom-select-list">
+                <li data-value="rues-celebres">
+                  Rues célèbres
+                  <span class="difficulty-pill difficulty-pill--very-easy">Très Facile</span>
+                </li>
+
                 <li data-value="rues-principales">
                   Rues principales
                   <span class="difficulty-pill difficulty-pill--easy">Facile</span>
-                </li>
-
-                <li data-value="rues-celebres">
-                  Rues célèbres
-                  <span class="difficulty-pill difficulty-pill--easy">Très Facile</span>
                 </li>
 
                 <li data-value="quartier">
@@ -102,8 +107,8 @@
 
           <!-- Vrai select caché, piloté par le custom select, utilisé par le JS -->
           <select id="mode-select" class="hidden">
-            <option value="rues-principales" selected>Rues principales</option>
-            <option value="rues-celebres">Rues célèbres</option>
+            <option value="rues-celebres" selected>Rues célèbres</option>
+            <option value="rues-principales">Rues principales</option>
             <option value="quartier">Par quartier</option>
             <option value="ville">Ville entière</option>
             <option value="monuments">Monuments</option>
@@ -177,8 +182,6 @@
             <button id="restart-btn" class="btn-primary">Commencer la session</button>
             <button id="skip-btn" class="btn-skip" style="display:none;">Passer</button>
             <button id="pause-btn" class="btn-secondary">Pause</button>
-            <button id="daily-mode-btn" class="btn-emphasis" style="display:none; margin-left:10px;">🏆 Défi
-              Quotidien</button>
           </div>
         </section>
 
