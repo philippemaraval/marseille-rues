@@ -347,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadStreets();
   loadQuartierPolygons();
   loadMonuments();
+  document.body.classList.add('app-ready');
 });
 
 // ------------------------
@@ -405,46 +406,43 @@ function initUI() {
   // ----- Nouveau select personnalisé "zone de jeu" -----
   const modeBtn = document.getElementById("mode-select-button");
   const modeList = document.getElementById("mode-select-list");
-  const modeLabel = modeBtn.querySelector(".custom-select-label");
+  const modeLabel = modeBtn ? modeBtn.querySelector(".custom-select-label") : null;
 
-  modeBtn.addEventListener("click", () => {
-    modeList.classList.toggle("visible");
-  });
-
-  modeList.querySelectorAll("li").forEach(item => {
-    item.addEventListener("click", () => {
-      const value = item.dataset.value;
-
-      // Mise à jour du label
-      modeLabel.textContent = item.childNodes[0].textContent.trim();
-
-      // Mise à jour pastille
-      const pill = item.querySelector(".difficulty-pill").cloneNode(true);
-      modeBtn.querySelector(".difficulty-pill").replaceWith(pill);
-
-      // Mise à jour interne
-      const fakeSelect = document.getElementById("mode-select");
-      if (fakeSelect) {
-        fakeSelect.value = value;
-
-        // Correction essentielle :
-        // déclenchement manuel du "change"
-        fakeSelect.dispatchEvent(new Event("change"));
-      }
-
-      modeList.classList.remove("visible");
+  if (modeBtn && modeList) {
+    modeBtn.addEventListener("click", () => {
+      modeList.classList.toggle("visible");
     });
-  });
+
+    modeList.querySelectorAll("li").forEach(item => {
+      item.addEventListener("click", () => {
+        const value = item.dataset.value;
+        if (modeLabel) modeLabel.textContent = item.childNodes[0].textContent.trim();
+
+        // Mise à jour pastille
+        const pillInList = item.querySelector(".difficulty-pill");
+        const btnPill = modeBtn.querySelector(".difficulty-pill");
+        if (pillInList) {
+          const newPill = pillInList.cloneNode(true);
+          if (btnPill) btnPill.replaceWith(newPill);
+          else modeBtn.appendChild(newPill);
+        }
+
+        if (modeSelect) {
+          modeSelect.value = value;
+          modeSelect.dispatchEvent(new Event("change"));
+        }
+        modeList.classList.remove("visible");
+      });
+    });
+  }
 
   // ----- Select personnalisé "type de partie" -----
   const gameModeBtn = document.getElementById("game-mode-select-button");
   const gameModeList = document.getElementById("game-mode-select-list");
-  const gameModeLabel = gameModeBtn
-    ? gameModeBtn.querySelector(".custom-select-label")
-    : null;
+  const gameModeLabel = gameModeBtn ? gameModeBtn.querySelector(".custom-select-label") : null;
   const gameModeSelect = document.getElementById("game-mode-select");
 
-  if (gameModeBtn && gameModeList && gameModeLabel && gameModeSelect) {
+  if (gameModeBtn && gameModeList && gameModeSelect) {
     gameModeBtn.addEventListener("click", () => {
       gameModeList.classList.toggle("visible");
     });
@@ -452,76 +450,45 @@ function initUI() {
     gameModeList.querySelectorAll("li").forEach(item => {
       item.addEventListener("click", () => {
         const value = item.dataset.value;
+        if (gameModeLabel) gameModeLabel.textContent = item.childNodes[0].textContent.trim();
 
-        // Mise à jour du label (Classique / Marathon / Chrono / Lecture)
-        gameModeLabel.textContent = item.childNodes[0].textContent.trim();
-
-        // Mise à jour de la pastille (20 rues / 3 erreurs max / 1 minute / Apprentissage)
         const pillInList = item.querySelector(".difficulty-pill");
         if (pillInList) {
           const newPill = pillInList.cloneNode(true);
           const btnPill = gameModeBtn.querySelector(".difficulty-pill");
-          if (btnPill) {
-            btnPill.replaceWith(newPill);
-          } else {
-            gameModeBtn.appendChild(newPill);
-          }
+          if (btnPill) btnPill.replaceWith(newPill);
+          else gameModeBtn.appendChild(newPill);
         }
 
-        // Mise à jour du <select> caché (utilisé par getGameMode())
         gameModeSelect.value = value;
-
-        // Si une session est en cours et qu'on change de mode, on la termine proprement
-        if (isSessionRunning) {
-          endSession();
-        }
-
-        // Met à jour la visibilité des boutons selon le mode
+        if (isSessionRunning) endSession();
         updateGameModeControls();
-
-        // Toujours : rembobiner la liste + fermer
-        gameModeList.scrollTop = 0;           // <<< AJOUT
+        gameModeList.scrollTop = 0;
         gameModeList.classList.remove("visible");
 
-        // Lecture : lancer APRÈS fermeture/layout stable
         if (value === 'lecture') {
-          requestAnimationFrame(() => startNewSession());   // <<< MODIF MINIMALE
+          requestAnimationFrame(() => startNewSession());
         }
       });
     });
   }
 
-  // ----- Select personnalisé "quartier" (sans pastille) -----
-  if (quartierBtn && quartierList && quartierLabel && quartierSelect) {
-    // Ouverture / fermeture de la liste
+  // ----- Select personnalisé "quartier" -----
+  if (quartierBtn && quartierList) {
     quartierBtn.addEventListener('click', () => {
       quartierList.classList.toggle('visible');
     });
-
-    // Le contenu de la liste (les <li>) sera créé dans populateQuartiers()
-    // On gérera là-bas les clics sur <li> pour mettre à jour le label et le <select> caché.
   }
 
-  // Ferme la liste déroulante si clic ailleurs
+  // Ferme les listes si clic ailleurs
   document.addEventListener("click", (e) => {
-    // Zone de jeu
-    if (modeBtn && modeList &&
-      !modeBtn.contains(e.target) &&
-      !modeList.contains(e.target)) {
+    if (modeBtn && modeList && !modeBtn.contains(e.target) && !modeList.contains(e.target)) {
       modeList.classList.remove("visible");
     }
-
-    // Type de partie
-    if (gameModeBtn && gameModeList &&
-      !gameModeBtn.contains(e.target) &&
-      !gameModeList.contains(e.target)) {
+    if (gameModeBtn && gameModeList && !gameModeBtn.contains(e.target) && !gameModeList.contains(e.target)) {
       gameModeList.classList.remove("visible");
     }
-
-    // Quartier
-    if (quartierBtn && quartierList &&
-      !quartierBtn.contains(e.target) &&
-      !quartierList.contains(e.target)) {
+    if (quartierBtn && quartierList && !quartierBtn.contains(e.target) && !quartierList.contains(e.target)) {
       quartierList.classList.remove("visible");
     }
   });
@@ -999,7 +966,7 @@ function addTouchBufferForLayer(baseLayer) {
 }
 
 function loadStreets() {
-  fetch(API_URL + '/data/marseille_rues_enrichi.geojson')
+  fetch('data/marseille_rues_enrichi.geojson')
     .then(response => {
       if (!response.ok) {
         throw new Error('Erreur HTTP ' + response.status);
@@ -1136,7 +1103,7 @@ function loadStreets() {
 // ------------------------
 
 function loadMonuments() {
-  fetch(API_URL + '/data/marseille_monuments.geojson')
+  fetch('data/marseille_monuments.geojson')
     .then(response => {
       if (!response.ok) {
         console.warn('Impossible de charger les monuments (HTTP ' + response.status + ').');
@@ -1305,7 +1272,7 @@ function refreshLectureTooltipsIfNeeded() {
 // ------------------------
 
 function loadQuartierPolygons() {
-  fetch(API_URL + '/data/marseille_quartiers_111.geojson')
+  fetch('data/marseille_quartiers_111.geojson')
     .then(response => {
       if (!response.ok) {
         throw new Error('Erreur HTTP ' + response.status);
@@ -1409,20 +1376,16 @@ function populateQuartiers() {
     quartierSelect.appendChild(opt);
   });
 
-  // Remplir la liste du faux select avec pastille
+  // Remplir la liste du faux select
   if (quartierList) {
     quartierList.innerHTML = '';
-
     quartiers.forEach(q => {
       const li = document.createElement('li');
       li.dataset.value = q;
-
-      // Nom du quartier
       const nameSpan = document.createElement('span');
       nameSpan.textContent = q;
       li.appendChild(nameSpan);
 
-      // Pastille arrondissement (si dispo)
       const arrLabel = arrondissementByQuartier.get(normalizeQuartierKey(q));
       if (arrLabel) {
         const pill = document.createElement('span');
@@ -1432,68 +1395,38 @@ function populateQuartiers() {
       }
 
       li.addEventListener('click', () => {
-        // Met à jour le label du bouton
-        const labelSpan = quartierBtn
-          ? quartierBtn.querySelector('.custom-select-label')
-          : null;
-        if (labelSpan) {
-          labelSpan.textContent = q;
-        }
-
-        // Met à jour la pastille sur le bouton
+        if (quartierLabel) quartierLabel.textContent = q;
         const liPill = li.querySelector('.difficulty-pill');
         if (quartierBtn) {
           const btnPill = quartierBtn.querySelector('.difficulty-pill');
           if (liPill) {
             const newPill = liPill.cloneNode(true);
-            if (btnPill) {
-              btnPill.replaceWith(newPill);
-            } else {
-              quartierBtn.appendChild(newPill);
-            }
+            if (btnPill) btnPill.replaceWith(newPill);
+            else quartierBtn.appendChild(newPill);
           } else if (btnPill) {
-            // Aucun arrondissement connu pour ce quartier → on enlève la pastille
             btnPill.remove();
           }
         }
-
-        // Met à jour le <select> caché
         quartierSelect.value = q;
-        // Déclenche le "change"
         quartierSelect.dispatchEvent(new Event('change'));
-
-        // Ferme le menu
         quartierList.classList.remove('visible');
       });
-
       quartierList.appendChild(li);
     });
 
-    // Label + pastille par défaut (premier quartier, si dispo)
     if (quartiers.length > 0 && quartierBtn) {
       const q0 = quartiers[0];
-      const labelSpan = quartierBtn.querySelector('.custom-select-label');
-
-      if (labelSpan) {
-        labelSpan.textContent = q0;
-      }
-
+      if (quartierLabel) quartierLabel.textContent = q0;
       const arrLabel0 = arrondissementByQuartier.get(normalizeQuartierKey(q0));
       if (arrLabel0) {
         const existingPill = quartierBtn.querySelector('.difficulty-pill');
         const newPill = document.createElement('span');
         newPill.className = 'difficulty-pill difficulty-pill--arrondissement';
         newPill.textContent = arrLabel0;
-
-        if (existingPill) {
-          existingPill.replaceWith(newPill);
-        } else {
-          quartierBtn.appendChild(newPill);
-        }
+        if (existingPill) existingPill.replaceWith(newPill);
+        else quartierBtn.appendChild(newPill);
       }
-
       quartierSelect.value = q0;
-      // Pas de dispatch ici : tu gardes ton comportement actuel
     }
   }
 }
@@ -1569,40 +1502,23 @@ function exitLectureModeToMenu() {
     gameModeSelect.value = 'classique';
   }
 
-  // Met à jour le sélecteur custom "Type de partie"
+  // Met à jour le sélecteur custom
   const gameModeBtn = document.getElementById('game-mode-select-button');
   const gameModeList = document.getElementById('game-mode-select-list');
-
-  if (gameModeBtn) {
+  if (gameModeBtn && gameModeList) {
     const label = gameModeBtn.querySelector('.custom-select-label');
-    if (label) {
-      if (gameModeList) {
-        const item = gameModeList.querySelector('li[data-value="classique"]');
-        if (item) {
-          const textNode = item.childNodes[0];
-          label.textContent = textNode && textNode.textContent
-            ? textNode.textContent.trim()
-            : 'Classique';
-
-          const pillInList = item.querySelector('.difficulty-pill');
-          if (pillInList) {
-            const newPill = pillInList.cloneNode(true);
-            const btnPill = gameModeBtn.querySelector('.difficulty-pill');
-            if (btnPill) {
-              btnPill.replaceWith(newPill);
-            } else {
-              gameModeBtn.appendChild(newPill);
-            }
-          }
-        } else {
-          label.textContent = 'Classique';
-        }
-      } else {
-        label.textContent = 'Classique';
+    const item = gameModeList.querySelector('li[data-value="classique"]');
+    if (label && item) {
+      label.textContent = item.childNodes[0].textContent.trim();
+      const pillInList = item.querySelector('.difficulty-pill');
+      if (pillInList) {
+        const newPill = pillInList.cloneNode(true);
+        const btnPill = gameModeBtn.querySelector('.difficulty-pill');
+        if (btnPill) btnPill.replaceWith(newPill);
+        else gameModeBtn.appendChild(newPill);
       }
     }
   }
-
   // Réinitialise les infos de cible / temps
   const targetStreetEl = document.getElementById('target-street');
   if (targetStreetEl) {
@@ -2872,16 +2788,7 @@ function resetWeightedBar() {
 // Auth helpers
 // ------------------------
 
-function loadCurrentUserFromStorage() {
-  try {
-    const raw = window.localStorage.getItem('marseille-quiz-user');
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
-    console.warn('Impossible de lire l’utilisateur stocké.', e);
-    return null;
-  }
-}
+
 
 function saveCurrentUserToStorage(user) {
   if (!user) return;
@@ -3088,7 +2995,10 @@ function startDailySession(data) {
   if (isSessionRunning) endSession();
 
   // Reset UI
-  document.getElementById('mode-select-button').innerHTML = '<span class="custom-select-label">Défi Quotidien</span><span class="difficulty-pill difficulty-pill--hard">5 essais</span>';
+  const modeBtn = document.getElementById('mode-select-button');
+  if (modeBtn) {
+    modeBtn.innerHTML = '<span class="custom-select-label">Défi Quotidien</span><span class="difficulty-pill difficulty-pill--hard">5 essais</span>';
+  }
 
   // Hide panels we don't need or adapt them
   const targetEl = document.getElementById('target-street');

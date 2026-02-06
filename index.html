@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jeu des rues de Marseille</title>
+  <title>Camino - Jeu des rues de Marseille</title>
 
   <!-- Google Fonts : Montserrat (titres), Nunito (texte) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -69,120 +69,79 @@
             <label>Zone de jeu :</label>
 
             <div id="mode-select-wrapper" class="custom-select">
-              <!-- Affichage sélectionné -->
               <button id="mode-select-button" class="custom-select-button">
                 <span class="custom-select-label">Rues célèbres</span>
                 <span class="difficulty-pill difficulty-pill--very-easy">Facile</span>
               </button>
-
-              <!-- Liste déroulante -->
               <ul id="mode-select-list" class="custom-select-list">
-                <li data-value="rues-celebres">
-                  Rues célèbres
-                  <span class="difficulty-pill difficulty-pill--very-easy">Facile</span>
-                </li>
-
-                <li data-value="rues-principales">
-                  Rues principales
-                  <span class="difficulty-pill difficulty-pill--easy">Moins Facile</span>
-                </li>
-
-                <li data-value="quartier">
-                  Par quartier
-                  <span class="difficulty-pill difficulty-pill--medium">Faisable</span>
-                </li>
-
-                <li data-value="ville">
-                  Ville entière
-                  <span class="difficulty-pill difficulty-pill--hard">Difficile</span>
-                </li>
-
-                <li data-value="monuments">
-                  Monuments
-                  <span class="difficulty-pill difficulty-pill--medium">Faisable</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Vrai select caché, piloté par le custom select, utilisé par le JS -->
-          <select id="mode-select" class="hidden">
-            <option value="rues-celebres" selected>Rues célèbres</option>
-            <option value="rues-principales">Rues principales</option>
-            <option value="quartier">Par quartier</option>
-            <option value="ville">Ville entière</option>
-            <option value="monuments">Monuments</option>
-          </select>
-
-          <div class="info-block" id="quartier-block" style="display:none;">
-            <label for="quartier-select">Quartier :</label>
-
-            <!-- Faux select stylé pour les quartiers (PAS de pastille) -->
-            <div id="quartier-select-wrapper" class="custom-select">
-              <!-- Affichage sélectionné -->
-              <button id="quartier-select-button" class="custom-select-button">
-                <span class="custom-select-label">Choisissez un quartier</span>
-              </button>
-
-              <!-- Liste déroulante remplie par le JS -->
-              <ul id="quartier-select-list" class="custom-select-list"></ul>
-            </div>
-
-            <!-- Vrai select caché, utilisé par le JS existant -->
-            <select id="quartier-select" class="hidden"></select>
-          </div>
-
-          <div class="info-block">
-            <label>Type de partie :</label>
-
-            <!-- Faux select stylé -->
-            <div id="game-mode-select-wrapper" class="custom-select">
-              <!-- Affichage sélectionné -->
-              <button id="game-mode-select-button" class="custom-select-button">
-                <span class="custom-select-label">Classique</span>
-                <span class="difficulty-pill gamepill--classique" id="game-mode-pill">
-                  20 rues
-                </span>
-              </button>
-
-              <!-- Liste déroulante -->
-              <ul id="game-mode-select-list" class="custom-select-list">
-                <li data-value="classique">
-                  Classique
-                  <span class="difficulty-pill gamepill--classique">20 rues</span>
-                </li>
-
-                <li data-value="marathon">
-                  Marathon
-                  <span class="difficulty-pill gamepill--marathon">3 erreurs max</span>
-                </li>
-
-                <li data-value="chrono">
-                  Mode chrono
-                  <span class="difficulty-pill gamepill--chrono">1 minute</span>
-                </li>
-
-                <li data-value="lecture">
-                  Lecture
-                  <span class="difficulty-pill gamepill--lecture">Apprentissage</span>
-                </li>
+                <li data-value="rues-celebres">Rues célèbres <span
+                    class="difficulty-pill difficulty-pill--very-easy">Facile</span></li>
+                <li data-value="rues-principales">Rues principales <span
+                    class="difficulty-pill difficulty-pill--easy">Moins Facile</span></li>
+                <li data-value="quartier">Par quartier <span
+                    class="difficulty-pill difficulty-pill--medium">Faisable</span></li>
+                <li data-value="ville">Ville entière <span
+                    class="difficulty-pill difficulty-pill--hard">Difficile</span></li>
+                <li data-value="monuments">Monuments <span
+                    class="difficulty-pill difficulty-pill--medium">Faisable</span></li>
               </ul>
             </div>
 
-            <!-- Vrai select caché, utilisé par le JS existant -->
-            <select id="game-mode-select" class="hidden">
-              <option value="classique" selected>Classique</option>
-              <option value="marathon">Marathon</option>
-              <option value="chrono">Mode Chrono</option>
-              <option value="lecture">Lecture</option>
+            <select id="mode-select" style="display:none !important;">
+              <option value="rues-celebres" selected>Rues célèbres</option>
+              <option value="rues-principales">Rues principales</option>
+              <option value="quartier">Par quartier</option>
+              <option value="ville">Ville entière</option>
+              <option value="monuments">Monuments</option>
             </select>
-          </div>
 
-          <div class="actions-row">
-            <button id="restart-btn" class="btn-primary">Commencer la session</button>
-            <button id="skip-btn" class="btn-skip" style="display:none;">Passer</button>
-            <button id="pause-btn" class="btn-secondary">Pause</button>
-          </div>
+            <div class="info-block" id="quartier-block" style="display:none;">
+              <label for="quartier-select">Quartier :</label>
+
+              <!-- Faux select stylé pour les quartiers (PAS de pastille) -->
+              <div id="quartier-select-wrapper" class="custom-select">
+                <button id="quartier-select-button" class="custom-select-button">
+                  <span class="custom-select-label">Choisissez un quartier</span>
+                </button>
+                <ul id="quartier-select-list" class="custom-select-list"></ul>
+              </div>
+              <select id="quartier-select" style="display:none !important;"></select>
+            </div>
+
+            <div class="info-block">
+              <label>Type de partie :</label>
+
+              <!-- Faux select stylé -->
+              <div id="game-mode-select-wrapper" class="custom-select">
+                <button id="game-mode-select-button" class="custom-select-button">
+                  <span class="custom-select-label">Classique</span>
+                  <span class="difficulty-pill gamepill--classique">20 rues</span>
+                </button>
+                <ul id="game-mode-select-list" class="custom-select-list">
+                  <li data-value="classique">Classique <span class="difficulty-pill gamepill--classique">20 rues</span>
+                  </li>
+                  <li data-value="marathon">Marathon <span class="difficulty-pill gamepill--marathon">3 erreurs
+                      max</span></li>
+                  <li data-value="chrono">Mode chrono <span class="difficulty-pill gamepill--chrono">1 minute</span>
+                  </li>
+                  <li data-value="lecture">Lecture <span class="difficulty-pill gamepill--lecture">Apprentissage</span>
+                  </li>
+                </ul>
+              </div>
+
+              <select id="game-mode-select" style="display:none !important;">
+                <option value="classique" selected>Classique</option>
+                <option value="marathon">Marathon</option>
+                <option value="chrono">Mode Chrono</option>
+                <option value="lecture">Lecture</option>
+              </select>
+            </div>
+
+            <div class="actions-row">
+              <button id="restart-btn" class="btn-primary">Commencer la session</button>
+              <button id="skip-btn" class="btn-skip" style="display:none;">Passer</button>
+              <button id="pause-btn" class="btn-secondary">Pause</button>
+            </div>
         </section>
 
         <!-- Panneau Rue à trouver -->
