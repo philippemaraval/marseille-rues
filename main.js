@@ -2127,15 +2127,15 @@ function handleStreetClick(clickedFeature) {
 
     let distance = 0;
     if (!isSuccess) {
-      // Calc distance approx
-      // On prend un point au pif de la rue cliquée (coord 0)
+      // Calc distance approx based on first point of geometry
       let cGeo = clickedFeature.geometry;
       let coords = cGeo.coordinates;
       if (cGeo.type === 'MultiLineString') coords = coords[0];
-      // coords est un tableau de points [lon, lat]
-      let p1 = coords[0];
-      let p2 = dailyTargetGeoJson; // [lon, lat]
-      distance = getDistanceMeters(p1[1], p1[0], p2[1], p2[0]);
+      if (cGeo.type === 'LineString' || cGeo.type === 'MultiLineString') {
+        const p1 = coords[0]; // [lon, lat]
+        const p2 = dailyTargetGeoJson; // [lon, lat]
+        distance = getDistanceMeters(p1[1], p1[0], p2[1], p2[0]);
+      }
     }
 
     fetch(API_URL + '/api/daily/guess', {
@@ -2151,18 +2151,20 @@ function handleStreetClick(clickedFeature) {
       })
     }).then(r => r.json()).then(newData => {
       dailyTargetData.userStatus = newData;
-      const attempts = newData.attempts;
+      const attempts = newData.attempts_count;
       const remaining = 5 - attempts;
 
       if (newData.success) {
         showMessage(`BRAVO ! Trouvé en ${attempts} essai(s) !`, 'success');
-        endSession(); // Stop le chrono/session
+        isDailyMode = false; // Prevents further clicks on this session
+        endSession();
       } else {
         if (remaining <= 0) {
-          showMessage(`Raté ! La bonne réponse était ailleurs. Fin du défi.`, 'error');
+          showMessage(`Dommage ! La bonne réponse était ailleurs. Fin du défi.`, 'error');
+          isDailyMode = false;
           endSession();
         } else {
-          showMessage(`Mauvaise rue. Distance: ${Math.round(distance)} m. Encore ${remaining} essais.`, 'warning');
+          showMessage(`Mince ! Plus que ${remaining} essai${remaining > 1 ? 's' : ''}. (Distance: ${Math.round(distance)} m)`, 'warning');
         }
       }
       updateDailyUI();
@@ -2499,6 +2501,11 @@ function endSession() {
   isChronoMode = false;
   chronoEndTime = null;
 
+  if (isDailyMode) {
+    isDailyMode = false;
+    updateDailyUI();
+  }
+
   // Désactive explicitement le mode lecture
   isLectureMode = false;
   updateLayoutSessionState();
@@ -2820,9 +2827,14 @@ function updateUserUI() {
   const authBlock = document.querySelector('.auth-block');
   const logoutBtn = document.getElementById('logout-btn');
   const dailyBtn = document.getElementById('daily-mode-btn');
+  const userSticker = document.getElementById('user-sticker');
 
   if (currentUser && currentUser.username) {
     if (label) label.textContent = `Connecté en tant que ${currentUser.username}`;
+    if (userSticker) {
+      userSticker.textContent = currentUser.username;
+      userSticker.style.display = 'inline-block';
+    }
 
     // Masquer les champs de connexion
     if (authBlock) {
@@ -2835,6 +2847,10 @@ function updateUserUI() {
     if (dailyBtn) dailyBtn.style.display = 'inline-block';
   } else {
     if (label) label.textContent = 'Non connecté.';
+    if (userSticker) {
+      userSticker.textContent = '';
+      userSticker.style.display = 'none';
+    }
 
     // Afficher les champs
     if (authBlock) {
@@ -3019,6 +3035,11 @@ function startDailySession(data) {
   isSessionRunning = true;
   updateStartStopButton(); // might need hiding
 
+  // Force map refresh for all streets
+  if (modeSelect) {
+    modeSelect.dispatchEvent(new Event('change'));
+  }
+
   showMessage(`Trouvez : ${dailyTargetData.streetName} (${5 - status.attempts_count} essais restants)`, 'info');
 
   // Override street click handler for daily mode?
@@ -3037,9 +3058,21 @@ startDailySession = function (data) {
 
 function updateDailyUI() {
   // Update attempts counter etc
-  const status = dailyTargetData.userStatus;
-  const remaining = 5 - (status.attempts_count || 0);
+  const status = dailyTargetData ? dailyTargetData.userStatus : {};
+  const attempts = status.attempts_count || 0;
+  const remaining = 5 - attempts;
+
   setMapStatus(`Défi: ${remaining} essais`, 'ready');
+
+  const counter = document.getElementById('daily-tries-counter');
+  if (counter) {
+    if (isDailyMode) {
+      counter.style.display = 'flex';
+      counter.innerHTML = `<span>🎯</span> ${attempts} / 5 essais`;
+    } else {
+      counter.style.display = 'none';
+    }
+  }
 }
 
 

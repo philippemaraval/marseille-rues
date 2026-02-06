@@ -112,6 +112,17 @@ body {
   padding: 12px;
   margin-bottom: 4px;
   transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s ease;
+  overflow: visible !important;
+}
+
+.panel-params {
+  position: relative;
+  z-index: 20;
+}
+
+.target-panel {
+  position: relative;
+  z-index: 10;
 }
 
 .panel:hover {
@@ -172,7 +183,26 @@ body {
   margin-bottom: 12px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  /* Allow sticker to stay right */
   gap: 6px;
+}
+
+.user-sticker {
+  font-size: 10px;
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 600;
+  display: none;
+  /* Shown via JS */
+}
+
+details[open] .user-sticker {
+  display: none !important;
 }
 
 /* ========== INPUTS & SELECTS ========== */
@@ -375,19 +405,34 @@ input:focus {
   z-index: 70 !important;
 }
 
-/* Target panel stacking: ensure it sits below dropdowns */
-.target-panel {
-  position: relative;
-  z-index: 10 !important;
-  /* Low enough to be behind dropdown lists (which have z-index 100+) */
+.panel-params .info-block:nth-child(1) {
+  z-index: 100 !important;
 }
 
-
-/* Target panel stacking: ensure it sits below dropdowns */
-.target-panel {
-  position: relative;
-  z-index: 50 !important;
+.panel-params .info-block:nth-child(2) {
+  z-index: 90 !important;
 }
+
+.panel-params .info-block:nth-child(3) {
+  z-index: 80 !important;
+}
+
+.tries-counter {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  color: white;
+  background: var(--primary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 
 
 /* Ensure the panels themselves don't clip the dropdowns or tooltips */
