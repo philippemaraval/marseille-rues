@@ -583,6 +583,7 @@ const MONUMENT_NAMES_NORMALIZED = [
 
 function normalizeName(name) {
   return (name || '').trim().toLowerCase();
+  // Safe comment to force git update
 }
 
 // Quartier → arrondissement (étiquette d'affichage)
