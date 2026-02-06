@@ -166,64 +166,7 @@ let arrondissementByQuartier = new Map();
 Object.entries(ARRONDISSEMENT_PAR_QUARTIER).forEach(([label, arr]) => {
   arrondissementByQuartier.set(normalizeQuartierKey(label), arr);
 });
-let map = null;
 
-// Zones
-let currentZoneMode = 'ville';      // 'ville' | 'quartier' | 'rues-principales' | 'monuments'
-
-// Données et couches rues
-let streetsLayer = null;
-let allStreetFeatures = [];
-let streetLayersById = new Map();
-
-// Données et couches monuments
-let monumentsLayer = null;
-let allMonuments = [];
-let sessionMonuments = [];
-let currentMonumentIndex = 0;
-let currentMonumentTarget = null;
-let isMonumentsMode = false;
-
-// Quartiers
-let quartierPolygonsByName = new Map();
-let quartierOverlay = null;
-
-// Normalisation des clés de quartier (pour matcher GeoJSON / table)
-function normalizeQuartierKey(raw) {
-  if (!raw) return '';
-
-  let s = raw.trim();
-
-  // Cas "Chapitre (Le)" → "Le Chapitre"
-  const match = s.match(/^(.+)\s+\((L'|L’|La|Le|Les)\)$/i);
-  if (match) {
-    let base = match[1].trim();
-    let art = match[2].trim();
-
-    // Unifier L' / L’
-    if (/^l[’']/i.test(art)) {
-      art = "L'";
-    } else {
-      // Mettre la majuscule standard : La/Le/Les
-      art = art.charAt(0).toUpperCase() + art.slice(1).toLowerCase();
-    }
-
-    s = `${art} ${base}`;
-  }
-
-  // Supprimer les accents, normaliser espaces, mettre en minuscule
-  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  s = s.replace(/\s+/g, ' ').toLowerCase();
-
-  return s;
-}
-
-// Map normalisée quartier → arrondissement (1er, 2e, etc.)
-let arrondissementByQuartier = new Map();
-Object.entries(ARRONDISSEMENT_PAR_QUARTIER).forEach(([label, arr]) => {
-  const key = normalizeQuartierKey(label);
-  arrondissementByQuartier.set(key, arr);
-});
 
 // Session en cours (rues)
 let sessionStreets = [];
