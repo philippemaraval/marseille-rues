@@ -1617,7 +1617,7 @@ function addTouchBufferForLayer(baseLayer) {
 }
 
 function loadStreets() {
-  fetch('data/marseille_rues_enrichi.geojson')
+  fetch(API_URL + '/data/marseille_rues_enrichi.geojson')
     .then(response => {
       if (!response.ok) {
         throw new Error('Erreur HTTP ' + response.status);
@@ -1754,7 +1754,7 @@ function loadStreets() {
 // ------------------------
 
 function loadMonuments() {
-  fetch('data/marseille_monuments.geojson')
+  fetch(API_URL + '/data/marseille_monuments.geojson')
     .then(response => {
       if (!response.ok) {
         console.warn('Impossible de charger les monuments (HTTP ' + response.status + ').');
@@ -1923,7 +1923,7 @@ function refreshLectureTooltipsIfNeeded() {
 // ------------------------
 
 function loadQuartierPolygons() {
-  fetch('data/marseille_quartiers_111.geojson')
+  fetch(API_URL + '/data/marseille_quartiers_111.geojson')
     .then(response => {
       if (!response.ok) {
         throw new Error('Erreur HTTP ' + response.status);
