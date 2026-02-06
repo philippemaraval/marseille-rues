@@ -1,12 +1,6 @@
-// ------------------------
-// Paramètres du jeu
-// (Updated)
-// ------------------------
-
-// *** CONFIGURATION: Set this to your Render backend URL after deployment ***
-// Example: 'https://camino-backend.onrender.com'
-// For local development, use '' (empty string) to use relative URLs
-const API_URL = 'https://camino2.onrender.com'; // <-- UPDATE THIS AFTER DEPLOYING BACKEND
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:')
+  ? 'http://localhost:3000'
+  : 'https://camino2.onrender.com';
 
 const SESSION_SIZE = 20;           // 20 rues / monuments par session
 const MAX_ERRORS_MARATHON = 3;     // 3 erreurs max en mode "marathon"
@@ -409,7 +403,8 @@ function initUI() {
   const modeLabel = modeBtn ? modeBtn.querySelector(".custom-select-label") : null;
 
   if (modeBtn && modeList) {
-    modeBtn.addEventListener("click", () => {
+    modeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       modeList.classList.toggle("visible");
     });
 
@@ -443,7 +438,8 @@ function initUI() {
   const gameModeSelect = document.getElementById("game-mode-select");
 
   if (gameModeBtn && gameModeList && gameModeSelect) {
-    gameModeBtn.addEventListener("click", () => {
+    gameModeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       gameModeList.classList.toggle("visible");
     });
 
@@ -475,7 +471,8 @@ function initUI() {
 
   // ----- Select personnalisé "quartier" -----
   if (quartierBtn && quartierList) {
-    quartierBtn.addEventListener('click', () => {
+    quartierBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Avoid immediate closure
       quartierList.classList.toggle('visible');
     });
   }
@@ -664,8 +661,8 @@ function initUI() {
         }
         const data = await res.json();
         currentUser = {
-          id: data.user?.id,
-          username: data.user?.username,
+          id: data.id, // Direct field
+          username: data.username, // Direct field
           token: data.token
         };
         saveCurrentUserToStorage(currentUser);
@@ -697,8 +694,8 @@ function initUI() {
         }
         const data = await res.json();
         currentUser = {
-          id: data.user?.id,
-          username: data.user?.username,
+          id: data.id, // Direct field
+          username: data.username, // Direct field
           token: data.token
         };
         saveCurrentUserToStorage(currentUser);

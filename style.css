@@ -97,6 +97,8 @@ body {
   gap: 12px;
   z-index: 10;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.02);
+  overflow-x: visible;
+  /* Ensure dropdowns aren't clipped */
 }
 
 /* ========== PANNEAUX (GLASSMORPHISM) ========== */
@@ -107,7 +109,8 @@ body {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 12px;
+  margin-bottom: 4px;
   transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s ease;
 }
 
@@ -251,6 +254,21 @@ input:focus {
   background: #f8fafc;
 }
 
+.custom-select {
+  position: relative;
+  z-index: 100;
+  /* Base z-index for dropdowns */
+}
+
+/* Ensure earlier dropdowns are above later ones */
+.info-block:nth-child(2) .custom-select {
+  z-index: 102;
+}
+
+.info-block:nth-child(3) .custom-select {
+  z-index: 101;
+}
+
 .custom-select-list {
   position: absolute;
   top: Calc(100% + 4px);
@@ -303,6 +321,63 @@ input:focus {
   background: var(--primary-soft);
   color: var(--primary);
 }
+
+/* Actions Row - Buttons on one line */
+.actions-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.actions-row button {
+  padding: 8px 0;
+  /* Save horizontal space */
+  font-size: 9.5px;
+  /* Fit "Commencer la session" */
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.actions-row .btn-primary {
+  flex: 2.6;
+  /* Maximize room for long text */
+}
+
+.actions-row .btn-skip,
+.actions-row .btn-secondary {
+  flex: 0.7;
+  /* Keep others small */
+}
+
+/* Stacking context for dropdowns: earlier siblings stay on top */
+.panel-params .info-block {
+  position: relative !important;
+}
+
+.panel-params .info-block:nth-child(1) {
+  z-index: 100 !important;
+}
+
+.panel-params .info-block:nth-child(2) {
+  z-index: 90 !important;
+}
+
+.panel-params .info-block:nth-child(3) {
+  z-index: 80 !important;
+}
+
+.panel-params .info-block:nth-child(4) {
+  z-index: 70 !important;
+}
+
+/* Ensure the panels themselves don't clip the dropdowns or tooltips */
+.panel {
+  overflow: visible !important;
+}
+
+
+
 
 /* ========== BOUTONS ========== */
 button {
@@ -599,6 +674,80 @@ button {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Tooltip Score Pondéré */
+.weighted-score-container {
+  position: relative;
+}
+
+.weighted-score-help-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.weighted-score-help {
+  position: absolute;
+  bottom: 120%;
+  left: -110px;
+  width: 260px;
+  background: #0f172a;
+  color: white;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-xs);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.4);
+  z-index: 10000;
+  /* Above everything (map, other panels) */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  margin-bottom: 8px;
+}
+
+.weighted-score-help::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 110px;
+  border: 8px solid transparent;
+  border-top-color: #0f172a;
+}
+
+.weighted-score-help-btn {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  /* Override global button min-height */
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  text-transform: none;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.weighted-score-help-btn:hover {
+  background: var(--primary-dark);
+  transform: scale(1.1);
+}
+
+.weighted-score-help-btn:hover+.weighted-score-help,
+.weighted-score-help-btn:focus+.weighted-score-help {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-5px);
+}
+
+
+
 .summary h2 {
   font-size: var(--fs-l);
   color: var(--primary-dark);
@@ -731,7 +880,12 @@ button {
   /* Layout boutons mobile */
   .actions-row {
     flex-direction: row;
-    gap: 8px;
+    gap: 4px;
+  }
+
+  .actions-row button {
+    padding: 8px 2px;
+    font-size: 10px;
   }
 
   /* Cible plus petite sur mobile */
