@@ -1153,9 +1153,9 @@ function loadMonuments() {
           pointToLayer: (feature, latlng) => {
             const marker = L.circleMarker(latlng, {
               radius: IS_TOUCH_DEVICE ? 12 : 8,
-              color: '#ffffff', // white border for visibility
+              color: '#e3f2fd',
               weight: 3,
-              fillColor: '#e91e63', // pink/magenta to stand out
+              fillColor: '#90caf9',
               fillOpacity: 1.0,
               pane: 'markerPane'
             });
@@ -2350,7 +2350,7 @@ function highlightMonument(layer, color) {
 
   setTimeout(() => {
     if (!layer.setStyle) return;
-    layer.setStyle({ color: '#1565c0', fillColor: '#2196f3' });
+    layer.setStyle({ color: '#e3f2fd', fillColor: '#90caf9' });
   }, HIGHLIGHT_DURATION_MS);
 }
 
