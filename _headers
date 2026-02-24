@@ -1,9 +1,9 @@
-# Caching for static GeoJSON data files (immutable between deploys)
+# GeoJSON data files: cache 1 hour, revalidate after
 /data/*
-  Cache-Control: public, max-age=604800, immutable
+  Cache-Control: public, max-age=3600, must-revalidate
 
-# Cache CSS and JS for 1 day (they may change between deploys)
+# CSS and JS: cache 1 hour, revalidate after
 /*.css
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=3600, must-revalidate
 /*.js
-  Cache-Control: public, max-age=86400
+  Cache-Control: public, max-age=3600, must-revalidate
