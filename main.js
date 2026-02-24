@@ -1149,6 +1149,7 @@ function loadMonuments() {
       monumentsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: allMonuments },
         {
+          renderer: L.svg(),  // Renderer SVG dédié pour éviter le conflit avec le canvas global
           pointToLayer: (feature, latlng) => {
             const marker = L.circleMarker(latlng, {
               radius: IS_TOUCH_DEVICE ? 12 : 8,
