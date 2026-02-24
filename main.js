@@ -1168,11 +1168,15 @@ function loadMonuments() {
       );
       refreshLectureTooltipsIfNeeded();
 
-      // Si la zone active est déjà "monuments", on force le rafraîchissement
+      // Si la zone active est déjà "monuments", on ajoute directement le layer
       const currentMode = getZoneMode();
       if (currentMode === 'monuments') {
-        const modeSelect = document.getElementById('mode-select');
-        if (modeSelect) modeSelect.dispatchEvent(new Event('change'));
+        if (!map.hasLayer(monumentsLayer)) {
+          monumentsLayer.addTo(map);
+        }
+        if (streetsLayer && map.hasLayer(streetsLayer)) {
+          map.removeLayer(streetsLayer);
+        }
       }
     })
     .catch(err => {
