@@ -1373,6 +1373,9 @@ function populateQuartiers() {
   const quartierSelect = document.getElementById('quartier-select');
   const quartierList = document.getElementById('quartier-select-list');
   const quartierBtn = document.getElementById('quartier-select-button');
+  const quartierLabel = quartierBtn
+    ? quartierBtn.querySelector('.custom-select-label')
+    : null;
 
   if (!quartierSelect) return;
 
