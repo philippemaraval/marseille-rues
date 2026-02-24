@@ -112,6 +112,7 @@ let currentZoneMode = 'ville';      // 'ville' | 'quartier' | 'rues-principales'
 let streetsLayer = null;
 let allStreetFeatures = [];
 let streetLayersById = new Map();
+let streetLayersByName = new Map();  // index par nom normalisé → Layer[]
 
 // Données et couches monuments
 let monumentsLayer = null;
@@ -352,7 +353,8 @@ function initMap() {
   map = L.map('map', {
     tap: true,              // ← nécessaire pour activer les interactions tactiles
     tapTolerance: IS_TOUCH_DEVICE ? 25 : 15,       // ← meilleure sensibilité mobile
-    doubleTapZoom: true     // ← zoomer au double-tap
+    doubleTapZoom: true,    // ← zoomer au double-tap
+    renderer: L.canvas({ padding: 0.5 })  // ← Canvas renderer : bien plus performant avec 15K+ polylines
   }).setView([43.2965, 5.37], 13);
 
   L.tileLayer(
@@ -566,12 +568,17 @@ function initUI() {
       if (streetsLayer && streetLayersById.size) {
         streetLayersById.forEach(layer => {
           const base = getBaseStreetStyle(layer);
+          const isVisible = base.weight > 0;
           layer.setStyle({
             color: base.color,
             weight: base.weight
           });
-          // on laisse les handlers décider si le clic est pertinent (voir handleStreetClick)
-          layer.options.interactive = true;
+
+          // Disable interactivity for hidden streets
+          layer.options.interactive = isVisible;
+          if (layer.touchBuffer) {
+            layer.touchBuffer.options.interactive = isVisible;
+          }
         });
       }
 
@@ -960,10 +967,11 @@ function addTouchBufferForLayer(baseLayer) {
   buffer.on('mouseout', () => baseLayer.fire('mouseout'));
 
   buffer.addTo(map);
+  baseLayer.touchBuffer = buffer;
 }
 
 function loadStreets() {
-  fetch('data/marseille_rues_enrichi.geojson')
+  fetch('data/marseille_rues_light.geojson')
     .then(response => {
       if (!response.ok) {
         throw new Error('Erreur HTTP ' + response.status);
@@ -971,20 +979,12 @@ function loadStreets() {
       return response.json();
     })
     .then(data => {
-      const features = (data.features || []).filter(f =>
-        f.properties &&
-        typeof f.properties.name === 'string' &&
-        f.properties.name.trim() !== ''
-      );
-
-      features.forEach(f => {
-        f.properties.name = f.properties.name.trim();
-      });
-
-      allStreetFeatures = features;
+      // Light GeoJSON: already filtered & trimmed by strip_geojson.py
+      allStreetFeatures = data.features || [];
       console.log('Nombre de rues chargées :', allStreetFeatures.length);
 
       streetLayersById.clear();
+      streetLayersByName.clear();
       let idCounter = 0;
 
       streetsLayer = L.geoJSON(allStreetFeatures, {
@@ -999,6 +999,12 @@ function loadStreets() {
           feature._gameId = idCounter++;
           streetLayersById.set(feature._gameId, layer);
           layer.feature = feature;
+
+          // Indexer par nom pour hover en O(1)
+          if (!streetLayersByName.has(nameNorm)) {
+            streetLayersByName.set(nameNorm, []);
+          }
+          streetLayersByName.get(nameNorm).push(layer);
 
           // Buffer tactile élargi pour les appareils tactiles
           addTouchBufferForLayer(layer);
@@ -1019,14 +1025,13 @@ function loadStreets() {
               return;
             }
 
-            streetLayersById.forEach(l => {
-              const n = normalizeName(l.feature.properties.name);
-              if (n === nameNorm) {
-                l.setStyle({
-                  weight: 7,
-                  color: '#ffffff'
-                });
-              }
+            // O(1) lookup via name index
+            const sameName = streetLayersByName.get(nameNorm) || [];
+            sameName.forEach(l => {
+              l.setStyle({
+                weight: 7,
+                color: '#ffffff'
+              });
             });
           });
 
@@ -1043,10 +1048,9 @@ function loadStreets() {
               return;
             }
 
-            streetLayersById.forEach(l => {
-              const n = normalizeName(l.feature.properties.name);
-              if (n !== nameNorm) return;
-
+            // O(1) lookup via name index
+            const sameNameOut = streetLayersByName.get(nameNorm) || [];
+            sameNameOut.forEach(l => {
               if (highlightedLayers && highlightedLayers.includes(l)) {
                 return;
               }
@@ -1118,12 +1122,12 @@ function loadMonuments() {
         f.properties.name.trim() !== ''
       );
 
-      features.forEach(f => {
-        f.properties.name = f.properties.name.trim();
-      });
-
       allMonuments = features;
       console.log('Nombre de monuments chargés :', allMonuments.length);
+
+      if (allMonuments.length === 0) {
+        console.warn('Aucun monument trouvé après filtrage.');
+      }
 
       if (monumentsLayer) {
         map.removeLayer(monumentsLayer);
@@ -1135,11 +1139,12 @@ function loadMonuments() {
         {
           pointToLayer: (feature, latlng) => {
             const marker = L.circleMarker(latlng, {
-              radius: IS_TOUCH_DEVICE ? 11 : 7,
-              color: '#1565c0',
-              weight: 2,
-              fillColor: '#2196f3',
-              fillOpacity: 0.9
+              radius: IS_TOUCH_DEVICE ? 12 : 8,
+              color: '#ffffff', // white border for visibility
+              weight: 3,
+              fillColor: '#e91e63', // pink/magenta to stand out
+              fillOpacity: 1.0,
+              pane: 'markerPane'
             });
             return marker;
           },
@@ -1149,14 +1154,12 @@ function loadMonuments() {
         }
       );
       refreshLectureTooltipsIfNeeded();
-      // Si la zone active est déjà "monuments", on montre directement la couche
-      if (getZoneMode() === 'monuments') {
-        if (streetsLayer && map.hasLayer(streetsLayer)) {
-          map.removeLayer(streetsLayer);
-        }
-        if (!map.hasLayer(monumentsLayer)) {
-          monumentsLayer.addTo(map);
-        }
+
+      // Si la zone active est déjà "monuments", on force le rafraîchissement
+      const currentMode = getZoneMode();
+      if (currentMode === 'monuments') {
+        const modeSelect = document.getElementById('mode-select');
+        if (modeSelect) modeSelect.dispatchEvent(new Event('change'));
       }
     })
     .catch(err => {
@@ -1211,15 +1214,25 @@ function setLectureTooltipsEnabled(enabled) {
       if (!name) return;
 
       if (enabled) {
-        if (!layer.getTooltip()) {
-          layer.bindTooltip(name, {
-            direction: 'top',
-            sticky: !IS_TOUCH_DEVICE,  // hover desktop
-            opacity: 0.9,
-            className: 'street-tooltip'
-          });
+        // Only bind if visible in current mode
+        const base = getBaseStreetStyle(layer);
+        const isVisible = base.weight > 0;
+
+        if (isVisible) {
+          if (!layer.getTooltip()) {
+            layer.bindTooltip(name, {
+              direction: 'top',
+              sticky: !IS_TOUCH_DEVICE,  // hover desktop
+              opacity: 0.9,
+              className: 'street-tooltip'
+            });
+          }
+          attachTapTooltip(layer);
+        } else {
+          // Unbind if hidden
+          if (layer.getTooltip()) layer.unbindTooltip();
+          detachTapTooltip(layer);
         }
-        attachTapTooltip(layer);
       } else {
         detachTapTooltip(layer);
         if (layer.getTooltip()) {

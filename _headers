@@ -1,0 +1,9 @@
+# Caching for static GeoJSON data files (immutable between deploys)
+/data/*
+  Cache-Control: public, max-age=604800, immutable
+
+# Cache CSS and JS for 1 day (they may change between deploys)
+/*.css
+  Cache-Control: public, max-age=86400
+/*.js
+  Cache-Control: public, max-age=86400
