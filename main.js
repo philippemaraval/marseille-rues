@@ -940,6 +940,35 @@ function getBaseStreetStyle(featureOrLayer) {
   return base;
 }
 
+// Helper : est-ce que cette rue est visible/interactive dans le mode courant ?
+function isStreetVisibleInCurrentMode(nameNorm, featureQuartier) {
+  const zoneMode = getZoneMode();
+
+  // Mode monuments → aucune rue interactive
+  if (zoneMode === 'monuments') return false;
+
+  // Mode rues célèbres → seulement les célèbres
+  if (zoneMode === 'rues-celebres') {
+    return FAMOUS_STREET_NAMES.has(nameNorm);
+  }
+
+  // Mode rues principales → seulement les principales
+  if (zoneMode === 'rues-principales' || zoneMode === 'main') {
+    return MAIN_STREET_NAMES.has(nameNorm);
+  }
+
+  // Mode quartier → seulement celles du quartier sélectionné
+  if (zoneMode === 'quartier') {
+    const selectedQuartier = getSelectedQuartier();
+    if (selectedQuartier && featureQuartier !== selectedQuartier) {
+      return false;
+    }
+  }
+
+  // Mode ville → toutes visibles
+  return true;
+}
+
 function addTouchBufferForLayer(baseLayer) {
   if (!IS_TOUCH_DEVICE || !map) return;
 
@@ -1010,20 +1039,8 @@ function loadStreets() {
           addTouchBufferForLayer(layer);
 
           layer.on('mouseover', () => {
-            const zoneMode = getZoneMode();
-            const isMain = MAIN_STREET_NAMES.has(nameNorm);
-            const selectedQuartier = getSelectedQuartier();
             const fq = feature.properties.quartier || null;
-
-            // Rues secondaires ignorées en mode "rues principales"
-            if ((zoneMode === 'rues-principales' || zoneMode === 'main') && !isMain) {
-              return;
-            }
-
-            // Rues hors quartier ignorées en mode "quartier"
-            if (zoneMode === 'quartier' && selectedQuartier && fq !== selectedQuartier) {
-              return;
-            }
+            if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
 
             // O(1) lookup via name index
             const sameName = streetLayersByName.get(nameNorm) || [];
@@ -1036,17 +1053,8 @@ function loadStreets() {
           });
 
           layer.on('mouseout', () => {
-            const zoneMode = getZoneMode();
-            const isMain = MAIN_STREET_NAMES.has(nameNorm);
-            const selectedQuartier = getSelectedQuartier();
             const fq = feature.properties.quartier || null;
-
-            if ((zoneMode === 'rues-principales' || zoneMode === 'main') && !isMain) {
-              return;
-            }
-            if (zoneMode === 'quartier' && selectedQuartier && fq !== selectedQuartier) {
-              return;
-            }
+            if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
 
             // O(1) lookup via name index
             const sameNameOut = streetLayersByName.get(nameNorm) || [];
@@ -1063,7 +1071,11 @@ function loadStreets() {
             });
           });
 
-          layer.on('click', () => handleStreetClick(feature));
+          layer.on('click', () => {
+            const fq = feature.properties.quartier || null;
+            if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
+            handleStreetClick(feature);
+          });
         }
       }).addTo(map);
       refreshLectureTooltipsIfNeeded();
