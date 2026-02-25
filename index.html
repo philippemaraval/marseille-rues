@@ -48,7 +48,12 @@
 
             <div class="info-block auth-block">
               <input id="auth-username" type="text" placeholder="Pseudo">
-              <input id="auth-password" type="password" placeholder="Mot de passe">
+              <div class="password-wrapper">
+                <input id="auth-password" type="password" placeholder="Mot de passe">
+                <button type="button" id="toggle-password" class="password-toggle"
+                  aria-label="Afficher le mot de passe">👁</button>
+              </div>
+              <div id="auth-feedback" class="auth-feedback"></div>
               <div class="auth-buttons">
                 <button id="login-btn" class="btn-secondary">Connexion</button>
                 <button id="register-btn" class="btn-secondary">Inscription</button>

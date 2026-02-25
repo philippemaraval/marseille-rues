@@ -1158,3 +1158,48 @@ button {
   font-weight: 600;
   color: var(--accent);
 }
+
+/* --- Password toggle & auth feedback --- */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  flex: 1;
+  padding-right: 36px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  opacity: 0.5;
+  line-height: 1;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
+.auth-feedback {
+  font-size: var(--fs-xs);
+  min-height: 0;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.auth-feedback.error {
+  color: #ef4444;
+  padding: 2px 0;
+}
+
+.auth-feedback.success {
+  color: #22c55e;
+  padding: 2px 0;
+}

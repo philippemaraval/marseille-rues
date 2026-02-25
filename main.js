@@ -648,13 +648,32 @@ function initUI() {
     });
   }
 
+  // Auth feedback helper
+  const authFeedback = document.getElementById('auth-feedback');
+  function showAuthFeedback(msg, type) {
+    if (!authFeedback) return;
+    authFeedback.textContent = msg;
+    authFeedback.className = 'auth-feedback ' + (type || '');
+  }
+
+  // Password toggle
+  const togglePwdBtn = document.getElementById('toggle-password');
+  if (togglePwdBtn && passwordInput) {
+    togglePwdBtn.addEventListener('click', () => {
+      const show = passwordInput.type === 'password';
+      passwordInput.type = show ? 'text' : 'password';
+      togglePwdBtn.textContent = show ? '🙈' : '👁';
+    });
+  }
+
   // Auth events
   if (loginBtn) {
     loginBtn.addEventListener('click', async () => {
+      showAuthFeedback('', '');
       const username = (usernameInput?.value || '').trim();
       const password = passwordInput?.value || '';
       if (!username || !password) {
-        showMessage('Pseudo et mot de passe requis.', 'error');
+        showAuthFeedback('Pseudo et mot de passe requis.', 'error');
         return;
       }
       try {
@@ -663,31 +682,41 @@ function initUI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        if (!res.ok) {
-          throw new Error('HTTP ' + res.status);
-        }
         const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 401) {
+            showAuthFeedback('Identifiants incorrects.', 'error');
+          } else {
+            showAuthFeedback(data.error || 'Erreur de connexion.', 'error');
+          }
+          return;
+        }
         currentUser = {
-          id: data.id, // Direct field
-          username: data.username, // Direct field
+          id: data.id,
+          username: data.username,
           token: data.token
         };
         saveCurrentUserToStorage(currentUser);
         updateUserUI();
-        showMessage('Connexion réussie.', 'success');
+        showAuthFeedback('Connexion réussie !', 'success');
       } catch (err) {
         console.error('Erreur login :', err);
-        showMessage('Erreur de connexion.', 'error');
+        showAuthFeedback('Serveur injoignable.', 'error');
       }
     });
   }
 
   if (registerBtn) {
     registerBtn.addEventListener('click', async () => {
+      showAuthFeedback('', '');
       const username = (usernameInput?.value || '').trim();
       const password = passwordInput?.value || '';
       if (!username || !password) {
-        showMessage('Pseudo et mot de passe requis.', 'error');
+        showAuthFeedback('Pseudo et mot de passe requis.', 'error');
+        return;
+      }
+      if (password.length < 4) {
+        showAuthFeedback('Mot de passe trop court (min. 4 caractères).', 'error');
         return;
       }
       try {
@@ -696,21 +725,26 @@ function initUI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password })
         });
-        if (!res.ok) {
-          throw new Error('HTTP ' + res.status);
-        }
         const data = await res.json();
+        if (!res.ok) {
+          if (data.error && data.error.includes('already taken')) {
+            showAuthFeedback('Ce pseudo est déjà pris.', 'error');
+          } else {
+            showAuthFeedback(data.error || 'Erreur lors de l\'inscription.', 'error');
+          }
+          return;
+        }
         currentUser = {
-          id: data.id, // Direct field
-          username: data.username, // Direct field
+          id: data.id,
+          username: data.username,
           token: data.token
         };
         saveCurrentUserToStorage(currentUser);
         updateUserUI();
-        showMessage('Compte créé et connecté.', 'success');
+        showAuthFeedback('Compte créé !', 'success');
       } catch (err) {
         console.error('Erreur register :', err);
-        showMessage('Erreur lors de la création du compte.', 'error');
+        showAuthFeedback('Serveur injoignable.', 'error');
       }
     });
   }
@@ -720,7 +754,7 @@ function initUI() {
       currentUser = null;
       clearCurrentUserFromStorage();
       updateUserUI();
-      showMessage('Déconnecté.', 'info');
+      showAuthFeedback('', '');
     });
   }
 
