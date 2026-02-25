@@ -305,9 +305,8 @@ function updateGameModeControls() {
     restartBtn.style.display = 'none';
     pauseBtn.style.display = 'none';
   } else {
-    // Autres modes : on les montre
+    // Autres modes : on délègue la visibilité à updateStartStopButton / updatePauseButton
     restartBtn.style.display = '';
-    pauseBtn.style.display = '';
   }
 }
 
@@ -753,9 +752,7 @@ function initUI() {
     summaryEl.classList.add('hidden');
   }
 
-  if (skipBtn) {
-    skipBtn.style.display = 'inline-block';
-  }
+  // La visibilité du skip est gérée par updateStartStopButton()
 }
 
 const infoEl = document.getElementById('street-info');
@@ -1937,6 +1934,7 @@ function triggerTargetPulse() {
 
 function updateStartStopButton() {
   const btn = document.getElementById('restart-btn');
+  const skipBtn = document.getElementById('skip-btn');
   if (!btn) return;
 
   const gameMode = getGameMode();
@@ -1944,6 +1942,7 @@ function updateStartStopButton() {
   // En mode lecture : bouton totalement caché
   if (gameMode === 'lecture') {
     btn.style.display = 'none';
+    if (skipBtn) skipBtn.style.display = 'none';
     return;
   } else {
     btn.style.display = '';
@@ -1953,10 +1952,12 @@ function updateStartStopButton() {
     btn.textContent = 'Arrêter la session';
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-stop');
+    if (skipBtn) skipBtn.style.display = '';
   } else {
     btn.textContent = 'Commencer la session';
     btn.classList.remove('btn-stop');
     btn.classList.add('btn-primary');
+    if (skipBtn) skipBtn.style.display = 'none';
   }
 }
 
@@ -2010,15 +2011,16 @@ function updatePauseButton() {
   if (gameMode === 'lecture') {
     pauseBtn.style.display = 'none';
     return;
-  } else {
-    pauseBtn.style.display = '';
   }
 
   if (!isSessionRunning) {
+    pauseBtn.style.display = 'none';
     pauseBtn.textContent = 'Pause';
     pauseBtn.disabled = true;
     return;
   }
+
+  pauseBtn.style.display = '';
 
   pauseBtn.disabled = false;
   pauseBtn.textContent = isPaused ? 'Reprendre' : 'Pause';
