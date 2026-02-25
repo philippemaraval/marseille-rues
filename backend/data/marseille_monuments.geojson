@@ -5,7 +5,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.371242, 43.2839455]
+        "coordinates": [
+          5.371242,
+          43.2839455
+        ]
       },
       "properties": {
         "name": "Notre-Dame de la Garde"
@@ -15,7 +18,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3649382, 43.2997902]
+        "coordinates": [
+          5.3649382,
+          43.2997902
+        ]
       },
       "properties": {
         "name": "Cathédrale Sainte-Marie Majeure dite \"de la Major\""
@@ -25,7 +31,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3655786, 43.2903106]
+        "coordinates": [
+          5.3655786,
+          43.2903106
+        ]
       },
       "properties": {
         "name": "Abbaye Saint-Victor"
@@ -35,7 +44,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3946063, 43.304237]
+        "coordinates": [
+          5.3946063,
+          43.304237
+        ]
       },
       "properties": {
         "name": "Palais Longchamp"
@@ -45,7 +57,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3610255, 43.2967287]
+        "coordinates": [
+          5.3610255,
+          43.2967287
+        ]
       },
       "properties": {
         "name": "Mucem"
@@ -55,7 +70,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3580321, 43.2942477]
+        "coordinates": [
+          5.3580321,
+          43.2942477
+        ]
       },
       "properties": {
         "name": "Palais du Pharo"
@@ -65,7 +83,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3618104, 43.295454]
+        "coordinates": [
+          5.3618104,
+          43.295454
+        ]
       },
       "properties": {
         "name": "Fort Saint-Jean"
@@ -75,7 +96,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3623351, 43.2910966]
+        "coordinates": [
+          5.3623351,
+          43.2910966
+        ]
       },
       "properties": {
         "name": "Fort Saint-Nicolas"
@@ -85,7 +109,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.325284, 43.279856]
+        "coordinates": [
+          5.325284,
+          43.279856
+        ]
       },
       "properties": {
         "name": "Château d’If"
@@ -95,7 +122,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3679163, 43.3005567]
+        "coordinates": [
+          5.3679163,
+          43.3005567
+        ]
       },
       "properties": {
         "name": "Vieille Charité"
@@ -105,7 +135,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3698419, 43.2965339]
+        "coordinates": [
+          5.3698419,
+          43.2965339
+        ]
       },
       "properties": {
         "name": "Hôtel de Ville"
@@ -115,7 +148,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3741365, 43.2946444]
+        "coordinates": [
+          5.3741365,
+          43.2946444
+        ]
       },
       "properties": {
         "name": "Ombrière du Vieux-Port"
@@ -125,7 +161,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3804935, 43.3027624]
+        "coordinates": [
+          5.3804935,
+          43.3027624
+        ]
       },
       "properties": {
         "name": "Gare Saint-Charles"
@@ -135,7 +174,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3753975, 43.296148]
+        "coordinates": [
+          5.3753975,
+          43.296148
+        ]
       },
       "properties": {
         "name": "Palais de la Bourse"
@@ -145,7 +187,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3766901, 43.2989721]
+        "coordinates": [
+          5.3766901,
+          43.2989721
+        ]
       },
       "properties": {
         "name": "Bibliothèque de l’Alcazar"
@@ -155,7 +200,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3801978, 43.2902692]
+        "coordinates": [
+          5.3801978,
+          43.2902692
+        ]
       },
       "properties": {
         "name": "Préfecture des Bouches-du-Rhône"
@@ -165,7 +213,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3749061, 43.2913267]
+        "coordinates": [
+          5.3749061,
+          43.2913267
+        ]
       },
       "properties": {
         "name": "Palais de Justice"
@@ -175,7 +226,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3680138, 43.2924447]
+        "coordinates": [
+          5.3680138,
+          43.2924447
+        ]
       },
       "properties": {
         "name": "Théâtre de la Criée"
@@ -185,7 +239,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3820734, 43.2973984]
+        "coordinates": [
+          5.3820734,
+          43.2973984
+        ]
       },
       "properties": {
         "name": "Théâtre du Gymnase"
@@ -195,7 +252,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3782084, 43.2922074]
+        "coordinates": [
+          5.3782084,
+          43.2922074
+        ]
       },
       "properties": {
         "name": "Musée Cantini"
@@ -205,7 +265,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3756864, 43.2975573]
+        "coordinates": [
+          5.3756864,
+          43.2975573
+        ]
       },
       "properties": {
         "name": "Musée d’Histoire de Marseille"
@@ -215,7 +278,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3940396, 43.3045965]
+        "coordinates": [
+          5.3940396,
+          43.3045965
+        ]
       },
       "properties": {
         "name": "Musée des Beaux-Arts"
@@ -225,17 +291,23 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3962763, 43.26146]
+        "coordinates": [
+          5.3962763,
+          43.26146
+        ]
       },
       "properties": {
-        "name": "Cité Radieuse dite \"Le Corbusier""
+        "name": "Cité Radieuse dite Le Corbusier"
       }
     },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4036121, 43.2507279]
+        "coordinates": [
+          5.4036121,
+          43.2507279
+        ]
       },
       "properties": {
         "name": "Obélisque de Mazargues"
@@ -245,7 +317,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3868731, 43.2819185]
+        "coordinates": [
+          5.3868731,
+          43.2819185
+        ]
       },
       "properties": {
         "name": "Basilique du Sacré-Cœur"
@@ -255,7 +330,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3819818, 43.2573485]
+        "coordinates": [
+          5.3819818,
+          43.2573485
+        ]
       },
       "properties": {
         "name": "Château Borély"
@@ -265,7 +343,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.5024796, 43.295355]
+        "coordinates": [
+          5.5024796,
+          43.295355
+        ]
       },
       "properties": {
         "name": "Château de la Buzine"
@@ -275,7 +356,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.364498, 43.295148]
+        "coordinates": [
+          5.364498,
+          43.295148
+        ]
       },
       "properties": {
         "name": "Consigne sanitaire"
@@ -285,7 +369,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4014283, 43.3093415]
+        "coordinates": [
+          5.4014283,
+          43.3093415
+        ]
       },
       "properties": {
         "name": "Église des Chartreux de Marseille"
@@ -295,7 +382,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.38375, 43.2859167]
+        "coordinates": [
+          5.38375,
+          43.2859167
+        ]
       },
       "properties": {
         "name": "Fontaine Cantini"
@@ -305,7 +395,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3190403, 43.2836068]
+        "coordinates": [
+          5.3190403,
+          43.2836068
+        ]
       },
       "properties": {
         "name": "Hôpital Caroline"
@@ -315,7 +408,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3713771, 43.2976157]
+        "coordinates": [
+          5.3713771,
+          43.2976157
+        ]
       },
       "properties": {
         "name": "Hôtel de Cabre"
@@ -325,7 +421,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3693763, 43.2969799]
+        "coordinates": [
+          5.3693763,
+          43.2969799
+        ]
       },
       "properties": {
         "name": "Maison Diamantée"
@@ -335,7 +434,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3537749, 43.2788238]
+        "coordinates": [
+          5.3537749,
+          43.2788238
+        ]
       },
       "properties": {
         "name": "Marégraphe"
@@ -345,7 +447,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3835924, 43.2959261]
+        "coordinates": [
+          5.3835924,
+          43.2959261
+        ]
       },
       "properties": {
         "name": "Palais des Arts"
@@ -355,7 +460,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.2306117, 43.1988449]
+        "coordinates": [
+          5.2306117,
+          43.1988449
+        ]
       },
       "properties": {
         "name": "Phare du Planier"
@@ -365,7 +473,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.311594, 43.3619508]
+        "coordinates": [
+          5.311594,
+          43.3619508
+        ]
       },
       "properties": {
         "name": "Villa La Palestine"
@@ -375,7 +486,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3764569, 43.2641212]
+        "coordinates": [
+          5.3764569,
+          43.2641212
+        ]
       },
       "properties": {
         "name": "Chapelle de Valbelle dite \"Mosquée de l’Arsenal des Galères\""
@@ -385,7 +499,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3752636, 43.2996809]
+        "coordinates": [
+          5.3752636,
+          43.2996809
+        ]
       },
       "properties": {
         "name": "Halle Puget"
@@ -395,7 +512,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3747365, 43.2618635]
+        "coordinates": [
+          5.3747365,
+          43.2618635
+        ]
       },
       "properties": {
         "name": "Statue de David"
@@ -405,7 +525,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3853302, 43.29957]
+        "coordinates": [
+          5.3853302,
+          43.29957
+        ]
       },
       "properties": {
         "name": "Fontaine des Danaïdes"
@@ -415,7 +538,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3747647, 43.3018758]
+        "coordinates": [
+          5.3747647,
+          43.3018758
+        ]
       },
       "properties": {
         "name": "Arc de Triomphe de la Porte d'Aix"
@@ -425,7 +551,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3989568, 43.2617679]
+        "coordinates": [
+          5.3989568,
+          43.2617679
+        ]
       },
       "properties": {
         "name": "Bastide de la Magalone"
@@ -435,7 +564,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3819067, 43.2965898]
+        "coordinates": [
+          5.3819067,
+          43.2965898
+        ]
       },
       "properties": {
         "name": "Chapelle des Bernardines - Lycée Thiers"
@@ -445,7 +577,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3845245, 43.2989716]
+        "coordinates": [
+          5.3845245,
+          43.2989716
+        ]
       },
       "properties": {
         "name": "Monuments aux Mobiles des Bouches-du-Rhone"
@@ -455,7 +590,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3504229, 43.2860551]
+        "coordinates": [
+          5.3504229,
+          43.2860551
+        ]
       },
       "properties": {
         "name": "Porte de l'Orient - Monuments aux Morts de l'Armée d'Orient et des terres lointaines"
@@ -465,7 +603,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3968329, 43.3086724]
+        "coordinates": [
+          5.3968329,
+          43.3086724
+        ]
       },
       "properties": {
         "name": "Pavillon de partage des eaux des Chutes-Lavie"
@@ -475,7 +616,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3643838, 43.2992686]
+        "coordinates": [
+          5.3643838,
+          43.2992686
+        ]
       },
       "properties": {
         "name": "Statue de Monseigneur de Belsunce"
@@ -485,7 +629,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3659395, 43.3053853]
+        "coordinates": [
+          5.3659395,
+          43.3053853
+        ]
       },
       "properties": {
         "name": "Immeuble des Docks de la Joliette"
@@ -495,7 +642,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3778931, 43.2902958]
+        "coordinates": [
+          5.3778931,
+          43.2902958
+        ]
       },
       "properties": {
         "name": "Fontaine Estrangin"
@@ -505,7 +655,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3663405, 43.3103965]
+        "coordinates": [
+          5.3663405,
+          43.3103965
+        ]
       },
       "properties": {
         "name": "Silo d'Arenc"
@@ -515,7 +668,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3844675, 43.3082994]
+        "coordinates": [
+          5.3844675,
+          43.3082994
+        ]
       },
       "properties": {
         "name": "Caserne du Muy"
@@ -525,7 +681,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3738004, 43.2990187]
+        "coordinates": [
+          5.3738004,
+          43.2990187
+        ]
       },
       "properties": {
         "name": "Hôtel des Postes"
@@ -535,7 +694,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4065347, 43.2961887]
+        "coordinates": [
+          5.4065347,
+          43.2961887
+        ]
       },
       "properties": {
         "name": "Gare de la Blancarde"
@@ -545,7 +707,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3580277, 43.2769681]
+        "coordinates": [
+          5.3580277,
+          43.2769681
+        ]
       },
       "properties": {
         "name": "Villa Gaby"
@@ -555,7 +720,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3890511, 43.2503139]
+        "coordinates": [
+          5.3890511,
+          43.2503139
+        ]
       },
       "properties": {
         "name": "Pouce de César"
@@ -565,7 +733,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3648361, 43.3667939]
+        "coordinates": [
+          5.3648361,
+          43.3667939
+        ]
       },
       "properties": {
         "name": "Pagode Phap-Hoa"
@@ -575,7 +746,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4146263, 43.2473521]
+        "coordinates": [
+          5.4146263,
+          43.2473521
+        ]
       },
       "properties": {
         "name": "Château Valmante"
@@ -585,7 +759,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3939378, 43.2965127]
+        "coordinates": [
+          5.3939378,
+          43.2965127
+        ]
       },
       "properties": {
         "name": "Église Saint-Michel du Camas"
@@ -595,7 +772,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3857842, 43.2952760]
+        "coordinates": [
+          5.3857842,
+          43.2952760
+        ]
       },
       "properties": {
         "name": "Monument à Capazza et Fondère"
@@ -605,7 +785,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4018952, 43.2824117]
+        "coordinates": [
+          5.4018952,
+          43.2824117
+        ]
       },
       "properties": {
         "name": "Palais Omnisports"
@@ -615,7 +798,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3950489, 43.2695539]
+        "coordinates": [
+          5.3950489,
+          43.2695539
+        ]
       },
       "properties": {
         "name": "Stade Vélodrome"
@@ -625,7 +811,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3853148, 43.2973072]
+        "coordinates": [
+          5.3853148,
+          43.2973072
+        ]
       },
       "properties": {
         "name": "Académie des Sciences, Lettres et Arts de Marseille"
@@ -635,7 +824,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4386726, 43.3522535]
+        "coordinates": [
+          5.4386726,
+          43.3522535
+        ]
       },
       "properties": {
         "name": "Château de Château-Gombert"
@@ -645,7 +837,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3950227, 43.3054502]
+        "coordinates": [
+          5.3950227,
+          43.3054502
+        ]
       },
       "properties": {
         "name": "Observatoire de Marseille"
@@ -655,7 +850,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3550283, 43.2798007]
+        "coordinates": [
+          5.3550283,
+          43.2798007
+        ]
       },
       "properties": {
         "name": "Villa Valmer"
@@ -665,7 +863,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3551627, 43.2815677]
+        "coordinates": [
+          5.3551627,
+          43.2815677
+        ]
       },
       "properties": {
         "name": "Théâtre Sylvain"
@@ -675,7 +876,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3556700, 43.2107798]
+        "coordinates": [
+          5.3556700,
+          43.2107798
+        ]
       },
       "properties": {
         "name": "Sémaphore de Callelongue"
@@ -685,7 +889,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3697459, 43.2986652]
+        "coordinates": [
+          5.3697459,
+          43.2986652
+        ]
       },
       "properties": {
         "name": "Hôtel-Dieu"
@@ -695,7 +902,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3904378, 43.2826860]
+        "coordinates": [
+          5.3904378,
+          43.2826860
+        ]
       },
       "properties": {
         "name": "Arbre de l'Espérance"
@@ -705,7 +915,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3733565, 43.2337299]
+        "coordinates": [
+          5.3733565,
+          43.2337299
+        ]
       },
       "properties": {
         "name": "Château Pastré"
@@ -715,7 +928,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3665893, 43.2692995]
+        "coordinates": [
+          5.3665893,
+          43.2692995
+        ]
       },
       "properties": {
         "name": "Monument aux Rapatriés"
@@ -725,7 +941,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3799329, 43.3454571]
+        "coordinates": [
+          5.3799329,
+          43.3454571
+        ]
       },
       "properties": {
         "name": "Château Grand-Séminaire"
@@ -735,7 +954,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3747714, 43.3069841]
+        "coordinates": [
+          5.3747714,
+          43.3069841
+        ]
       },
       "properties": {
         "name": "Caserne de l'État-Major des Marins-Pompiers de Marseille"
@@ -745,7 +967,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.5055740, 43.2896774]
+        "coordinates": [
+          5.5055740,
+          43.2896774
+        ]
       },
       "properties": {
         "name": "Château de la Reynarde"
@@ -755,7 +980,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.5002733, 43.2898379]
+        "coordinates": [
+          5.5002733,
+          43.2898379
+        ]
       },
       "properties": {
         "name": "Château Régis"
@@ -765,7 +993,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3915466, 43.3441031]
+        "coordinates": [
+          5.3915466,
+          43.3441031
+        ]
       },
       "properties": {
         "name": "Château Ricard"
@@ -775,7 +1006,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3874679, 43.3455671]
+        "coordinates": [
+          5.3874679,
+          43.3455671
+        ]
       },
       "properties": {
         "name": "Tour Sainte"
@@ -785,7 +1019,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3649042, 43.3515058]
+        "coordinates": [
+          5.3649042,
+          43.3515058
+        ]
       },
       "properties": {
         "name": "Cité des Arts de la Rue"
@@ -795,7 +1032,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4137143, 43.2334891]
+        "coordinates": [
+          5.4137143,
+          43.2334891
+        ]
       },
       "properties": {
         "name": "Centre Pénitentiaire des Baumettes"
@@ -805,7 +1045,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3872413, 43.3101745]
+        "coordinates": [
+          5.3872413,
+          43.3101745
+        ]
       },
       "properties": {
         "name": "Couvent Levat"
@@ -815,7 +1058,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3906121, 43.3099486]
+        "coordinates": [
+          5.3906121,
+          43.3099486
+        ]
       },
       "properties": {
         "name": "Friche La Belle-de-Mai"
@@ -825,7 +1071,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3565105, 43.2778834]
+        "coordinates": [
+          5.3565105,
+          43.2778834
+        ]
       },
       "properties": {
         "name": "Château Berger"
@@ -835,7 +1084,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4200588, 43.2491918]
+        "coordinates": [
+          5.4200588,
+          43.2491918
+        ]
       },
       "properties": {
         "name": "Chapelle Saint-Joseph du Redon"
@@ -845,7 +1097,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4134659, 43.2897957]
+        "coordinates": [
+          5.4134659,
+          43.2897957
+        ]
       },
       "properties": {
         "name": "Cimetière Saint-Pierre"
@@ -855,7 +1110,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3856340, 43.2989267]
+        "coordinates": [
+          5.3856340,
+          43.2989267
+        ]
       },
       "properties": {
         "name": "Église Saint-Vincent-de-Paul dite \"Les Réformés\""
@@ -865,7 +1123,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3836196, 43.3008017]
+        "coordinates": [
+          5.3836196,
+          43.3008017
+        ]
       },
       "properties": {
         "name": "Église grecque orthodoxe de la Dormition de la Mère de Dieu"
@@ -875,7 +1136,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3656931, 43.3151524]
+        "coordinates": [
+          5.3656931,
+          43.3151524
+        ]
       },
       "properties": {
         "name": "Tour CMA CGM"
@@ -885,7 +1149,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3501631, 43.2800360]
+        "coordinates": [
+          5.3501631,
+          43.2800360
+        ]
       },
       "properties": {
         "name": "Villa Petite Ourse"
@@ -895,7 +1162,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4249230, 43.3126522]
+        "coordinates": [
+          5.4249230,
+          43.3126522
+        ]
       },
       "properties": {
         "name": "Château Bois-Luzy"
@@ -905,7 +1175,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4193611, 43.3039334]
+        "coordinates": [
+          5.4193611,
+          43.3039334
+        ]
       },
       "properties": {
         "name": "Église Saint-Barnabé"
@@ -915,7 +1188,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4678702, 43.2844177]
+        "coordinates": [
+          5.4678702,
+          43.2844177
+        ]
       },
       "properties": {
         "name": "Château Forbin"
@@ -925,7 +1201,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3809270, 43.2794490]
+        "coordinates": [
+          5.3809270,
+          43.2794490
+        ]
       },
       "properties": {
         "name": "Château Périer"
@@ -935,7 +1214,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3823459, 43.2702611]
+        "coordinates": [
+          5.3823459,
+          43.2702611
+        ]
       },
       "properties": {
         "name": "Villa Bagatelle"
@@ -945,7 +1227,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3656659, 43.2384366]
+        "coordinates": [
+          5.3656659,
+          43.2384366
+        ]
       },
       "properties": {
         "name": "Église Sainte-Eusébie"
@@ -955,7 +1240,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3780309, 43.2900498]
+        "coordinates": [
+          5.3780309,
+          43.2900498
+        ]
       },
       "properties": {
         "name": "Banque de France"
@@ -965,7 +1253,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3718062, 43.2719465]
+        "coordinates": [
+          5.3718062,
+          43.2719465
+        ]
       },
       "properties": {
         "name": "Château Talabot"
@@ -975,7 +1266,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3934650, 43.3239538]
+        "coordinates": [
+          5.3934650,
+          43.3239538
+        ]
       },
       "properties": {
         "name": "Église Saint-Barthélémy"
@@ -985,7 +1279,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3889941, 43.2704308]
+        "coordinates": [
+          5.3889941,
+          43.2704308
+        ]
       },
       "properties": {
         "name": "Cathédrale apostolique arménienne des Saints Traducteurs"
@@ -995,7 +1292,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3301924, 43.3607633]
+        "coordinates": [
+          5.3301924,
+          43.3607633
+        ]
       },
       "properties": {
         "name": "Cinéma l'Alhambra"
@@ -1005,7 +1305,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4093011, 43.2927532]
+        "coordinates": [
+          5.4093011,
+          43.2927532
+        ]
       },
       "properties": {
         "name": "Église Saint-Pierre"
@@ -1015,7 +1318,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3580159, 43.3484687]
+        "coordinates": [
+          5.3580159,
+          43.3484687
+        ]
       },
       "properties": {
         "name": "Église Saint-Louis"
@@ -1025,7 +1331,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4236620, 43.3359882]
+        "coordinates": [
+          5.4236620,
+          43.3359882
+        ]
       },
       "properties": {
         "name": "Couvent Madeleine Rémusat"
@@ -1035,7 +1344,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3507498, 43.2113352]
+        "coordinates": [
+          5.3507498,
+          43.2113352
+        ]
       },
       "properties": {
         "name": "Vestiges du Téléscaphe des Goudes"
@@ -1045,7 +1357,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3719017, 43.2233172]
+        "coordinates": [
+          5.3719017,
+          43.2233172
+        ]
       },
       "properties": {
         "name": "Croix du sommet du massif de Marseilleveyre"
@@ -1055,7 +1370,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4044741, 43.3153146]
+        "coordinates": [
+          5.4044741,
+          43.3153146
+        ]
       },
       "properties": {
         "name": "Le Dôme"
@@ -1065,7 +1383,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.4057311, 43.3150273]
+        "coordinates": [
+          5.4057311,
+          43.3150273
+        ]
       },
       "properties": {
         "name": "Hôtel du Département"
@@ -1075,7 +1396,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3738701, 43.3012243]
+        "coordinates": [
+          5.3738701,
+          43.3012243
+        ]
       },
       "properties": {
         "name": "Hôtel de Région"
@@ -1085,7 +1409,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3788507, 43.2881233]
+        "coordinates": [
+          5.3788507,
+          43.2881233
+        ]
       },
       "properties": {
         "name": "Église Saint-Joseph"
@@ -1095,7 +1422,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3784721, 43.2913081]
+        "coordinates": [
+          5.3784721,
+          43.2913081
+        ]
       },
       "properties": {
         "name": "Hôtel Roux de Corse - Lycée Montgrand"
@@ -1105,7 +1435,10 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3774710, 43.2870619]
+        "coordinates": [
+          5.3774710,
+          43.2870619
+        ]
       },
       "properties": {
         "name": "Grande Synagogue de Marseille"
@@ -1115,16 +1448,23 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3785814, 43.2924255]
+        "coordinates": [
+          5.3785814,
+          43.2924255
+        ]
       },
       "properties": {
         "name": "Temple réformé Grignan"
-      },
+      }
+    },
     {
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [5.3637575, 43.2933440]
+        "coordinates": [
+          5.3637575,
+          43.2933440
+        ]
       },
       "properties": {
         "name": "Monument à Gyptis et Protis"

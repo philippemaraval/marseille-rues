@@ -71,7 +71,18 @@ const FAMOUS_STREET_NAMES = new Set([
     'avenue des caillols',
     'boulevard de saint-loup',
     'boulevard de saint-marcel',
-    'avenue de saint-barnabé'
+    'avenue de saint-barnabé',
+    'rue saint-pierre',
+    'rue d\'aubagne',
+    'rue des catalans',
+    'autoroute est',
+    'l2 est',
+    'l2 nord',
+    'autoroute du littoral',
+    'tunnel du vieux-port',
+    'autoroute du soleil',
+    'tunnel du prado carénage',
+    'tunnel prado-carénage'
 ]);
 
 // Rues principales de Marseille (en minuscules)
