@@ -1003,8 +1003,6 @@ function isStreetVisibleInCurrentMode(nameNorm, featureQuartier) {
 
 function addTouchBufferForLayer(baseLayer) {
   if (!IS_TOUCH_DEVICE || !map) return;
-  // Skip if buffer already exists
-  if (baseLayer.touchBuffer) return;
 
   const latlngs = baseLayer.getLatLngs();
   if (!latlngs || latlngs.length === 0) return;
@@ -1031,25 +1029,6 @@ function addTouchBufferForLayer(baseLayer) {
 
   buffer.addTo(map);
   baseLayer.touchBuffer = buffer;
-}
-
-// Create touch buffers only for visible/active streets
-function refreshTouchBuffers() {
-  if (!IS_TOUCH_DEVICE || !map || !streetsLayer) return;
-  // Remove old buffers
-  streetsLayer.eachLayer(layer => {
-    if (layer.touchBuffer) {
-      map.removeLayer(layer.touchBuffer);
-      layer.touchBuffer = null;
-    }
-  });
-  // Add buffers only for visible streets
-  streetsLayer.eachLayer(layer => {
-    const base = getBaseStreetStyle(layer);
-    if (base.weight > 0) {
-      addTouchBufferForLayer(layer);
-    }
-  });
 }
 
 function loadStreets() {
@@ -1088,8 +1067,8 @@ function loadStreets() {
           }
           streetLayersByName.get(nameNorm).push(layer);
 
-          // Touch buffers are created lazily at session start (not here)
-          // to avoid creating 15,000+ polylines synchronously
+          // Buffer tactile élargi pour les appareils tactiles
+          addTouchBufferForLayer(layer);
 
           layer.on('mouseover', () => {
             const fq = feature.properties.quartier || null;
@@ -1202,9 +1181,9 @@ function loadMonuments() {
       monumentsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: allMonuments },
         {
-          renderer: L.svg({ pane: 'markerPane' }),
+          renderer: L.svg({ pane: 'markerPane' }),  // markerPane (z-600) au-dessus du canvas (z-400)
           pointToLayer: (feature, latlng) => {
-            return L.circleMarker(latlng, {
+            const marker = L.circleMarker(latlng, {
               radius: 8,
               color: '#e3f2fd',
               weight: 3,
@@ -1212,12 +1191,34 @@ function loadMonuments() {
               fillOpacity: 1.0,
               pane: 'markerPane'
             });
+            // On touch devices, add an invisible larger hit area
+            if (IS_TOUCH_DEVICE) {
+              marker._monumentFeature = feature;
+            }
+            return marker;
           },
           onEachFeature: (feature, layer) => {
             layer.on('click', () => handleMonumentClick(feature, layer));
           }
         }
       );
+
+      // Add invisible hit areas after layer is created (can't add during construction)
+      if (IS_TOUCH_DEVICE && monumentsLayer) {
+        monumentsLayer.eachLayer(layer => {
+          const feat = layer._monumentFeature;
+          if (!feat) return;
+          const latlng = layer.getLatLng();
+          const hitArea = L.circleMarker(latlng, {
+            radius: 18,
+            fillOpacity: 0,
+            opacity: 0,
+            pane: 'markerPane'
+          });
+          hitArea.on('click', () => handleMonumentClick(feat, layer));
+          monumentsLayer.addLayer(hitArea);
+        });
+      }
       refreshLectureTooltipsIfNeeded();
 
       // Si la zone active est déjà "monuments", on ajoute directement le layer
@@ -1766,7 +1767,6 @@ function startNewSession() {
     sessionStartTime = performance.now();
     streetStartTime = null;
     isSessionRunning = true;
-    refreshTouchBuffers();
     updateStartStopButton();
     updatePauseButton();
     updateLayoutSessionState();
@@ -1834,7 +1834,6 @@ function startNewSession() {
   streetStartTime = null;
 
   isSessionRunning = true;
-  refreshTouchBuffers();
   updateStartStopButton();
   updatePauseButton();
   updateLayoutSessionState();
@@ -2315,22 +2314,6 @@ function handleStreetClick(clickedFeature) {
 function handleMonumentClick(clickedFeature, clickedLayer) {
   const zoneMode = getZoneMode();
   if (zoneMode !== 'monuments') return;
-
-  // En mode lecture, afficher le tooltip au tap (mobile)
-  const gameMode = getGameMode();
-  if (gameMode === 'lecture' || isLectureMode === true) {
-    if (clickedLayer.getTooltip()) {
-      clickedLayer.openTooltip();
-      // Fermer les autres
-      if (monumentsLayer) {
-        monumentsLayer.eachLayer(l => {
-          if (l !== clickedLayer && l.getTooltip && l.getTooltip()) l.closeTooltip();
-        });
-      }
-    }
-    return;
-  }
-
   if (isPaused) return;
 
   if (!currentMonumentTarget || sessionStartTime === null || streetStartTime === null) {
