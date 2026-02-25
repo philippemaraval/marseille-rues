@@ -71,6 +71,7 @@ body {
 #app {
   display: flex;
   height: 100vh;
+  height: 100dvh;
 }
 
 /* ========== CARTE ========== */
@@ -1072,6 +1073,7 @@ button {
   body.app-ready:not(.session-running) #sidebar {
     flex: 1;
     min-height: 100vh;
+    min-height: 100dvh;
     max-height: none;
     overflow-y: auto;
   }
@@ -1106,9 +1108,10 @@ button {
   body.session-running #sidebar {
     flex: 0 0 auto;
     max-height: none;
-    overflow-y: hidden;
+    overflow-y: visible;
     padding: 8px 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
   }
 
   body.session-running #map {
