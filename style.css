@@ -201,7 +201,15 @@ body {
   letter-spacing: normal;
   font-weight: 600;
   display: none;
-  /* Shown via JS */
+  margin-left: auto;
+}
+
+.login-hint {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  font-weight: 400;
+  font-style: italic;
 }
 
 details[open] .user-sticker {
@@ -931,7 +939,6 @@ button {
   /* Cacher les panneaux inutiles AVANT la session sur mobile */
   body.app-ready:not(.session-running) .target-panel,
   body.app-ready:not(.session-running) .stats-panel,
-  body.app-ready:not(.session-running) .leaderboard-panel,
   body.app-ready:not(.session-running) .info-panel,
   body.app-ready:not(.session-running) .panel-feedback {
     display: none !important;

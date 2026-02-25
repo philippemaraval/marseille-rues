@@ -2845,6 +2845,7 @@ function updateUserUI() {
   const logoutBtn = document.getElementById('logout-btn');
   const dailyBtn = document.getElementById('daily-mode-btn');
   const userSticker = document.getElementById('user-sticker');
+  const loginHint = document.getElementById('login-hint');
 
   if (currentUser && currentUser.username) {
     if (label) label.textContent = `Connecté en tant que ${currentUser.username}`;
@@ -2852,6 +2853,7 @@ function updateUserUI() {
       userSticker.textContent = currentUser.username;
       userSticker.style.display = 'inline-block';
     }
+    if (loginHint) loginHint.style.display = 'none';
 
     // Masquer les champs de connexion
     if (authBlock) {
@@ -2868,6 +2870,7 @@ function updateUserUI() {
       userSticker.textContent = '';
       userSticker.style.display = 'none';
     }
+    if (loginHint) loginHint.style.display = '';
 
     // Afficher les champs
     if (authBlock) {
