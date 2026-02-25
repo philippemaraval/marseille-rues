@@ -1323,14 +1323,31 @@ function setLectureTooltipsEnabled(enabled) {
         if (!layer.getTooltip()) {
           layer.bindTooltip(name, {
             direction: 'top',
-            sticky: !IS_TOUCH_DEVICE,
+            sticky: false,
+            permanent: false,
             opacity: 0.9,
             className: 'monument-tooltip'
           });
         }
-        attachTapTooltip(layer);
+
+        // On touch devices, bind a direct click-to-show-tooltip handler
+        if (IS_TOUCH_DEVICE && !layer.__monumentTapBound) {
+          layer.__monumentTapBound = true;
+          layer.on('click', () => {
+            // Close all other monument tooltips
+            monumentsLayer.eachLayer(l => {
+              if (l !== layer && l.getTooltip && l.getTooltip()) l.closeTooltip();
+            });
+            // Toggle this tooltip
+            if (layer.getTooltip()) {
+              layer.toggleTooltip();
+            }
+          });
+        }
       } else {
-        detachTapTooltip(layer);
+        if (layer.__monumentTapBound) {
+          layer.__monumentTapBound = false;
+        }
         if (layer.getTooltip()) {
           layer.closeTooltip();
           layer.unbindTooltip();
