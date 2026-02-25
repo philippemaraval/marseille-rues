@@ -3010,8 +3010,8 @@ function loadAllLeaderboards() {
       });
     })
     .catch(err => {
-      console.error('Erreur leaderboard :', err);
-      el.innerHTML = '<p>Erreur lors du chargement du leaderboard.</p>';
+      console.warn('Leaderboard indisponible :', err.message);
+      el.innerHTML = '<p>Aucun score enregistré.</p>';
     });
 }
 
