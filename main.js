@@ -1003,6 +1003,8 @@ function isStreetVisibleInCurrentMode(nameNorm, featureQuartier) {
 
 function addTouchBufferForLayer(baseLayer) {
   if (!IS_TOUCH_DEVICE || !map) return;
+  // Skip if buffer already exists
+  if (baseLayer.touchBuffer) return;
 
   const latlngs = baseLayer.getLatLngs();
   if (!latlngs || latlngs.length === 0) return;
@@ -1029,6 +1031,25 @@ function addTouchBufferForLayer(baseLayer) {
 
   buffer.addTo(map);
   baseLayer.touchBuffer = buffer;
+}
+
+// Create touch buffers only for visible/active streets
+function refreshTouchBuffers() {
+  if (!IS_TOUCH_DEVICE || !map || !streetsLayer) return;
+  // Remove old buffers
+  streetsLayer.eachLayer(layer => {
+    if (layer.touchBuffer) {
+      map.removeLayer(layer.touchBuffer);
+      layer.touchBuffer = null;
+    }
+  });
+  // Add buffers only for visible streets
+  streetsLayer.eachLayer(layer => {
+    const base = getBaseStreetStyle(layer);
+    if (base.weight > 0) {
+      addTouchBufferForLayer(layer);
+    }
+  });
 }
 
 function loadStreets() {
@@ -1067,8 +1088,8 @@ function loadStreets() {
           }
           streetLayersByName.get(nameNorm).push(layer);
 
-          // Buffer tactile élargi pour les appareils tactiles
-          addTouchBufferForLayer(layer);
+          // Touch buffers are created lazily at session start (not here)
+          // to avoid creating 15,000+ polylines synchronously
 
           layer.on('mouseover', () => {
             const fq = feature.properties.quartier || null;
@@ -1745,6 +1766,7 @@ function startNewSession() {
     sessionStartTime = performance.now();
     streetStartTime = null;
     isSessionRunning = true;
+    refreshTouchBuffers();
     updateStartStopButton();
     updatePauseButton();
     updateLayoutSessionState();
@@ -1812,6 +1834,7 @@ function startNewSession() {
   streetStartTime = null;
 
   isSessionRunning = true;
+  refreshTouchBuffers();
   updateStartStopButton();
   updatePauseButton();
   updateLayoutSessionState();
