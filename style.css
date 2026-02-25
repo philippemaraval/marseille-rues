@@ -890,24 +890,35 @@ button {
 
 /* ========== MOBILE OPTIMIZATIONS ========== */
 @media (max-width: 900px) {
+
+  /* --- Prevent horizontal scroll everywhere --- */
+  html,
+  body {
+    overflow-x: hidden !important;
+    max-width: 100vw;
+  }
+
   #app {
     flex-direction: column;
+    overflow-x: hidden;
   }
 
   #sidebar {
     width: 100%;
+    max-width: 100vw;
     padding: 12px;
     border-right: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.85);
-    /* Plus opaque sur mobile pour lisibilité */
+    background: rgba(255, 255, 255, 0.92);
+    overflow-x: hidden;
+    box-sizing: border-box;
   }
 
-  /* --- LOGIQUE D'AFFICHAGE MOBILE (SHOW/HIDE CARTE) --- */
-  /* Hors session : Sidebar Full Screen */
+  /* --- PRÉ-SESSION : Sidebar plein écran, carte cachée --- */
   body.app-ready:not(.session-running) #sidebar {
-    max-height: 100vh;
     flex: 1;
+    max-height: 100vh;
+    overflow-y: auto;
   }
 
   body.app-ready:not(.session-running) #map {
@@ -916,40 +927,82 @@ button {
     visibility: hidden;
   }
 
-  /* En session : Sidebar Compacte (Bottom Sheet style ou Top Header) */
+  /* Cacher les panneaux inutiles AVANT la session sur mobile */
+  body.app-ready:not(.session-running) .target-panel,
+  body.app-ready:not(.session-running) .stats-panel,
+  body.app-ready:not(.session-running) .leaderboard-panel,
+  body.app-ready:not(.session-running) .info-panel,
+  body.app-ready:not(.session-running) .panel-feedback {
+    display: none !important;
+  }
+
+  /* Boutons pleine largeur pré-session */
+  body.app-ready:not(.session-running) .actions-row {
+    padding: 4px 0;
+    margin: 8px 0;
+  }
+
+  /* --- EN SESSION : Bandeau compact en haut + carte plein écran --- */
   body.session-running #sidebar {
-    max-height: 25vh;
-    /* Suffisant pour la cible et les boutons */
-    overflow-y: auto;
-    padding-bottom: 4px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    flex: 0 0 auto;
+    max-height: none;
+    overflow-y: hidden;
+    padding: 8px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   body.session-running #map {
-    height: 75vh;
+    flex: 1;
     opacity: 1;
     visibility: visible;
   }
 
-  /* Cache les panneaux inutiles en session mobile pour gagner de la place */
+  /* Cacher tous les panneaux sauf target + actions pendant la session */
   body.session-running .header-panel,
   body.session-running .user-panel,
   body.session-running .panel-params,
-  body.session-running .stats-panel {
+  body.session-running .stats-panel,
+  body.session-running .leaderboard-panel,
+  body.session-running .panel-feedback,
+  body.session-running .info-panel {
     display: none !important;
   }
 
-  /* Sauf le Target Panel et les contrôles ! */
+  /* Target panel compact en session */
   body.session-running .target-panel {
-    margin-top: 0;
-    padding: 12px;
+    margin: 0;
+    padding: 6px 10px;
     border-left-width: 4px;
+    border-radius: var(--radius-sm);
   }
 
-  /* Layout boutons mobile */
+  body.session-running .target-panel .panel-title {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  body.session-running .target-name {
+    font-size: 16px;
+    line-height: 1.2;
+  }
+
+  /* Actions compactes en session */
+  body.session-running .actions-row {
+    padding: 4px 0 0;
+    gap: 4px;
+  }
+
+  body.session-running .actions-row button {
+    padding: 6px 2px;
+    font-size: 9px;
+    min-height: 36px;
+  }
+
+  /* --- Layout boutons mobile (commun) --- */
   .actions-row {
     flex-direction: row;
-    gap: 4px;
+    gap: 6px;
+    padding: 0 0;
   }
 
   .actions-row button {
@@ -960,6 +1013,30 @@ button {
   /* Cible plus petite sur mobile */
   .target-name {
     font-size: 18px;
+  }
+
+  /* Panneaux mobile plus compacts */
+  .panel {
+    padding: 10px;
+    margin-bottom: 4px;
+  }
+
+  /* Header plus compact */
+  .header-panel {
+    padding: 8px 10px;
+  }
+
+  .header-title {
+    font-size: 24px;
+  }
+
+  .header-subtitle {
+    font-size: 11px;
+  }
+
+  /* Profil repliable : gagner de la place */
+  .user-panel details:not([open]) summary {
+    padding: 6px 0;
   }
 }
 
