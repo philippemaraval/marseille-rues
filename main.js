@@ -1216,6 +1216,8 @@ function loadMonuments() {
             pane: 'markerPane'
           });
           hitArea.on('click', () => handleMonumentClick(feat, layer));
+          hitArea._visibleMarker = layer;  // link back to visible marker
+          hitArea._isHitArea = true;
           monumentsLayer.addLayer(hitArea);
         });
       }
@@ -1316,6 +1318,27 @@ function setLectureTooltipsEnabled(enabled) {
   // MONUMENTS
   if (monumentsLayer) {
     monumentsLayer.eachLayer(layer => {
+      // Skip hit areas — they don't need tooltips themselves
+      if (layer._isHitArea) {
+        // But bind a tap handler that toggles tooltip on the visible marker
+        if (enabled && IS_TOUCH_DEVICE && !layer.__hitAreaTooltipBound) {
+          layer.__hitAreaTooltipBound = true;
+          layer.on('click', () => {
+            const visMarker = layer._visibleMarker;
+            if (visMarker && visMarker.getTooltip()) {
+              // Close all other tooltips
+              monumentsLayer.eachLayer(l => {
+                if (l !== visMarker && l.getTooltip && l.getTooltip()) l.closeTooltip();
+              });
+              visMarker.toggleTooltip();
+            }
+          });
+        } else if (!enabled) {
+          layer.__hitAreaTooltipBound = false;
+        }
+        return;
+      }
+
       const name = layer.feature?.properties?.name || '';
       if (!name) return;
 
@@ -1330,18 +1353,14 @@ function setLectureTooltipsEnabled(enabled) {
           });
         }
 
-        // On touch devices, bind a direct click-to-show-tooltip handler
+        // On touch devices, also bind tap on the visible marker itself
         if (IS_TOUCH_DEVICE && !layer.__monumentTapBound) {
           layer.__monumentTapBound = true;
           layer.on('click', () => {
-            // Close all other monument tooltips
             monumentsLayer.eachLayer(l => {
               if (l !== layer && l.getTooltip && l.getTooltip()) l.closeTooltip();
             });
-            // Toggle this tooltip
-            if (layer.getTooltip()) {
-              layer.toggleTooltip();
-            }
+            if (layer.getTooltip()) layer.toggleTooltip();
           });
         }
       } else {
