@@ -1193,14 +1193,7 @@ function loadMonuments() {
             });
             // On touch devices, add an invisible larger hit area
             if (IS_TOUCH_DEVICE) {
-              const hitArea = L.circleMarker(latlng, {
-                radius: 18,
-                fillOpacity: 0,
-                opacity: 0,
-                pane: 'markerPane'
-              });
-              hitArea.on('click', () => handleMonumentClick(feature, marker));
-              if (monumentsLayer) monumentsLayer.addLayer(hitArea);
+              marker._monumentFeature = feature;
             }
             return marker;
           },
@@ -1209,6 +1202,23 @@ function loadMonuments() {
           }
         }
       );
+
+      // Add invisible hit areas after layer is created (can't add during construction)
+      if (IS_TOUCH_DEVICE && monumentsLayer) {
+        monumentsLayer.eachLayer(layer => {
+          const feat = layer._monumentFeature;
+          if (!feat) return;
+          const latlng = layer.getLatLng();
+          const hitArea = L.circleMarker(latlng, {
+            radius: 18,
+            fillOpacity: 0,
+            opacity: 0,
+            pane: 'markerPane'
+          });
+          hitArea.on('click', () => handleMonumentClick(feat, layer));
+          monumentsLayer.addLayer(hitArea);
+        });
+      }
       refreshLectureTooltipsIfNeeded();
 
       // Si la zone active est déjà "monuments", on ajoute directement le layer
