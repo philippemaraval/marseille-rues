@@ -2314,6 +2314,22 @@ function handleStreetClick(clickedFeature) {
 function handleMonumentClick(clickedFeature, clickedLayer) {
   const zoneMode = getZoneMode();
   if (zoneMode !== 'monuments') return;
+
+  // En mode lecture, afficher le tooltip au tap (mobile)
+  const gameMode = getGameMode();
+  if (gameMode === 'lecture' || isLectureMode === true) {
+    if (clickedLayer.getTooltip()) {
+      clickedLayer.openTooltip();
+      // Fermer les autres
+      if (monumentsLayer) {
+        monumentsLayer.eachLayer(l => {
+          if (l !== clickedLayer && l.getTooltip && l.getTooltip()) l.closeTooltip();
+        });
+      }
+    }
+    return;
+  }
+
   if (isPaused) return;
 
   if (!currentMonumentTarget || sessionStartTime === null || streetStartTime === null) {
