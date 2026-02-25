@@ -1181,9 +1181,9 @@ function loadMonuments() {
       monumentsLayer = L.geoJSON(
         { type: 'FeatureCollection', features: allMonuments },
         {
-          renderer: L.svg({ pane: 'markerPane' }),  // markerPane (z-600) au-dessus du canvas (z-400)
+          renderer: L.svg({ pane: 'markerPane' }),
           pointToLayer: (feature, latlng) => {
-            const marker = L.circleMarker(latlng, {
+            return L.circleMarker(latlng, {
               radius: 8,
               color: '#e3f2fd',
               weight: 3,
@@ -1191,36 +1191,12 @@ function loadMonuments() {
               fillOpacity: 1.0,
               pane: 'markerPane'
             });
-            // On touch devices, add an invisible larger hit area
-            if (IS_TOUCH_DEVICE) {
-              marker._monumentFeature = feature;
-            }
-            return marker;
           },
           onEachFeature: (feature, layer) => {
             layer.on('click', () => handleMonumentClick(feature, layer));
           }
         }
       );
-
-      // Add invisible hit areas after layer is created (can't add during construction)
-      if (IS_TOUCH_DEVICE && monumentsLayer) {
-        const hitAreas = [];
-        monumentsLayer.eachLayer(layer => {
-          const feat = layer._monumentFeature;
-          if (!feat) return;
-          const latlng = layer.getLatLng();
-          const hitArea = L.circleMarker(latlng, {
-            radius: 18,
-            fillOpacity: 0,
-            opacity: 0,
-            pane: 'markerPane'
-          });
-          hitArea.on('click', () => handleMonumentClick(feat, layer));
-          hitAreas.push(hitArea);
-        });
-        hitAreas.forEach(h => monumentsLayer.addLayer(h));
-      }
       refreshLectureTooltipsIfNeeded();
 
       // Si la zone active est déjà "monuments", on ajoute directement le layer
