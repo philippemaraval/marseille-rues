@@ -1150,13 +1150,24 @@ function loadMonuments() {
           renderer: L.svg({ pane: 'markerPane' }),  // markerPane (z-600) au-dessus du canvas (z-400)
           pointToLayer: (feature, latlng) => {
             const marker = L.circleMarker(latlng, {
-              radius: IS_TOUCH_DEVICE ? 18 : 8,
+              radius: 8,
               color: '#e3f2fd',
               weight: 3,
               fillColor: '#90caf9',
               fillOpacity: 1.0,
               pane: 'markerPane'
             });
+            // On touch devices, add an invisible larger hit area
+            if (IS_TOUCH_DEVICE) {
+              const hitArea = L.circleMarker(latlng, {
+                radius: 18,
+                fillOpacity: 0,
+                opacity: 0,
+                pane: 'markerPane'
+              });
+              hitArea.on('click', () => handleMonumentClick(feature, marker));
+              if (monumentsLayer) monumentsLayer.addLayer(hitArea);
+            }
             return marker;
           },
           onEachFeature: (feature, layer) => {
