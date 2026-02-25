@@ -341,6 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadStreets();
   loadQuartierPolygons();
   loadMonuments();
+  loadAllLeaderboards();
   document.body.classList.add('app-ready');
 });
 
@@ -2885,25 +2886,27 @@ function updateUserUI() {
 // ------------------------
 
 function sendScoreToServer(payload) {
-  // Adaptation pour le serveur
-  // Server expects: { mode, gameType, score }
-  // Daily mode sends to a different endpoint or handled differently?
-  // Daily mode score is handled by /api/daily/guess directly.
-  // So here we only handle standard games.
   if (isDailyMode) return;
+  if (!currentUser || !currentUser.token) return;
 
   try {
     fetch(API_URL + '/api/scores', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(currentUser?.token ? { 'Authorization': 'Bearer ' + currentUser.token } : {})
+        'Authorization': 'Bearer ' + currentUser.token
       },
       body: JSON.stringify({
         mode: payload.zoneMode,
         gameType: payload.gameMode,
-        score: payload.weightedScore
+        score: payload.weightedScore,
+        itemsCorrect: payload.itemsCorrect,
+        itemsTotal: payload.itemsAnswered,
+        timeSec: payload.totalTimeSec
       })
+    }).then(r => r.json()).then(() => {
+      // Auto-refresh leaderboard after score submission
+      loadAllLeaderboards();
     }).catch(err => {
       console.error('Erreur envoi score :', err);
     });
@@ -2912,65 +2915,106 @@ function sendScoreToServer(payload) {
   }
 }
 
-function loadLeaderboard(zoneMode, quartierName, gameMode) {
+// --- Labels français ---
+const ZONE_LABELS = {
+  'ville': 'Ville entière',
+  'rues-principales': 'Rues principales',
+  'rues-celebres': 'Rues célèbres',
+  'quartier': 'Quartier',
+  'monuments': 'Monuments'
+};
+const GAME_LABELS = {
+  'classique': 'Classique',
+  'marathon': 'Marathon',
+  'chrono': 'Chrono',
+  'lecture': 'Lecture'
+};
+
+function loadAllLeaderboards() {
   const el = document.getElementById('leaderboard');
   if (!el) return;
 
-  el.innerHTML = '<p>Chargement du leaderboard...</p>';
+  el.innerHTML = '<p>Chargement du leaderboard…</p>';
 
-  const params = new URLSearchParams();
-  params.set('zone_mode', zoneMode);
-  params.set('game_mode', gameMode);
-  if (quartierName) {
-    params.set('quartier_name', quartierName);
-  }
-
-  fetch(API_URL + '/api/leaderboard?' + params.toString())
-    .then(res => {
-      if (!res.ok) {
-        throw new Error('HTTP ' + res.status);
-      }
-      return res.json();
+  fetch(API_URL + '/api/leaderboards')
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
     })
     .then(data => {
-      const entries = data.entries || [];
-      if (!entries.length) {
-        el.innerHTML = '<p>Aucun score pour ce mode.</p>';
+      const keys = Object.keys(data);
+      if (keys.length === 0) {
+        el.innerHTML = '<p>Aucun score enregistré.</p>';
         return;
       }
 
-      const table = document.createElement('table');
-      const thead = document.createElement('thead');
-      thead.innerHTML = '<tr><th>#</th><th>Joueur</th><th>Score pondéré</th><th>%</th><th>Temps</th></tr>';
-      table.appendChild(thead);
-
-      const tbody = document.createElement('tbody');
-      entries.forEach((e, index) => {
-        const tr = document.createElement('tr');
-        const rank = e.rank != null ? e.rank : index + 1;
-        const username = e.username || 'Anonyme';
-        const score = typeof e.weighted_score === 'number' ? e.weighted_score.toFixed(1) : '-';
-        const pc = typeof e.percent_correct === 'number' ? e.percent_correct + ' %' : '-';
-        const time = typeof e.total_time_sec === 'number' ? e.total_time_sec.toFixed(1) + ' s' : '-';
-
-        tr.innerHTML =
-          `<td>${rank}</td>
-           <td>${username}</td>
-           <td>${score}</td>
-           <td>${pc}</td>
-           <td>${time}</td>`;
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-
       el.innerHTML = '';
-      el.appendChild(table);
+
+      keys.forEach(key => {
+        const [mode, gameType] = key.split('|');
+        const rows = data[key];
+        if (!rows || rows.length === 0) return;
+
+        const section = document.createElement('div');
+        section.className = 'leaderboard-section';
+
+        const title = document.createElement('h4');
+        title.className = 'leaderboard-section-title';
+        const zoneLabel = ZONE_LABELS[mode] || mode;
+        const gameLabel = GAME_LABELS[gameType] || gameType;
+        title.textContent = `${zoneLabel} — ${gameLabel}`;
+        section.appendChild(title);
+
+        const table = document.createElement('table');
+        table.className = 'leaderboard-table';
+
+        // Column headers adapt per game type
+        const thead = document.createElement('thead');
+        let headerHTML = '<tr><th>#</th><th>Joueur</th><th>Score</th>';
+        if (gameType === 'marathon') {
+          headerHTML += '<th>Trouvés</th>';
+        }
+        if (gameType === 'chrono') {
+          headerHTML += '<th>Temps</th>';
+        }
+        headerHTML += '<th>Parties</th></tr>';
+        thead.innerHTML = headerHTML;
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        rows.forEach((r, i) => {
+          const tr = document.createElement('tr');
+          let html = `<td>${i + 1}</td><td>${r.username || 'Anonyme'}</td>`;
+          html += `<td>${typeof r.high_score === 'number' ? r.high_score.toFixed(1) : '-'}</td>`;
+
+          if (gameType === 'marathon') {
+            const found = r.items_correct || 0;
+            const total = r.items_total || 0;
+            html += `<td>${found}/${total}</td>`;
+          }
+          if (gameType === 'chrono') {
+            const t = r.time_sec || 0;
+            html += `<td>${t.toFixed(1)}s</td>`;
+          }
+
+          html += `<td>${r.games_played || 0}</td>`;
+          tr.innerHTML = html;
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        section.appendChild(table);
+        el.appendChild(section);
+      });
     })
     .catch(err => {
-      // Chargement du leaderboard pour ce mode
       console.error('Erreur leaderboard :', err);
       el.innerHTML = '<p>Erreur lors du chargement du leaderboard.</p>';
     });
+}
+
+function loadLeaderboard(zoneMode, quartierName, gameMode) {
+  // Redirect to full leaderboard load
+  loadAllLeaderboards();
 }
 
 

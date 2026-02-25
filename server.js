@@ -63,21 +63,26 @@ app.post('/api/login', (req, res) => {
 // ----------------------
 
 app.get('/api/leaderboard', (req, res) => {
-    const { mode, gameType } = req.query;
+    const mode = req.query.mode || req.query.zone_mode;
+    const gameType = req.query.gameType || req.query.game_mode;
     if (!mode || !gameType) return res.status(400).json({ error: 'Missing mode or gameType' });
 
     const rows = db.getLeaderboard(mode, gameType);
     res.json(rows);
 });
 
+app.get('/api/leaderboards', (req, res) => {
+    const data = db.getAllLeaderboards();
+    res.json(data);
+});
+
 app.post('/api/scores', authenticateToken, (req, res) => {
-    const { mode, gameType, score } = req.body;
-    // Basic validation
+    const { mode, gameType, score, itemsCorrect, itemsTotal, timeSec } = req.body;
     if (!mode || !gameType || score === undefined) {
         return res.status(400).json({ error: 'Invalid data' });
     }
 
-    db.addScore(req.user.id, req.user.username, mode, gameType, score);
+    db.addScore(req.user.id, req.user.username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec);
     res.json({ success: true });
 });
 

@@ -1104,3 +1104,50 @@ button {
 .leaflet-tooltip-top:before {
   border-top-color: rgba(15, 23, 42, 0.9);
 }
+
+/* --- Leaderboard sections --- */
+.leaderboard-section {
+  margin-bottom: 12px;
+}
+
+.leaderboard-section:last-child {
+  margin-bottom: 0;
+}
+
+.leaderboard-section-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 0 4px 0;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--border-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-xs);
+}
+
+.leaderboard-table th {
+  text-align: left;
+  padding: 4px 6px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard-table td {
+  padding: 3px 6px;
+}
+
+.leaderboard-table tbody tr:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.leaderboard-table tbody tr:first-child td {
+  font-weight: 600;
+  color: var(--accent);
+}

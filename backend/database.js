@@ -18,20 +18,31 @@ function initDb() {
   `);
 
   // Scores table
-  // mode: 'rues-principales', 'quartier', 'ville', 'monuments', 'rues-celebres'
-  // game_type: 'classique', 'marathon', 'chrono', 'lecture'
   db.exec(`
     CREATE TABLE IF NOT EXISTS scores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
-      username TEXT, -- denormalized for easier querying
+      username TEXT,
       mode TEXT NOT NULL,
       game_type TEXT NOT NULL,
       score REAL NOT NULL,
+      items_correct INTEGER DEFAULT 0,
+      items_total INTEGER DEFAULT 0,
+      time_sec REAL DEFAULT 0,
       timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id)
     )
   `);
+
+  // Migration: add new columns if missing
+  const migrateCols = [
+    ['items_correct', 'INTEGER DEFAULT 0'],
+    ['items_total', 'INTEGER DEFAULT 0'],
+    ['time_sec', 'REAL DEFAULT 0']
+  ];
+  for (const [col, def] of migrateCols) {
+    try { db.exec(`ALTER TABLE scores ADD COLUMN ${col} ${def}`); } catch (e) { }
+  }
 
   // Daily challenge stats (the target for each day)
   db.exec(`
@@ -94,17 +105,23 @@ function verifyPassword(user, password) {
 }
 
 // Score Helpers
-function addScore(userId, username, mode, gameType, score) {
+function addScore(userId, username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec) {
   const stmt = db.prepare(`
-    INSERT INTO scores (user_id, username, mode, game_type, score)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO scores (user_id, username, mode, game_type, score, items_correct, items_total, time_sec)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  return stmt.run(userId, username, mode, gameType, score);
+  return stmt.run(userId, username, mode, gameType, score, itemsCorrect || 0, itemsTotal || 0, timeSec || 0);
 }
 
 function getLeaderboard(mode, gameType, limit = 10) {
+  // Return best score per user for this mode+gameType combination
   const stmt = db.prepare(`
-    SELECT username, max(score) as high_score, count(*) as games_played
+    SELECT username,
+           MAX(score) as high_score,
+           items_correct,
+           items_total,
+           time_sec,
+           COUNT(*) as games_played
     FROM scores
     WHERE mode = ? AND game_type = ?
     GROUP BY user_id
@@ -112,6 +129,20 @@ function getLeaderboard(mode, gameType, limit = 10) {
     LIMIT ?
   `);
   return stmt.all(mode, gameType, limit);
+}
+
+function getAllLeaderboards(limit = 5) {
+  // Get all distinct mode+game_type combos that have scores
+  const combos = db.prepare(`
+    SELECT DISTINCT mode, game_type FROM scores ORDER BY mode, game_type
+  `).all();
+
+  const result = {};
+  for (const { mode, game_type } of combos) {
+    const key = `${mode}|${game_type}`;
+    result[key] = getLeaderboard(mode, game_type, limit);
+  }
+  return result;
 }
 
 // Daily Challenge Helpers
@@ -189,6 +220,7 @@ module.exports = {
   verifyPassword,
   addScore,
   getLeaderboard,
+  getAllLeaderboards,
   getDailyTarget,
   setDailyTarget,
   getDailyUserStatus,
