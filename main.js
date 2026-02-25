@@ -1205,6 +1205,7 @@ function loadMonuments() {
 
       // Add invisible hit areas after layer is created (can't add during construction)
       if (IS_TOUCH_DEVICE && monumentsLayer) {
+        const hitAreas = [];
         monumentsLayer.eachLayer(layer => {
           const feat = layer._monumentFeature;
           if (!feat) return;
@@ -1216,8 +1217,9 @@ function loadMonuments() {
             pane: 'markerPane'
           });
           hitArea.on('click', () => handleMonumentClick(feat, layer));
-          monumentsLayer.addLayer(hitArea);
+          hitAreas.push(hitArea);
         });
+        hitAreas.forEach(h => monumentsLayer.addLayer(h));
       }
       refreshLectureTooltipsIfNeeded();
 
