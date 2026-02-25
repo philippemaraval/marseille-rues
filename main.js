@@ -1149,7 +1149,7 @@ function loadMonuments() {
           renderer: L.svg({ pane: 'markerPane' }),  // markerPane (z-600) au-dessus du canvas (z-400)
           pointToLayer: (feature, latlng) => {
             const marker = L.circleMarker(latlng, {
-              radius: IS_TOUCH_DEVICE ? 12 : 8,
+              radius: IS_TOUCH_DEVICE ? 18 : 8,
               color: '#e3f2fd',
               weight: 3,
               fillColor: '#90caf9',
@@ -3068,7 +3068,9 @@ function startDailySession(data) {
 
   // Start "game" state
   isSessionRunning = true;
-  updateStartStopButton(); // might need hiding
+  updateStartStopButton();
+  updatePauseButton();
+  updateLayoutSessionState();
 
   // Force map refresh for all streets
   if (modeSelect) {
