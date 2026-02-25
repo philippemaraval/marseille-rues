@@ -1106,7 +1106,7 @@ function loadStreets() {
           layer.on('click', () => {
             const fq = feature.properties.quartier || null;
             if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
-            handleStreetClick(feature);
+            handleStreetClick(feature, layer);
           });
         }
       }).addTo(map);
@@ -2187,7 +2187,7 @@ function computeItemPoints(elapsedSeconds) {
   return Math.max(0, MAX_POINTS_PER_ITEM - elapsedSeconds);
 }
 
-function handleStreetClick(clickedFeature) {
+function handleStreetClick(clickedFeature, clickedLayer) {
   const zoneMode = getZoneMode();
 
   if (zoneMode === 'monuments') return;
@@ -2231,12 +2231,25 @@ function handleStreetClick(clickedFeature) {
     const targetName = normalizeName(dailyTargetData.streetName);
     const isSuccess = (clickedName === targetName);
 
-    // Calculate distance between centroids
+    // Calculate distance and direction between centroids
     let distance = 0;
+    let arrow = '';
+    const clickedCentroid = computeFeatureCentroid(clickedFeature);
     if (!isSuccess) {
-      const clickedCentroid = computeFeatureCentroid(clickedFeature);
       const targetCoords = dailyTargetGeoJson; // [lon, lat]
       distance = getDistanceMeters(clickedCentroid[1], clickedCentroid[0], targetCoords[1], targetCoords[0]);
+      arrow = getDirectionArrow(clickedCentroid, targetCoords);
+    }
+
+    // Flash wrong street on map
+    if (!isSuccess && clickedLayer && typeof clickedLayer.setStyle === 'function') {
+      const origStyle = getBaseStreetStyle(clickedLayer);
+      clickedLayer.setStyle({ color: '#f97316', weight: 6, opacity: 1 });
+      setTimeout(() => {
+        if (clickedLayer && map.hasLayer(clickedLayer)) {
+          clickedLayer.setStyle(origStyle);
+        }
+      }, 2000);
     }
 
     // Send guess to server
@@ -2263,17 +2276,16 @@ function handleStreetClick(clickedFeature) {
         highlightDailyTarget(result.targetGeometry, true);
         endDailySession();
       } else if (remaining <= 0) {
-        // Ajouter le dernier essai raté dans l'historique
-        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance });
+        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance, arrow });
+        saveDailyGuessesToStorage();
         renderDailyGuessHistory({ success: false });
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
         endDailySession();
       } else {
-        // Ajouter l'essai raté dans l'historique
-        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance });
+        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance, arrow });
+        saveDailyGuessesToStorage();
         renderDailyGuessHistory();
-        // Format distance
         const distStr = distance >= 1000
           ? `${(distance / 1000).toFixed(1)} km`
           : `${Math.round(distance)} m`;
@@ -3175,10 +3187,18 @@ function startDailySession(data) {
   // Start daily session
   isDailyMode = true;
 
-  // Reset guess history
+  // Restore guess history from localStorage if resuming
   dailyGuessHistory = [];
   const historyEl = document.getElementById('daily-guesses-history');
   if (historyEl) { historyEl.style.display = 'none'; historyEl.innerHTML = ''; }
+  if ((status.attempts_count || 0) > 0 && !status.success) {
+    restoreDailyGuessesFromStorage(data.date);
+    if (dailyGuessHistory.length > 0) {
+      renderDailyGuessHistory();
+    }
+  }
+  // Clean up old days from localStorage
+  cleanOldDailyGuessStorage(data.date);
 
   // Cleanup any existing session
   if (isSessionRunning) endSession();
@@ -3270,7 +3290,7 @@ function renderDailyGuessHistory(finalResult) {
   if (dailyGuessHistory.length > 0) {
     html += '<div class="daily-history-title">Essais précédents</div>';
     html += '<table class="daily-history-table">';
-    html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th></tr></thead>';
+    html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th><th></th></tr></thead>';
     html += '<tbody>';
 
     dailyGuessHistory.forEach((g, i) => {
@@ -3278,14 +3298,43 @@ function renderDailyGuessHistory(finalResult) {
         ? `${(g.distance / 1000).toFixed(1)} km`
         : `${Math.round(g.distance)} m`;
       const isLast = (i === dailyGuessHistory.length - 1) && !finalResult;
+      // Color-coded distance class
+      let distClass = 'dist-cold';
+      if (g.distance < 500) distClass = 'dist-hot';
+      else if (g.distance < 2000) distClass = 'dist-warm';
       html += `<tr class="${isLast ? 'daily-row-enter' : ''}">`;
       html += `<td>${i + 1}</td>`;
       html += `<td>${g.streetName}</td>`;
-      html += `<td>${distStr}</td>`;
+      html += `<td class="${distClass}">${distStr}</td>`;
+      html += `<td class="daily-arrow">${g.arrow || ''}</td>`;
       html += '</tr>';
     });
 
     html += '</tbody></table>';
+  }
+
+  // Progressive hints
+  const attemptsCount = dailyGuessHistory.length;
+  if (attemptsCount >= 2 && dailyTargetData && !finalResult) {
+    html += '<div class="daily-hints">';
+    html += '<div class="daily-hints-title">💡 Indices</div>';
+    // Hint 1 (after 2 attempts): Arrondissement
+    const quartierRaw = dailyTargetData.quartier || '';
+    const normQ = normalizeQuartierKey(quartierRaw);
+    const arr = arrondissementByQuartier.get(normQ);
+    if (arr) {
+      html += `<div class="daily-hint">📍 Arrondissement : <strong>${arr}</strong></div>`;
+    }
+    // Hint 2 (after 3 attempts): Quartier
+    if (attemptsCount >= 3 && quartierRaw) {
+      html += `<div class="daily-hint">🏘️ Quartier : <strong>${quartierRaw}</strong></div>`;
+    }
+    // Hint 3 (after 4 attempts): first letter of the street name
+    if (attemptsCount >= 4 && dailyTargetData.streetName) {
+      const firstLetter = dailyTargetData.streetName.charAt(0).toUpperCase();
+      html += `<div class="daily-hint">🔤 Commence par : <strong>${firstLetter}</strong></div>`;
+    }
+    html += '</div>';
   }
 
   // Final result footer
@@ -3294,7 +3343,6 @@ function renderDailyGuessHistory(finalResult) {
       const n = finalResult.attempts;
       html += `<div class="daily-result daily-result--success">🎉 Bravo, vous avez trouvé la rue en ${n} essai${n > 1 ? 's' : ''} !</div>`;
     } else {
-      // Find best (shortest) distance
       const bestDist = Math.min(...dailyGuessHistory.map(g => g.distance));
       const bestStr = bestDist >= 1000
         ? `${(bestDist / 1000).toFixed(1)} km`
@@ -3304,6 +3352,49 @@ function renderDailyGuessHistory(finalResult) {
   }
 
   container.innerHTML = html;
+}
+
+// Direction arrow: returns emoji arrow from clicked toward target
+function getDirectionArrow(clickedCoords, targetCoords) {
+  // coords are [lon, lat]
+  const dLon = targetCoords[0] - clickedCoords[0];
+  const dLat = targetCoords[1] - clickedCoords[1];
+  const angle = Math.atan2(dLon, dLat) * 180 / Math.PI; // 0=North, 90=East
+  // Normalize to 0-360
+  const a = ((angle % 360) + 360) % 360;
+  const arrows = ['⬆️', '↗️', '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️'];
+  const idx = Math.round(a / 45) % 8;
+  return arrows[idx];
+}
+
+// localStorage helpers for daily guess persistence
+function saveDailyGuessesToStorage() {
+  if (!dailyTargetData || !dailyTargetData.date) return;
+  try {
+    const key = `camino_daily_guesses_${dailyTargetData.date}`;
+    localStorage.setItem(key, JSON.stringify(dailyGuessHistory));
+  } catch (e) { /* quota exceeded or private browsing */ }
+}
+
+function restoreDailyGuessesFromStorage(date) {
+  try {
+    const key = `camino_daily_guesses_${date}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      dailyGuessHistory = JSON.parse(raw);
+    }
+  } catch (e) { dailyGuessHistory = []; }
+}
+
+function cleanOldDailyGuessStorage(currentDate) {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('camino_daily_guesses_') && !key.endsWith(currentDate)) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) { /* ignore */ }
 }
 
 function highlightDailyTarget(geometryJson, isSuccess) {
