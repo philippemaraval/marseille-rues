@@ -1784,7 +1784,7 @@ function startNewSession() {
   scrollSidebarToTargetPanel();
 
   const skipBtn = document.getElementById('skip-btn');
-  if (skipBtn) skipBtn.style.display = 'inline-block';
+  if (skipBtn && !isLectureMode) skipBtn.style.display = 'inline-block';
 
   setNewTarget();
   showMessage('Session démarrée.', 'info');
@@ -2554,7 +2554,7 @@ function endSession() {
   updateLayoutSessionState();
 
   const skipBtn = document.getElementById('skip-btn');
-  if (skipBtn) skipBtn.style.display = 'inline-block';
+  if (skipBtn) skipBtn.style.display = 'none';
 
   const total = summaryData.length;
   const nbCorrect = summaryData.filter(r => r.correct).length;

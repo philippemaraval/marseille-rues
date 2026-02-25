@@ -917,7 +917,8 @@ button {
   /* --- PRÉ-SESSION : Sidebar plein écran, carte cachée --- */
   body.app-ready:not(.session-running) #sidebar {
     flex: 1;
-    max-height: 100vh;
+    min-height: 100vh;
+    max-height: none;
     overflow-y: auto;
   }
 
@@ -940,6 +941,12 @@ button {
   body.app-ready:not(.session-running) .actions-row {
     padding: 4px 0;
     margin: 8px 0;
+  }
+
+  /* Cacher le bouton Passer en pré-session et en mode lecture */
+  body.app-ready:not(.session-running) #skip-btn,
+  body.lecture-mode #skip-btn {
+    display: none !important;
   }
 
   /* --- EN SESSION : Bandeau compact en haut + carte plein écran --- */
@@ -968,12 +975,33 @@ button {
     display: none !important;
   }
 
-  /* Target panel compact en session */
+  /* Sidebar-content en flex pour permettre le réordonnement */
+  body.session-running #sidebar-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Target panel compact en session — AVANT les boutons */
   body.session-running .target-panel {
+    order: 1;
     margin: 0;
     padding: 6px 10px;
     border-left-width: 4px;
     border-radius: var(--radius-sm);
+  }
+
+  /* Boutons APRÈS la cible avec un léger espace */
+  body.session-running .actions-row {
+    order: 2;
+    padding: 0;
+    margin-top: 8px;
+    gap: 4px;
+  }
+
+  /* Retour au menu (lecture) : même position que les boutons session */
+  body.session-running .lecture-back-btn {
+    order: 2;
+    margin-top: 8px;
   }
 
   body.session-running .target-panel .panel-title {
@@ -986,14 +1014,7 @@ button {
     line-height: 1.2;
   }
 
-  /* Actions compactes en session */
-  body.session-running .actions-row {
-    padding: 4px 0 0;
-    gap: 4px;
-  }
-
   body.session-running .actions-row button {
-    padding: 6px 2px;
     font-size: 9px;
     min-height: 36px;
   }
