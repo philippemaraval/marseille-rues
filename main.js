@@ -2262,10 +2262,16 @@ function handleStreetClick(clickedFeature) {
         highlightDailyTarget(result.targetGeometry, true);
         endDailySession();
       } else if (remaining <= 0) {
+        // Ajouter le dernier essai raté dans l'historique
+        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance });
+        renderDailyGuessHistory();
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
         endDailySession();
       } else {
+        // Ajouter l'essai raté dans l'historique
+        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance });
+        renderDailyGuessHistory();
         // Format distance
         const distStr = distance >= 1000
           ? `${(distance / 1000).toFixed(1)} km`
@@ -3141,6 +3147,7 @@ let dailyTargetData = null;
 let dailyTargetGeoJson = null;
 let isDailyMode = false;
 let dailyHighlightLayer = null;
+let dailyGuessHistory = [];
 
 function startDailySession(data) {
   dailyTargetData = data;
@@ -3166,6 +3173,11 @@ function startDailySession(data) {
 
   // Start daily session
   isDailyMode = true;
+
+  // Reset guess history
+  dailyGuessHistory = [];
+  const historyEl = document.getElementById('daily-guesses-history');
+  if (historyEl) { historyEl.style.display = 'none'; historyEl.innerHTML = ''; }
 
   // Cleanup any existing session
   if (isSessionRunning) endSession();
@@ -3236,6 +3248,39 @@ function endDailySession() {
   updatePauseButton();
   updateLayoutSessionState();
   updateDailyUI();
+}
+
+function renderDailyGuessHistory() {
+  const container = document.getElementById('daily-guesses-history');
+  if (!container) return;
+
+  if (dailyGuessHistory.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  let html = '<div class="daily-history-title">Essais précédents</div>';
+  html += '<table class="daily-history-table">';
+  html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th></tr></thead>';
+  html += '<tbody>';
+
+  dailyGuessHistory.forEach((g, i) => {
+    const distStr = g.distance >= 1000
+      ? `${(g.distance / 1000).toFixed(1)} km`
+      : `${Math.round(g.distance)} m`;
+    const isLast = (i === dailyGuessHistory.length - 1);
+    html += `<tr class="${isLast ? 'daily-row-enter' : ''}">`;
+    html += `<td>${i + 1}</td>`;
+    html += `<td>${g.streetName}</td>`;
+    html += `<td>${distStr}</td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  container.innerHTML = html;
 }
 
 function highlightDailyTarget(geometryJson, isSuccess) {

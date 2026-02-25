@@ -446,6 +446,84 @@ input:focus {
   gap: 4px;
 }
 
+/* ========== DAILY GUESS HISTORY TABLE ========== */
+#daily-guesses-history {
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.daily-history-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 6px;
+}
+
+.daily-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-xs);
+  font-family: var(--font-body);
+}
+
+.daily-history-table th {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  font-weight: 700;
+  padding: 4px 6px;
+  text-align: left;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.daily-history-table th:last-child {
+  text-align: right;
+}
+
+.daily-history-table td {
+  padding: 5px 6px;
+  color: #334155;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.daily-history-table td:first-child {
+  font-weight: 700;
+  color: #94a3b8;
+  width: 24px;
+}
+
+.daily-history-table td:last-child {
+  text-align: right;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  color: #dc2626;
+  white-space: nowrap;
+}
+
+.daily-history-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.daily-history-table tr.daily-row-enter {
+  animation: dailyRowSlide 0.3s ease-out;
+}
+
+@keyframes dailyRowSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 
 
 /* Ensure the panels themselves don't clip the dropdowns or tooltips */
