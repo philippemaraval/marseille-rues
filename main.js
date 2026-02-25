@@ -2259,12 +2259,13 @@ function handleStreetClick(clickedFeature) {
 
       if (result.success) {
         showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
+        renderDailyGuessHistory({ success: true, attempts });
         highlightDailyTarget(result.targetGeometry, true);
         endDailySession();
       } else if (remaining <= 0) {
         // Ajouter le dernier essai raté dans l'historique
         dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance });
-        renderDailyGuessHistory();
+        renderDailyGuessHistory({ success: false });
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
         endDailySession();
@@ -3250,11 +3251,12 @@ function endDailySession() {
   updateDailyUI();
 }
 
-function renderDailyGuessHistory() {
+function renderDailyGuessHistory(finalResult) {
   const container = document.getElementById('daily-guesses-history');
   if (!container) return;
 
-  if (dailyGuessHistory.length === 0) {
+  // If success with no previous wrong guesses and no history, just show result
+  if (dailyGuessHistory.length === 0 && (!finalResult || !finalResult.success)) {
     container.style.display = 'none';
     container.innerHTML = '';
     return;
@@ -3262,24 +3264,45 @@ function renderDailyGuessHistory() {
 
   container.style.display = 'block';
 
-  let html = '<div class="daily-history-title">Essais précédents</div>';
-  html += '<table class="daily-history-table">';
-  html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th></tr></thead>';
-  html += '<tbody>';
+  let html = '';
 
-  dailyGuessHistory.forEach((g, i) => {
-    const distStr = g.distance >= 1000
-      ? `${(g.distance / 1000).toFixed(1)} km`
-      : `${Math.round(g.distance)} m`;
-    const isLast = (i === dailyGuessHistory.length - 1);
-    html += `<tr class="${isLast ? 'daily-row-enter' : ''}">`;
-    html += `<td>${i + 1}</td>`;
-    html += `<td>${g.streetName}</td>`;
-    html += `<td>${distStr}</td>`;
-    html += '</tr>';
-  });
+  // Show guess table only if there are wrong attempts
+  if (dailyGuessHistory.length > 0) {
+    html += '<div class="daily-history-title">Essais précédents</div>';
+    html += '<table class="daily-history-table">';
+    html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th></tr></thead>';
+    html += '<tbody>';
 
-  html += '</tbody></table>';
+    dailyGuessHistory.forEach((g, i) => {
+      const distStr = g.distance >= 1000
+        ? `${(g.distance / 1000).toFixed(1)} km`
+        : `${Math.round(g.distance)} m`;
+      const isLast = (i === dailyGuessHistory.length - 1) && !finalResult;
+      html += `<tr class="${isLast ? 'daily-row-enter' : ''}">`;
+      html += `<td>${i + 1}</td>`;
+      html += `<td>${g.streetName}</td>`;
+      html += `<td>${distStr}</td>`;
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+  }
+
+  // Final result footer
+  if (finalResult) {
+    if (finalResult.success) {
+      const n = finalResult.attempts;
+      html += `<div class="daily-result daily-result--success">🎉 Bravo, vous avez trouvé la rue en ${n} essai${n > 1 ? 's' : ''} !</div>`;
+    } else {
+      // Find best (shortest) distance
+      const bestDist = Math.min(...dailyGuessHistory.map(g => g.distance));
+      const bestStr = bestDist >= 1000
+        ? `${(bestDist / 1000).toFixed(1)} km`
+        : `${Math.round(bestDist)} m`;
+      html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${bestStr} en cinq essais</div>`;
+    }
+  }
+
   container.innerHTML = html;
 }
 

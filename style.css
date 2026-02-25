@@ -524,7 +524,28 @@ input:focus {
   }
 }
 
+/* Daily Result Footer */
+.daily-result {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-s);
+  font-weight: 700;
+  text-align: center;
+  animation: dailyRowSlide 0.4s ease-out;
+}
 
+.daily-result--success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #10b981;
+}
+
+.daily-result--fail {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
 
 /* Ensure the panels themselves don't clip the dropdowns or tooltips */
 .panel {
@@ -622,7 +643,7 @@ button {
   border-left: 6px solid var(--primary);
   padding: 20px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .target-panel::after {
