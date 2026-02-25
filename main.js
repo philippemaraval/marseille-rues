@@ -1962,7 +1962,9 @@ function updateStartStopButton() {
 }
 
 function stopSessionManually() {
-  if (!isSessionRunning) return;
+  if (!isSessionRunning && !isDailyMode) return;
+  // In daily mode, use dedicated handler
+  if (typeof handleDailyStop === 'function' && handleDailyStop()) return;
   endSession();
 }
 
@@ -2129,50 +2131,23 @@ function handleStreetClick(clickedFeature) {
   if (isDailyMode) {
     if (!dailyTargetData || !dailyTargetGeoJson) return;
 
-    // Vérifier si clickable (tentatives restantes)
     const status = dailyTargetData.userStatus || {};
     if (status.success || (status.attempts_count || 0) >= 5) return;
 
-    // Calcul distance (approx centre bounding box ou point point)
-    // Leaflet click returns latlng
-    const clickLat = clickedFeature.properties.lat || (clickedFeature.geometry.type === 'Point' ? clickedFeature.geometry.coordinates[1] : 0);
-    // Attention: clickedFeature est un Feature GeoJSON. Leaflet event donne latlng, mais ici on a 'clickedFeature' passé par la couche.
-    // Il faut récupérer les coordonnées du clic. 
-    // Modification: handleStreetClick est appelé avec (feature, layer).
-    // On va simplifier : on prend le premier point de la géométrie de la rue cliquée.
-    // Ou mieux: on compare avec le nom !
-
+    // Compare street names
     const clickedName = normalizeName(clickedFeature.properties.name);
     const targetName = normalizeName(dailyTargetData.streetName);
     const isSuccess = (clickedName === targetName);
 
-    // Si on veut la distance du clic, c'est mieux d'avoir l'event. 
-    // Mais ici on n'a que la feature.
-    // On va calculer la distance entre le centre de la rue cliquée et le centre de la rue cible (stocké dans dailyTargetGeoJson).
-
-    // Simplification : Distance = 0 si succès. Sinon, distance arbitraire ou distance entre centroids.
-    // Pour l'instant on se base sur le succès.
-    // Si l'utilisateur veut la distance pour l'indice : 
-    // Il faut la géométrie.
-
-    // On envoie au serveur
-    // On triche un peu sur la distance pour ce prototype si on n'a pas les coords exactes sous la main facilement.
-    // Mais on a dailyTargetGeoJson [lon, lat].
-    // On peut estimer le centroid de clickedFeature.
-
+    // Calculate distance between centroids
     let distance = 0;
     if (!isSuccess) {
-      // Calc distance approx based on first point of geometry
-      let cGeo = clickedFeature.geometry;
-      let coords = cGeo.coordinates;
-      if (cGeo.type === 'MultiLineString') coords = coords[0];
-      if (cGeo.type === 'LineString' || cGeo.type === 'MultiLineString') {
-        const p1 = coords[0]; // [lon, lat]
-        const p2 = dailyTargetGeoJson; // [lon, lat]
-        distance = getDistanceMeters(p1[1], p1[0], p2[1], p2[0]);
-      }
+      const clickedCentroid = computeFeatureCentroid(clickedFeature);
+      const targetCoords = dailyTargetGeoJson; // [lon, lat]
+      distance = getDistanceMeters(clickedCentroid[1], clickedCentroid[0], targetCoords[1], targetCoords[0]);
     }
 
+    // Send guess to server
     fetch(API_URL + '/api/daily/guess', {
       method: 'POST',
       headers: {
@@ -2184,25 +2159,31 @@ function handleStreetClick(clickedFeature) {
         distanceMeters: Math.round(distance),
         isSuccess
       })
-    }).then(r => r.json()).then(newData => {
-      dailyTargetData.userStatus = newData;
-      const attempts = newData.attempts_count;
+    }).then(r => r.json()).then(result => {
+      // Update local status
+      dailyTargetData.userStatus = result;
+      const attempts = result.attempts_count;
       const remaining = 5 - attempts;
 
-      if (newData.success) {
-        showMessage(`BRAVO ! Trouvé en ${attempts} essai(s) !`, 'success');
-        isDailyMode = false; // Prevents further clicks on this session
-        endSession();
+      if (result.success) {
+        showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
+        highlightDailyTarget(result.targetGeometry, true);
+        endDailySession();
+      } else if (remaining <= 0) {
+        showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
+        highlightDailyTarget(result.targetGeometry, false);
+        endDailySession();
       } else {
-        if (remaining <= 0) {
-          showMessage(`Dommage ! La bonne réponse était ailleurs. Fin du défi.`, 'error');
-          isDailyMode = false;
-          endSession();
-        } else {
-          showMessage(`Mince ! Plus que ${remaining} essai${remaining > 1 ? 's' : ''}. (Distance: ${Math.round(distance)} m)`, 'warning');
-        }
+        // Format distance
+        const distStr = distance >= 1000
+          ? `${(distance / 1000).toFixed(1)} km`
+          : `${Math.round(distance)} m`;
+        showMessage(`❌ Raté ! Distance : ${distStr}. Plus que ${remaining} essai${remaining > 1 ? 's' : ''}.`, 'warning');
       }
       updateDailyUI();
+    }).catch(err => {
+      console.error('Daily guess error:', err);
+      showMessage('Erreur de connexion. Réessayez.', 'error');
     });
 
     return; // Stop normal logic
@@ -3018,8 +2999,10 @@ async function handleDailyModeClick() {
   }
 }
 
-let dailyTargetData = null; // { streetName, quartier, userStatus }
-let dailyTargetGeoJson = null; // coordinates
+let dailyTargetData = null;
+let dailyTargetGeoJson = null;
+let isDailyMode = false;
+let dailyHighlightLayer = null;
 
 function startDailySession(data) {
   dailyTargetData = data;
@@ -3027,19 +3010,31 @@ function startDailySession(data) {
 
   const status = data.userStatus || {};
 
+  // Game already completed — show result
   if (status.success) {
-    showMessage(`Bravo ! Vous avez déjà réussi le défi d'aujourd'hui en ${status.attempts_count} essais.`, 'success');
+    showMessage(`🎉 Déjà réussi aujourd'hui en ${status.attempts_count} essai${status.attempts_count > 1 ? 's' : ''} !`, 'success');
+    if (data.targetGeometry) {
+      highlightDailyTarget(data.targetGeometry, true);
+    }
     return;
   }
   if (status.attempts_count >= 5) {
-    showMessage(`Dommage ! Vous avez épuisé vos 5 essais pour aujourd'hui.`, 'error');
+    showMessage(`❌ Plus d'essais pour aujourd'hui. La rue était « ${data.streetName} ».`, 'error');
+    if (data.targetGeometry) {
+      highlightDailyTarget(data.targetGeometry, false);
+    }
     return;
   }
 
-  // Setup UI for Daily Mode
-  currentZoneMode = 'ville'; // Force full map context
+  // Start daily session
+  isDailyMode = true;
 
-  // 1. Update Game Zone Dropdown
+  // Cleanup any existing session
+  if (isSessionRunning) endSession();
+  removeDailyHighlight();
+
+  // Force zone to "ville"
+  currentZoneMode = 'ville';
   const modeSelect = document.getElementById('mode-select');
   const modeBtn = document.getElementById('mode-select-button');
   if (modeSelect) {
@@ -3049,57 +3044,145 @@ function startDailySession(data) {
     }
   }
 
-  // 2. Update Game Type Dropdown
-  const gameModeSelect = document.getElementById('game-mode-select');
-  const gameModeBtn = document.getElementById('game-mode-select-button');
-  if (gameModeSelect) {
-    gameModeSelect.value = 'daily';
-    if (gameModeBtn) {
-      gameModeBtn.innerHTML = '<span class="custom-select-label">Daily (5 essais)</span><span class="difficulty-pill gamepill--marathon">Défi</span>';
-    }
+  // Set target name
+  const targetEl = document.getElementById('target-street');
+  if (targetEl) {
+    targetEl.textContent = data.streetName;
+    requestAnimationFrame(fitTargetStreetText);
   }
 
-  // Custom cleanup
-  if (isSessionRunning) endSession();
+  // Update target panel title with attempts
+  const remaining = 5 - (status.attempts_count || 0);
+  const titleEl = document.getElementById('target-panel-title');
+  if (titleEl) {
+    titleEl.textContent = `🎯 Défi quotidien — ${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+  }
 
-  // Hide panels we don't need or adapt them
-  const targetEl = document.getElementById('target-street');
-  if (targetEl) targetEl.textContent = dailyTargetData.streetName;
-
-  // Start "game" state
+  // Start game state
   isSessionRunning = true;
-  updateStartStopButton();
-  updatePauseButton();
   updateLayoutSessionState();
+
+  // Hide skip and pause buttons (no skip/pause in daily)
+  const skipBtn = document.getElementById('skip-btn');
+  const pauseBtn = document.getElementById('pause-btn');
+  if (skipBtn) skipBtn.style.display = 'none';
+  if (pauseBtn) pauseBtn.style.display = 'none';
+
+  // Show stop button as "Quitter le défi"
+  const restartBtn = document.getElementById('restart-btn');
+  if (restartBtn) {
+    restartBtn.textContent = 'Quitter le défi';
+    restartBtn.classList.remove('btn-primary');
+    restartBtn.classList.add('btn-stop');
+    restartBtn.style.display = '';
+  }
 
   // Force map refresh for all streets
   if (modeSelect) {
     modeSelect.dispatchEvent(new Event('change'));
   }
 
-  showMessage(`Trouvez : ${dailyTargetData.streetName} (${5 - status.attempts_count} essais restants)`, 'info');
-
-  // Override street click handler for daily mode?
-  // We can use a flag: isDailyMode
-}
-
-let isDailyMode = false;
-
-// Modify startDailySession to set flag
-const originalStartDailySession = startDailySession;
-startDailySession = function (data) {
-  isDailyMode = true;
-  originalStartDailySession(data);
+  showMessage(`Trouvez : ${data.streetName} (${remaining} essais restants)`, 'info');
   updateDailyUI();
 }
 
+function endDailySession() {
+  isDailyMode = false;
+  isSessionRunning = false;
+
+  // Restore target panel title
+  const titleEl = document.getElementById('target-panel-title');
+  if (titleEl) titleEl.textContent = 'Rue à trouver';
+
+  updateStartStopButton();
+  updatePauseButton();
+  updateLayoutSessionState();
+  updateDailyUI();
+}
+
+function highlightDailyTarget(geometryJson, isSuccess) {
+  removeDailyHighlight();
+
+  if (!geometryJson || !map) return;
+
+  let geometry;
+  try {
+    geometry = typeof geometryJson === 'string' ? JSON.parse(geometryJson) : geometryJson;
+  } catch (e) {
+    console.error('Invalid target geometry:', e);
+    return;
+  }
+
+  const color = isSuccess ? '#4caf50' : '#f44336';
+
+  dailyHighlightLayer = L.geoJSON(
+    { type: 'Feature', geometry, properties: {} },
+    {
+      style: {
+        color: color,
+        weight: 6,
+        opacity: 1,
+        dashArray: isSuccess ? null : '8, 4'
+      }
+    }
+  ).addTo(map);
+
+  // Zoom to the target
+  map.fitBounds(dailyHighlightLayer.getBounds(), { padding: [40, 40], maxZoom: 16 });
+}
+
+function removeDailyHighlight() {
+  if (dailyHighlightLayer && map) {
+    map.removeLayer(dailyHighlightLayer);
+    dailyHighlightLayer = null;
+  }
+}
+
+// Haversine distance in meters
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+    Math.cos(φ1) * Math.cos(φ2) *
+    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function computeFeatureCentroid(feature) {
+  const geo = feature.geometry;
+  let coords = [];
+  if (geo.type === 'LineString') {
+    coords = geo.coordinates;
+  } else if (geo.type === 'MultiLineString') {
+    coords = geo.coordinates.flat();
+  } else if (geo.type === 'Point') {
+    return geo.coordinates;
+  } else {
+    return [5.3698, 43.2965]; // Fallback
+  }
+  if (coords.length === 0) return [5.3698, 43.2965];
+  const sum = coords.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1]], [0, 0]);
+  return [sum[0] / coords.length, sum[1] / coords.length];
+}
+
 function updateDailyUI() {
-  // Update attempts counter etc
   const status = dailyTargetData ? dailyTargetData.userStatus : {};
   const attempts = status.attempts_count || 0;
   const remaining = 5 - attempts;
 
-  setMapStatus(`Défi: ${remaining} essais`, 'ready');
+  if (isDailyMode) {
+    setMapStatus(`Défi: ${remaining} essais`, 'ready');
+
+    // Update title with remaining attempts
+    const titleEl = document.getElementById('target-panel-title');
+    if (titleEl) {
+      titleEl.textContent = `🎯 Défi quotidien — ${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+    }
+  }
 
   const counter = document.getElementById('daily-tries-counter');
   if (counter) {
@@ -3112,26 +3195,15 @@ function updateDailyUI() {
   }
 }
 
-
-// Function to calculate distance (Haversine or creating Leaflet LatLng)
-function getDistanceMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371e3; // metres
-  const φ1 = lat1 * Math.PI / 180;
-  const φ2 = lat2 * Math.PI / 180;
-  const Δφ = (lat2 - lat1) * Math.PI / 180;
-  const Δλ = (lon2 - lon1) * Math.PI / 180;
-
-  const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) *
-    Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return R * c;
+// Inject daily mode into the "Quitter le défi" button
+function handleDailyStop() {
+  if (isDailyMode) {
+    endDailySession();
+    removeDailyHighlight();
+    return true; // Handled
+  }
+  return false;
 }
-
-// Inject Daily Logic into click handler (needs Modification of handleStreetClick upstream)
-// For now, we'll patch it below or assume we modify handleStreetClick next.
-// For now, we'll patch it below or assume we modify handleStreetClick next.
 
 
 function fitTargetStreetText() {

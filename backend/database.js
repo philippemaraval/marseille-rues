@@ -7,8 +7,8 @@ const db = new Database(dbPath);
 
 // Initialize database
 function initDb() {
-    // Users table
-    db.exec(`
+  // Users table
+  db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -17,10 +17,10 @@ function initDb() {
     )
   `);
 
-    // Scores table
-    // mode: 'rues-principales', 'quartier', 'ville', 'monuments', 'rues-celebres'
-    // game_type: 'classique', 'marathon', 'chrono', 'lecture'
-    db.exec(`
+  // Scores table
+  // mode: 'rues-principales', 'quartier', 'ville', 'monuments', 'rues-celebres'
+  // game_type: 'classique', 'marathon', 'chrono', 'lecture'
+  db.exec(`
     CREATE TABLE IF NOT EXISTS scores (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -33,18 +33,26 @@ function initDb() {
     )
   `);
 
-    // Daily challenge stats (the target for each day)
-    db.exec(`
+  // Daily challenge stats (the target for each day)
+  db.exec(`
     CREATE TABLE IF NOT EXISTS daily_targets (
       date TEXT PRIMARY KEY, -- 'YYYY-MM-DD'
       street_name TEXT NOT NULL,
       quartier TEXT,
-      coordinates_json TEXT -- JSON string "[lon, lat]" of the target
+      coordinates_json TEXT, -- JSON string "[lon, lat]" centroid
+      geometry_json TEXT     -- Full GeoJSON geometry for target highlighting
     )
   `);
 
-    // Daily attempts per user
-    db.exec(`
+  // Migration: add geometry_json if missing
+  try {
+    db.exec(`ALTER TABLE daily_targets ADD COLUMN geometry_json TEXT`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+
+  // Daily attempts per user
+  db.exec(`
     CREATE TABLE IF NOT EXISTS daily_user_attempts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -58,44 +66,44 @@ function initDb() {
     )
   `);
 
-    console.log('Database initialized successfully.');
+  console.log('Database initialized successfully.');
 }
 
 // User Helpers
 function createUser(username, password) {
-    const hash = bcrypt.hashSync(password, 10);
-    try {
-        const stmt = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
-        const info = stmt.run(username, hash);
-        return info.lastInsertRowid;
-    } catch (err) {
-        if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-            throw new Error('Username already taken');
-        }
-        throw err;
+  const hash = bcrypt.hashSync(password, 10);
+  try {
+    const stmt = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
+    const info = stmt.run(username, hash);
+    return info.lastInsertRowid;
+  } catch (err) {
+    if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      throw new Error('Username already taken');
     }
+    throw err;
+  }
 }
 
 function getUser(username) {
-    const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-    return stmt.get(username);
+  const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
+  return stmt.get(username);
 }
 
 function verifyPassword(user, password) {
-    return bcrypt.compareSync(password, user.password_hash);
+  return bcrypt.compareSync(password, user.password_hash);
 }
 
 // Score Helpers
 function addScore(userId, username, mode, gameType, score) {
-    const stmt = db.prepare(`
+  const stmt = db.prepare(`
     INSERT INTO scores (user_id, username, mode, game_type, score)
     VALUES (?, ?, ?, ?, ?)
   `);
-    return stmt.run(userId, username, mode, gameType, score);
+  return stmt.run(userId, username, mode, gameType, score);
 }
 
 function getLeaderboard(mode, gameType, limit = 10) {
-    const stmt = db.prepare(`
+  const stmt = db.prepare(`
     SELECT username, max(score) as high_score, count(*) as games_played
     FROM scores
     WHERE mode = ? AND game_type = ?
@@ -103,67 +111,67 @@ function getLeaderboard(mode, gameType, limit = 10) {
     ORDER BY high_score DESC
     LIMIT ?
   `);
-    return stmt.all(mode, gameType, limit);
+  return stmt.all(mode, gameType, limit);
 }
 
 // Daily Challenge Helpers
 function getDailyTarget(date) {
-    const stmt = db.prepare('SELECT * FROM daily_targets WHERE date = ?');
-    return stmt.get(date);
+  const stmt = db.prepare('SELECT * FROM daily_targets WHERE date = ?');
+  return stmt.get(date);
 }
 
-function setDailyTarget(date, streetName, quartier, coordinates) {
-    const stmt = db.prepare(`
-    INSERT OR REPLACE INTO daily_targets (date, street_name, quartier, coordinates_json)
-    VALUES (?, ?, ?, ?)
+function setDailyTarget(date, streetName, quartier, coordinates, geometry) {
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO daily_targets (date, street_name, quartier, coordinates_json, geometry_json)
+    VALUES (?, ?, ?, ?, ?)
   `);
-    return stmt.run(date, streetName, quartier, JSON.stringify(coordinates));
+  return stmt.run(date, streetName, quartier, JSON.stringify(coordinates), geometry ? JSON.stringify(geometry) : null);
 }
 
 function getDailyUserStatus(userId, date) {
-    const stmt = db.prepare('SELECT * FROM daily_user_attempts WHERE user_id = ? AND date = ?');
-    return stmt.get(userId, date);
+  const stmt = db.prepare('SELECT * FROM daily_user_attempts WHERE user_id = ? AND date = ?');
+  return stmt.get(userId, date);
 }
 
 function updateDailyUserAttempt(userId, date, distanceMeters, isSuccess) {
-    // First ensure record exists
-    db.prepare(`
+  // First ensure record exists
+  db.prepare(`
     INSERT OR IGNORE INTO daily_user_attempts (user_id, date, attempts_count, best_distance_meters, success)
     VALUES (?, ?, 0, NULL, 0)
   `).run(userId, date);
 
-    const current = getDailyUserStatus(userId, date);
-    const newCount = current.attempts_count + 1;
+  const current = getDailyUserStatus(userId, date);
+  const newCount = current.attempts_count + 1;
 
-    // Update best distance (min distance)
-    let newBestDist = current.best_distance_meters;
-    if (newBestDist === null || distanceMeters < newBestDist) {
-        newBestDist = distanceMeters;
-    }
+  // Update best distance (min distance)
+  let newBestDist = current.best_distance_meters;
+  if (newBestDist === null || distanceMeters < newBestDist) {
+    newBestDist = distanceMeters;
+  }
 
-    const newSuccess = current.success || (isSuccess ? 1 : 0);
+  const newSuccess = current.success || (isSuccess ? 1 : 0);
 
-    const stmt = db.prepare(`
+  const stmt = db.prepare(`
     UPDATE daily_user_attempts 
     SET attempts_count = ?, best_distance_meters = ?, success = ?, last_attempt_at = CURRENT_TIMESTAMP
     WHERE user_id = ? AND date = ?
   `);
-    stmt.run(newCount, newBestDist, newSuccess, userId, date);
+  stmt.run(newCount, newBestDist, newSuccess, userId, date);
 
-    return { attempts: newCount, bestDistance: newBestDist, success: newSuccess };
+  return { attempts_count: newCount, best_distance_meters: newBestDist, success: newSuccess };
 }
 
 function getDailyLeaderboard(date) {
-    // Rank by: Success (desc), Attempts (asc), Best Distance (asc)
-    // Only show successful ones? Or all? User requested: "Rank them from the fewer tries to the most tries and then from the fastest to the slowest if tights."
-    // Note: We don't track "fastest" time duration yet, only "fewer tries". 
-    // We can use "best_distance" as tie breaker if not successful, but if successful distance is 0 or irrelevant?
-    // User spec: "Rank them from the fewer tries to the most tries and then from the fastest to the slowest if tights."
-    // Wait, "fastest to slowest" implies time taken. 
-    // My schematic doesn't track "time taken to find". I only track "last_attempt_at".
-    // I will add a simplified ranking: Success first, then fewer attempts.
+  // Rank by: Success (desc), Attempts (asc), Best Distance (asc)
+  // Only show successful ones? Or all? User requested: "Rank them from the fewer tries to the most tries and then from the fastest to the slowest if tights."
+  // Note: We don't track "fastest" time duration yet, only "fewer tries". 
+  // We can use "best_distance" as tie breaker if not successful, but if successful distance is 0 or irrelevant?
+  // User spec: "Rank them from the fewer tries to the most tries and then from the fastest to the slowest if tights."
+  // Wait, "fastest to slowest" implies time taken. 
+  // My schematic doesn't track "time taken to find". I only track "last_attempt_at".
+  // I will add a simplified ranking: Success first, then fewer attempts.
 
-    const stmt = db.prepare(`
+  const stmt = db.prepare(`
     SELECT u.username, d.attempts_count, d.success
     FROM daily_user_attempts d
     JOIN users u ON d.user_id = u.id
@@ -171,19 +179,19 @@ function getDailyLeaderboard(date) {
     ORDER BY d.attempts_count ASC, d.last_attempt_at ASC
     LIMIT 20
   `);
-    return stmt.all(date);
+  return stmt.all(date);
 }
 
 module.exports = {
-    initDb,
-    createUser,
-    getUser,
-    verifyPassword,
-    addScore,
-    getLeaderboard,
-    getDailyTarget,
-    setDailyTarget,
-    getDailyUserStatus,
-    updateDailyUserAttempt,
-    getDailyLeaderboard
+  initDb,
+  createUser,
+  getUser,
+  verifyPassword,
+  addScore,
+  getLeaderboard,
+  getDailyTarget,
+  setDailyTarget,
+  getDailyUserStatus,
+  updateDailyUserAttempt,
+  getDailyLeaderboard
 };

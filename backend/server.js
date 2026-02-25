@@ -115,22 +115,59 @@ app.post('/api/scores', authenticateToken, (req, res) => {
 // Daily Challenge Routes
 // ----------------------
 
-// Helper to seed daily challenge if missing (simplified for prototype)
+// Load street data once at startup for daily target selection
+const fs = require('fs');
+let allStreets = [];
+try {
+    const geoData = JSON.parse(
+        fs.readFileSync(path.join(__dirname, 'data', 'marseille_rues_enrichi.geojson'), 'utf8')
+    );
+    allStreets = geoData.features.filter(f => f.properties && f.properties.name);
+    console.log(`Loaded ${allStreets.length} streets for daily challenges.`);
+} catch (err) {
+    console.error('Could not load streets for daily:', err.message);
+}
+
+// Compute centroid of a GeoJSON geometry
+function computeCentroid(geometry) {
+    let coords = [];
+    if (geometry.type === 'LineString') {
+        coords = geometry.coordinates;
+    } else if (geometry.type === 'MultiLineString') {
+        coords = geometry.coordinates.flat();
+    } else if (geometry.type === 'Point') {
+        return geometry.coordinates; // [lon, lat]
+    } else {
+        return [5.3698, 43.2965]; // Marseille center fallback
+    }
+    if (coords.length === 0) return [5.3698, 43.2965];
+    const sum = coords.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1]], [0, 0]);
+    return [sum[0] / coords.length, sum[1] / coords.length];
+}
+
+// Simple date-based hash for reproducible random selection
+function dateHash(dateStr) {
+    let h = 0;
+    for (let i = 0; i < dateStr.length; i++) {
+        h = ((h << 5) - h + dateStr.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+}
+
 function ensureDailyTarget() {
     const date = new Date().toISOString().split('T')[0];
     let target = db.getDailyTarget(date);
-    if (!target) {
-        // Pick a random street from a hardcoded list or load from file? 
-        // Since this is a prototype, I'll hardcode one or pick randomly if I had access to the data here.
-        // Ideally we'd read 'marseille_rues_enrichi.geojson' but that's heavy.
-        // Let's seed a dummy one for today, or valid one if we can.
-        // For now, I'll seed "La Canebière" as a fallback or user can rely on external script to seed.
-        // IMPROVEMENT: Read a small subset of streets on boot?
-        // Let's just seed a fixed valid one for testing: 'la canebière'.
-
-        // In production, a cron job should pick a random street every day from the full dataset.
-        // Here we will just set a hardcoded one for demonstration purposes if none exists.
-        db.setDailyTarget(date, 'la canebière', '1er', [5.380, 43.295]);
+    if (!target && allStreets.length > 0) {
+        // Pick a street using date-based hash (same every time for a given day)
+        const idx = dateHash(date) % allStreets.length;
+        const feature = allStreets[idx];
+        const name = feature.properties.name;
+        const quartier = feature.properties.quartier || null;
+        const centroid = computeCentroid(feature.geometry);
+        db.setDailyTarget(date, name, quartier, centroid, feature.geometry);
+    } else if (!target) {
+        // Fallback if no streets loaded
+        db.setDailyTarget(date, 'La Canebière', '1er', [5.380, 43.295], null);
     }
     return date;
 }
@@ -139,34 +176,40 @@ app.get('/api/daily', authenticateToken, (req, res) => {
     const date = ensureDailyTarget();
     const target = db.getDailyTarget(date);
     const status = db.getDailyUserStatus(req.user.id, date);
+    const userStatus = status || { attempts_count: 0, success: false, best_distance_meters: null };
 
-    // We DO NOT return coordinates to the client to avoid cheating!
-    // Unless we want the client to calculate distance. 
-    // Plan said: "Client-side calculation is easier for map interactions, server validates attempt count."
-    // So we MUST return coordinates or feature geometry so the map can check distance.
-    // BUT: if we send coordinates, user can inspect network.
-    // "Cheating" is acceptable for this level of game.
-
-    res.json({
+    const response = {
         date,
         streetName: target.street_name,
         quartier: target.quartier,
-        targetGeoJson: target.coordinates_json, // [lon, lat]
-        userStatus: status || { attempts_count: 0, success: false, best_distance_meters: null }
-    });
+        targetGeoJson: target.coordinates_json, // centroid [lon, lat]
+        userStatus
+    };
+
+    // Reveal target geometry only when game is over (success or 5 attempts exhausted)
+    if (userStatus.success || userStatus.attempts_count >= 5) {
+        response.targetGeometry = target.geometry_json || null;
+    }
+
+    res.json(response);
 });
 
 app.post('/api/daily/guess', authenticateToken, (req, res) => {
     const { date, distanceMeters, isSuccess } = req.body;
-    // TODO: Verify date matches today? 
-    // For now trust client.
 
     const result = db.updateDailyUserAttempt(req.user.id, date, distanceMeters, isSuccess);
+
+    // If game is now over, also return the target geometry
+    if (result.success || result.attempts_count >= 5) {
+        const target = db.getDailyTarget(date);
+        result.targetGeometry = target ? target.geometry_json : null;
+    }
+
     res.json(result);
 });
 
 app.get('/api/daily/leaderboard', (req, res) => {
-    const date = new Date().toISOString().split('T')[0]; // simple ISO date
+    const date = new Date().toISOString().split('T')[0];
     const rows = db.getDailyLeaderboard(date);
     res.json(rows);
 });
