@@ -121,34 +121,35 @@ app.post('/api/scores', authenticateToken, (req, res) => {
 // Daily Challenge Routes
 // ----------------------
 
-// Load street data once at startup for daily target selection
+// Load lightweight street index at startup (names + centroids only, ~1.4 KB)
 const fs = require('fs');
-let allStreets = [];
+let streetIndex = [];
 try {
-    const geoData = JSON.parse(
-        fs.readFileSync(path.join(__dirname, 'data', 'marseille_rues_enrichi.geojson'), 'utf8')
+    streetIndex = JSON.parse(
+        fs.readFileSync(path.join(__dirname, 'data', 'streets_index.json'), 'utf8')
     );
-    allStreets = geoData.features.filter(f => f.properties && f.properties.name);
-    console.log(`Loaded ${allStreets.length} streets for daily challenges.`);
+    console.log(`Loaded ${streetIndex.length} streets from index for daily challenges.`);
 } catch (err) {
-    console.error('Could not load streets for daily:', err.message);
+    console.error('Could not load street index for daily:', err.message);
 }
 
-// Compute centroid of a GeoJSON geometry
-function computeCentroid(geometry) {
-    let coords = [];
-    if (geometry.type === 'LineString') {
-        coords = geometry.coordinates;
-    } else if (geometry.type === 'MultiLineString') {
-        coords = geometry.coordinates.flat();
-    } else if (geometry.type === 'Point') {
-        return geometry.coordinates; // [lon, lat]
-    } else {
-        return [5.3698, 43.2965]; // Marseille center fallback
+// Extract the full geometry for a specific street from the large GeoJSON (lazy, one-time)
+function extractStreetGeometry(streetName) {
+    try {
+        const geoPath = path.join(__dirname, 'data', 'marseille_rues_enrichi.geojson');
+        const raw = fs.readFileSync(geoPath, 'utf8');
+        const data = JSON.parse(raw);
+        const normalizedTarget = streetName.toLowerCase().trim();
+        for (const f of data.features) {
+            if (f.properties && f.properties.name &&
+                f.properties.name.toLowerCase().trim() === normalizedTarget) {
+                return f.geometry;
+            }
+        }
+    } catch (err) {
+        console.error('Error extracting geometry:', err.message);
     }
-    if (coords.length === 0) return [5.3698, 43.2965];
-    const sum = coords.reduce((acc, c) => [acc[0] + c[0], acc[1] + c[1]], [0, 0]);
-    return [sum[0] / coords.length, sum[1] / coords.length];
+    return null;
 }
 
 // Simple date-based hash for reproducible random selection
@@ -163,19 +164,29 @@ function dateHash(dateStr) {
 function ensureDailyTarget() {
     const date = new Date().toISOString().split('T')[0];
     let target = db.getDailyTarget(date);
-    if (!target && allStreets.length > 0) {
-        // Pick a street using date-based hash (same every time for a given day)
-        const idx = dateHash(date) % allStreets.length;
-        const feature = allStreets[idx];
-        const name = feature.properties.name;
-        const quartier = feature.properties.quartier || null;
-        const centroid = computeCentroid(feature.geometry);
-        db.setDailyTarget(date, name, quartier, centroid, feature.geometry);
+    if (!target && streetIndex.length > 0) {
+        const idx = dateHash(date) % streetIndex.length;
+        const street = streetIndex[idx];
+        // Store without geometry initially (geometry loaded lazily when needed)
+        db.setDailyTarget(date, street.name, street.quartier, street.centroid, null);
     } else if (!target) {
-        // Fallback if no streets loaded
         db.setDailyTarget(date, 'La Canebière', '1er', [5.380, 43.295], null);
     }
     return date;
+}
+
+// Lazy-load geometry for a target (only when game ends)
+function getTargetGeometry(target) {
+    if (target.geometry_json) return target.geometry_json;
+    // Extract from large file on demand
+    const geometry = extractStreetGeometry(target.street_name);
+    if (geometry) {
+        // Cache it in DB for next time
+        db.setDailyTarget(target.date, target.street_name, target.quartier,
+            JSON.parse(target.coordinates_json), geometry);
+        return JSON.stringify(geometry);
+    }
+    return null;
 }
 
 app.get('/api/daily', authenticateToken, (req, res) => {
@@ -194,7 +205,7 @@ app.get('/api/daily', authenticateToken, (req, res) => {
 
     // Reveal target geometry only when game is over (success or 5 attempts exhausted)
     if (userStatus.success || userStatus.attempts_count >= 5) {
-        response.targetGeometry = target.geometry_json || null;
+        response.targetGeometry = getTargetGeometry(target);
     }
 
     res.json(response);
@@ -208,7 +219,7 @@ app.post('/api/daily/guess', authenticateToken, (req, res) => {
     // If game is now over, also return the target geometry
     if (result.success || result.attempts_count >= 5) {
         const target = db.getDailyTarget(date);
-        result.targetGeometry = target ? target.geometry_json : null;
+        result.targetGeometry = target ? getTargetGeometry(target) : null;
     }
 
     res.json(result);
