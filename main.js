@@ -2227,7 +2227,7 @@ function handleStreetClick(clickedFeature, clickedLayer) {
     if (!dailyTargetData || !dailyTargetGeoJson) return;
 
     const status = dailyTargetData.userStatus || {};
-    if (status.success || (status.attempts_count || 0) >= 5) return;
+    if (status.success || (status.attempts_count || 0) >= 7) return;
 
     // Compare street names
     const clickedName = normalizeName(clickedFeature.properties.name);
@@ -3527,7 +3527,7 @@ function computeFeatureCentroid(feature) {
 function updateDailyUI() {
   const status = dailyTargetData ? dailyTargetData.userStatus : {};
   const attempts = status.attempts_count || 0;
-  const remaining = 5 - attempts;
+  const remaining = 7 - attempts;
 
   if (isDailyMode) {
     setMapStatus(`Défi: ${remaining} essais`, 'ready');
@@ -3543,7 +3543,7 @@ function updateDailyUI() {
   if (counter) {
     if (isDailyMode) {
       counter.style.display = 'flex';
-      counter.innerHTML = `<span>🎯</span> ${attempts} / 5 essais`;
+      counter.innerHTML = `<span>🎯</span> ${attempts} / 7 essais`;
     } else {
       counter.style.display = 'none';
     }
