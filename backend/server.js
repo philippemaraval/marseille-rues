@@ -205,8 +205,8 @@ app.get('/api/daily', authenticateToken, (req, res) => {
         userStatus
     };
 
-    // Reveal target geometry only when game is over (success or 5 attempts exhausted)
-    if (userStatus.success || userStatus.attempts_count >= 5) {
+    // Reveal target geometry only when game is over (success or 7 attempts exhausted)
+    if (userStatus.success || userStatus.attempts_count >= 7) {
         response.targetGeometry = getTargetGeometry(target);
     }
 
@@ -219,7 +219,7 @@ app.post('/api/daily/guess', authenticateToken, (req, res) => {
     const result = db.updateDailyUserAttempt(req.user.id, date, distanceMeters, isSuccess);
 
     // If game is now over, also return the target geometry
-    if (result.success || result.attempts_count >= 5) {
+    if (result.success || result.attempts_count >= 7) {
         const target = db.getDailyTarget(date);
         result.targetGeometry = target ? getTargetGeometry(target) : null;
     }

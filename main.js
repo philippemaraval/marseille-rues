@@ -2271,7 +2271,7 @@ function handleStreetClick(clickedFeature, clickedLayer) {
       // Update local status
       dailyTargetData.userStatus = result;
       const attempts = result.attempts_count;
-      const remaining = 5 - attempts;
+      const remaining = 7 - attempts;
 
       if (result.success) {
         showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
@@ -3179,7 +3179,7 @@ function startDailySession(data) {
   if (status.success) {
     isAlreadyFinished = true;
     finalResultObj = { success: true, attempts: status.attempts_count };
-  } else if (status.attempts_count >= 5) {
+  } else if (status.attempts_count >= 7) {
     isAlreadyFinished = true;
     finalResultObj = { success: false, attempts: status.attempts_count };
   }
@@ -3227,7 +3227,7 @@ function startDailySession(data) {
   }
 
   // Update target panel title with attempts
-  const remaining = Math.max(0, 5 - (status.attempts_count || 0));
+  const remaining = Math.max(0, 7 - (status.attempts_count || 0));
   const titleEl = document.getElementById('target-panel-title');
   if (titleEl) {
     if (isAlreadyFinished) {
@@ -3342,6 +3342,7 @@ function renderDailyGuessHistory(finalResult) {
   if (attemptsCount >= 2 && dailyTargetData && !finalResult) {
     html += '<div class="daily-hints">';
     html += '<div class="daily-hints-title">💡 Indices</div>';
+
     // Hint 1 (after 2 attempts): Arrondissement
     const quartierRaw = dailyTargetData.quartier || '';
     const normQ = normalizeQuartierKey(quartierRaw);
@@ -3349,15 +3350,21 @@ function renderDailyGuessHistory(finalResult) {
     if (arr) {
       html += `<div class="daily-hint">📍 Arrondissement : <strong>${arr}</strong></div>`;
     }
-    // Hint 2 (after 3 attempts): Quartier
-    if (attemptsCount >= 3 && quartierRaw) {
+
+    // Hint 2 (after 4 attempts): Quartier
+    if (attemptsCount >= 4 && quartierRaw) {
       html += `<div class="daily-hint">🏘️ Quartier : <strong>${quartierRaw}</strong></div>`;
     }
-    // Hint 3 (after 4 attempts): first letter of the street name
-    if (attemptsCount >= 4 && dailyTargetData.streetName) {
-      const firstLetter = dailyTargetData.streetName.charAt(0).toUpperCase();
-      html += `<div class="daily-hint">🔤 Commence par : <strong>${firstLetter}</strong></div>`;
+
+    // Hint 3 (after 6 attempts): Street length
+    if (attemptsCount >= 6 && dailyTargetData.streetName) {
+      const len = calculateStreetLength(dailyTargetData.streetName);
+      if (len > 0) {
+        const lenStr = len >= 1000 ? `${(len / 1000).toFixed(1)} km` : `${Math.round(len)} m`;
+        html += `<div class="daily-hint">📏 Longueur : <strong>~ ${lenStr}</strong></div>`;
+      }
     }
+
     html += '</div>';
   }
 
@@ -3471,6 +3478,33 @@ function getDistanceMeters(lat1, lon1, lat2, lon2) {
     Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+function calculateStreetLength(streetName) {
+  if (!streetName || !allStreetFeatures) return 0;
+  const nameNorm = normalizeName(streetName);
+  const feature = allStreetFeatures.find(f => f.properties && normalizeName(f.properties.name) === nameNorm);
+  if (!feature || !feature.geometry) return 0;
+
+  let totalLength = 0;
+  const geo = feature.geometry;
+
+  if (geo.type === 'LineString') {
+    for (let i = 0; i < geo.coordinates.length - 1; i++) {
+      const [lon1, lat1] = geo.coordinates[i];
+      const [lon2, lat2] = geo.coordinates[i + 1];
+      totalLength += getDistanceMeters(lat1, lon1, lat2, lon2);
+    }
+  } else if (geo.type === 'MultiLineString') {
+    for (const line of geo.coordinates) {
+      for (let i = 0; i < line.length - 1; i++) {
+        const [lon1, lat1] = line[i];
+        const [lon2, lat2] = line[i + 1];
+        totalLength += getDistanceMeters(lat1, lon1, lat2, lon2);
+      }
+    }
+  }
+  return totalLength;
 }
 
 function computeFeatureCentroid(feature) {
