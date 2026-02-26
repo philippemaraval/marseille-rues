@@ -122,13 +122,19 @@ app.get('/api/daily', authenticateToken, (req, res) => {
     // BUT: if we send coordinates, user can inspect network.
     // "Cheating" is acceptable for this level of game.
 
-    res.json({
+    const response = {
         date,
         streetName: target.street_name,
         quartier: target.quartier,
         targetGeoJson: target.coordinates_json, // [lon, lat]
         userStatus: status || { attempts_count: 0, success: false, best_distance_meters: null }
-    });
+    };
+
+    if (response.userStatus.success || response.userStatus.attempts_count >= 7) {
+        response.targetGeometry = target.geometry_json || null;
+    }
+
+    res.json(response);
 });
 
 app.post('/api/daily/guess', authenticateToken, (req, res) => {
@@ -137,6 +143,12 @@ app.post('/api/daily/guess', authenticateToken, (req, res) => {
     // For now trust client.
 
     const result = db.updateDailyUserAttempt(req.user.id, date, distanceMeters, isSuccess);
+
+    if (result.success || result.attempts_count >= 7) {
+        const target = db.getDailyTarget(date);
+        result.targetGeometry = target ? target.geometry_json : null;
+    }
+
     res.json(result);
 });
 
