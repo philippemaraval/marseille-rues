@@ -3365,8 +3365,8 @@ function renderDailyGuessHistory(finalResult) {
       html += '<div class="daily-hints-title">💡 Indices</div>';
 
       // Hint 1 (after 2 attempts): Arrondissement
+      const quartierRaw = dailyTargetData.quartier || '';
       try {
-        const quartierRaw = dailyTargetData.quartier || '';
         const normQ = normalizeQuartierKey(quartierRaw);
         if (arrondissementByQuartier && arrondissementByQuartier.has(normQ)) {
           const arr = arrondissementByQuartier.get(normQ);
