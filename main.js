@@ -3541,8 +3541,17 @@ function highlightDailyTarget(geometryJson, isSuccess) {
     }
   ).addTo(map);
 
-  // Zoom to the target
-  map.fitBounds(dailyHighlightLayer.getBounds(), { padding: [40, 40], maxZoom: 16 });
+  // Zoom to the target if valid bounds exist
+  try {
+    if (dailyHighlightLayer && Object.keys(dailyHighlightLayer._layers).length > 0) {
+      const bounds = dailyHighlightLayer.getBounds();
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+      }
+    }
+  } catch (err) {
+    console.error("Could not fit logic bounds", err);
+  }
 }
 
 function removeDailyHighlight() {
