@@ -2288,28 +2288,34 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
         isSuccess
       })
     }).then(r => r.json()).then(result => {
-      // Update local status
+      // 1. Enregistrer la tentative dans l'historique local
+      dailyGuessHistory.push({
+        streetName: clickedFeature.properties.name,
+        distance: Math.round(distance),
+        arrow
+      });
+      saveDailyGuessesToStorage();
+
+      // 2. Mettre à jour le statut global
       dailyTargetData.userStatus = result;
       const attempts = result.attempts_count;
       const remaining = 7 - attempts;
 
       if (result.success) {
+        isSessionRunning = false; // Fin de partie naturelle (Victoire)
         showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
         renderDailyGuessHistory({ success: true, attempts });
         highlightDailyTarget(result.targetGeometry, true);
         const titleEl = document.getElementById('target-panel-title');
         if (titleEl) titleEl.textContent = '🎉 Défi réussi !';
       } else if (remaining <= 0) {
-        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance, arrow });
-        saveDailyGuessesToStorage();
+        isSessionRunning = false; // Fin de partie naturelle (Échec)
         renderDailyGuessHistory({ success: false });
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
         const titleEl = document.getElementById('target-panel-title');
         if (titleEl) titleEl.textContent = '❌ Défi échoué';
       } else {
-        dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance, arrow });
-        saveDailyGuessesToStorage();
         renderDailyGuessHistory();
         const distStr = distance >= 1000
           ? `${(distance / 1000).toFixed(1)} km`
@@ -2317,6 +2323,7 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
         showMessage(`❌ Raté ! Distance : ${distStr}. Plus que ${remaining} essai${remaining > 1 ? 's' : ''}.`, 'warning');
       }
       updateDailyUI();
+      updateStartStopButton(); // Met à jour le bouton "Quitter" -> "Commencer"
     }).catch(err => {
       console.error('Daily guess error:', err);
       showMessage('Erreur de connexion. Réessayez.', 'error');
