@@ -1104,10 +1104,10 @@ function loadStreets() {
             });
           });
 
-          layer.on('click', () => {
+          layer.on('click', (e) => {
             const fq = feature.properties.quartier || null;
             if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
-            handleStreetClick(feature, layer);
+            handleStreetClick(feature, layer, e);
           });
         }
       }).addTo(map);
@@ -2188,7 +2188,7 @@ function computeItemPoints(elapsedSeconds) {
   return Math.max(0, MAX_POINTS_PER_ITEM - elapsedSeconds);
 }
 
-function handleStreetClick(clickedFeature, clickedLayer) {
+function handleStreetClick(clickedFeature, clickedLayer, event) {
   const zoneMode = getZoneMode();
 
   if (zoneMode === 'monuments') return;
@@ -2234,14 +2234,34 @@ function handleStreetClick(clickedFeature, clickedLayer) {
     const targetName = normalizeName(dailyTargetData.streetName);
     const isSuccess = (clickedName === targetName);
 
-    // Calculate distance and direction between centroids
+    // Calculate distance and direction
     let distance = 0;
     let arrow = '';
     const clickedCentroid = computeFeatureCentroid(clickedFeature);
+    const targetCentroid = dailyTargetGeoJson; // [lon, lat]
+
     if (!isSuccess) {
-      const targetCoords = dailyTargetGeoJson; // [lon, lat]
-      distance = getDistanceMeters(clickedCentroid[1], clickedCentroid[0], targetCoords[1], targetCoords[0]);
-      arrow = getDirectionArrow(clickedCentroid, targetCoords);
+      // Find true clicked position
+      let clickLon = clickedCentroid[0];
+      let clickLat = clickedCentroid[1];
+      if (event && event.latlng) {
+        clickLon = event.latlng.lng;
+        clickLat = event.latlng.lat;
+      }
+
+      // 1. Point-to-line true distance checking target street polyline
+      const targetNameNorm = normalizeName(dailyTargetData.streetName);
+      const targetFeature = allStreetFeatures.find(f => f.properties && normalizeName(f.properties.name) === targetNameNorm);
+
+      if (targetFeature && targetFeature.geometry) {
+        distance = getDistanceToFeature(clickLat, clickLon, targetFeature.geometry);
+      } else {
+        // Fallback to centroid logic
+        distance = getDistanceMeters(clickLat, clickLon, targetCentroid[1], targetCentroid[0]);
+      }
+
+      // 2. Broad direction
+      arrow = getDirectionArrow(clickedCentroid, targetCentroid);
     }
 
     // Flash wrong street on map
@@ -3378,11 +3398,66 @@ function renderDailyGuessHistory(finalResult) {
       const bestStr = bestDist >= 1000
         ? `${(bestDist / 1000).toFixed(1)} km`
         : `${Math.round(bestDist)} m`;
-      html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${bestStr} en cinq essais</div>`;
+      html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${bestStr} en sept essais</div>`;
     }
+
+    // Share button
+    html += `<button id="daily-share-btn" class="btn-primary" style="margin-top: 15px; width: 100%; border-radius: 8px;">Partager 🔗</button>`;
   }
 
   container.innerHTML = html;
+
+  // Add share listener
+  if (finalResult) {
+    const shareBtn = document.getElementById('daily-share-btn');
+    if (shareBtn) {
+      shareBtn.addEventListener('click', () => {
+        handleDailyShare(finalResult);
+      });
+    }
+  }
+}
+
+function handleDailyShare(finalResult) {
+  if (!dailyTargetData) return;
+  const attempts = finalResult.success ? finalResult.attempts : 'X';
+  let text = `Camino - ${dailyTargetData.streetName} 📍🎯 ${attempts}/7\n\n`;
+
+  dailyGuessHistory.forEach((g, i) => {
+    if (finalResult.success && i === dailyGuessHistory.length - 1) {
+      text += `🟩 🏁\n`;
+    } else {
+      let square = '🟥';
+      if (g.distance < 500) square = '🟩';
+      else if (g.distance < 2000) square = '🟨';
+      text += `${square} ${g.arrow || ''}\n`;
+    }
+  });
+
+  text += `\ncamino4.netlify.app`;
+
+  // clipboard API
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showMessage('Copié dans le presse-papier !', 'success');
+    }).catch(err => {
+      console.error('Failed to copy', err);
+      showMessage('Erreur lors de la copie', 'error');
+    });
+  } else {
+    // Fallback if not secure context (like local IP without HTTPS)
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showMessage('Copié dans le presse-papier !', 'success');
+    } catch (e) {
+      showMessage('Impossible de copier (navigateur non supporté)', 'error');
+    }
+  }
 }
 
 // Direction arrow: returns emoji arrow from clicked toward target
@@ -3478,6 +3553,59 @@ function getDistanceMeters(lat1, lon1, lat2, lon2) {
     Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
+}
+
+function pointToSegmentDistance(lat, lon, lon1, lat1, lon2, lat2) {
+  const R = 6371e3;
+  const cosLat = Math.cos(lat * Math.PI / 180);
+
+  const x = lon * cosLat * R * Math.PI / 180;
+  const y = lat * R * Math.PI / 180;
+  const x1_m = lon1 * cosLat * R * Math.PI / 180;
+  const y1_m = lat1 * R * Math.PI / 180;
+  const x2_m = lon2 * cosLat * R * Math.PI / 180;
+  const y2_m = lat2 * R * Math.PI / 180;
+
+  const dx = x2_m - x1_m;
+  const dy = y2_m - y1_m;
+  const vx = x - x1_m;
+  const vy = y - y1_m;
+
+  const lenSq = dx * dx + dy * dy;
+  let t = 0;
+  if (lenSq !== 0) {
+    t = Math.max(0, Math.min(1, (vx * dx + vy * dy) / lenSq));
+  }
+
+  const projX = x1_m + t * dx;
+  const projY = y1_m + t * dy;
+
+  const distSq = (x - projX) * (x - projX) + (y - projY) * (y - projY);
+  return Math.sqrt(distSq);
+}
+
+function getDistanceToFeature(lat, lon, geo) {
+  if (!geo) return 0;
+  let minDistance = Infinity;
+
+  function processLineString(coords) {
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [lon1, lat1] = coords[i];
+      const [lon2, lat2] = coords[i + 1];
+      const dist = pointToSegmentDistance(lat, lon, lon1, lat1, lon2, lat2);
+      if (dist < minDistance) minDistance = dist;
+    }
+  }
+
+  if (geo.type === 'LineString') {
+    processLineString(geo.coordinates);
+  } else if (geo.type === 'MultiLineString') {
+    geo.coordinates.forEach(processLineString);
+  } else if (geo.type === 'Point') {
+    minDistance = getDistanceMeters(lat, lon, geo.coordinates[1], geo.coordinates[0]);
+  }
+
+  return minDistance !== Infinity ? minDistance : 0;
 }
 
 function calculateStreetLength(streetName) {
