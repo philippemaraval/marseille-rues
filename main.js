@@ -3365,12 +3365,16 @@ function renderDailyGuessHistory(finalResult) {
       html += '<div class="daily-hints-title">💡 Indices</div>';
 
       // Hint 1 (after 2 attempts): Arrondissement
-      const quartierRaw = dailyTargetData.quartier || '';
-      const normQ = normalizeQuartierKey(quartierRaw);
-      const arr = arrondissementByQuartier.get(normQ);
-      if (arr) {
-        html += `<div class="daily-hint">📍 Arrondissement : <strong>${arr}</strong></div>`;
-      }
+      try {
+        const quartierRaw = dailyTargetData.quartier || '';
+        const normQ = normalizeQuartierKey(quartierRaw);
+        if (arrondissementByQuartier && arrondissementByQuartier.has(normQ)) {
+          const arr = arrondissementByQuartier.get(normQ);
+          if (arr) {
+            html += `<div class="daily-hint">📍 Arrondissement : <strong>${arr}</strong></div>`;
+          }
+        }
+      } catch (e) { console.error('Error with Hint 1:', e); }
 
       // Hint 2 (after 4 attempts): Quartier
       if (attemptsCount >= 4 && quartierRaw) {
@@ -3379,11 +3383,13 @@ function renderDailyGuessHistory(finalResult) {
 
       // Hint 3 (after 6 attempts): Street length
       if (attemptsCount >= 6 && dailyTargetData.streetName) {
-        const len = calculateStreetLength(dailyTargetData.streetName);
-        if (len > 0) {
-          const lenStr = len >= 1000 ? `${(len / 1000).toFixed(1)} km` : `${Math.round(len)} m`;
-          html += `<div class="daily-hint">📏 Longueur : <strong>~ ${lenStr}</strong></div>`;
-        }
+        try {
+          const len = calculateStreetLength(dailyTargetData.streetName);
+          if (len > 0) {
+            const lenStr = len >= 1000 ? `${(len / 1000).toFixed(1)} km` : `${Math.round(len)} m`;
+            html += `<div class="daily-hint">📏 Longueur : <strong>~ ${lenStr}</strong></div>`;
+          }
+        } catch (e) { console.error('Error with Hint 3:', e); }
       }
 
       html += '</div>';
@@ -3614,30 +3620,35 @@ function getDistanceToFeature(lat, lon, geo) {
 }
 
 function calculateStreetLength(streetName) {
-  if (!streetName || !allStreetFeatures) return 0;
-  const nameNorm = normalizeName(streetName);
-  const feature = allStreetFeatures.find(f => f.properties && normalizeName(f.properties.name) === nameNorm);
-  if (!feature || !feature.geometry) return 0;
+  try {
+    if (!streetName || !allStreetFeatures) return 0;
+    const nameNorm = normalizeName(streetName);
+    const feature = allStreetFeatures.find(f => f && f.properties && f.properties.name && normalizeName(f.properties.name) === nameNorm);
+    if (!feature || !feature.geometry || !feature.geometry.coordinates) return 0;
 
-  let totalLength = 0;
-  const geo = feature.geometry;
+    let totalLength = 0;
+    const geo = feature.geometry;
 
-  if (geo.type === 'LineString') {
-    for (let i = 0; i < geo.coordinates.length - 1; i++) {
-      const [lon1, lat1] = geo.coordinates[i];
-      const [lon2, lat2] = geo.coordinates[i + 1];
-      totalLength += getDistanceMeters(lat1, lon1, lat2, lon2);
-    }
-  } else if (geo.type === 'MultiLineString') {
-    for (const line of geo.coordinates) {
-      for (let i = 0; i < line.length - 1; i++) {
-        const [lon1, lat1] = line[i];
-        const [lon2, lat2] = line[i + 1];
+    if (geo.type === 'LineString') {
+      for (let i = 0; i < geo.coordinates.length - 1; i++) {
+        const [lon1, lat1] = geo.coordinates[i];
+        const [lon2, lat2] = geo.coordinates[i + 1];
         totalLength += getDistanceMeters(lat1, lon1, lat2, lon2);
       }
+    } else if (geo.type === 'MultiLineString') {
+      for (const line of geo.coordinates) {
+        for (let i = 0; i < line.length - 1; i++) {
+          const [lon1, lat1] = line[i];
+          const [lon2, lat2] = line[i + 1];
+          totalLength += getDistanceMeters(lat1, lon1, lat2, lon2);
+        }
+      }
     }
+    return totalLength;
+  } catch (e) {
+    console.error("Error calculating street length:", e);
+    return 0;
   }
-  return totalLength;
 }
 
 function computeFeatureCentroid(feature) {
