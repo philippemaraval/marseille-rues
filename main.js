@@ -992,7 +992,8 @@ function isStreetVisibleInCurrentMode(nameNorm, featureQuartier) {
   // Mode quartier → seulement celles du quartier sélectionné
   if (zoneMode === 'quartier') {
     const selectedQuartier = getSelectedQuartier();
-    if (selectedQuartier && featureQuartier !== selectedQuartier) {
+    const featQ = typeof featureQuartier === 'string' ? featureQuartier.trim() : null;
+    if (selectedQuartier && featQ !== selectedQuartier) {
       return false;
     }
   }
@@ -2211,8 +2212,10 @@ function handleStreetClick(clickedFeature, clickedLayer) {
   // En mode "quartier" : on ignore les rues hors quartier
   if (zoneMode === 'quartier') {
     const selectedQuartier = getSelectedQuartier();
-    if (selectedQuartier &&
-      clickedFeature.properties.quartier !== selectedQuartier) {
+    const featQ = (clickedFeature.properties && typeof clickedFeature.properties.quartier === 'string')
+      ? clickedFeature.properties.quartier.trim()
+      : null;
+    if (selectedQuartier && featQ !== selectedQuartier) {
       return;
     }
   }
@@ -2274,14 +2277,16 @@ function handleStreetClick(clickedFeature, clickedLayer) {
         showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
         renderDailyGuessHistory({ success: true, attempts });
         highlightDailyTarget(result.targetGeometry, true);
-        endDailySession();
+        const titleEl = document.getElementById('target-panel-title');
+        if (titleEl) titleEl.textContent = '🎉 Défi réussi !';
       } else if (remaining <= 0) {
         dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance, arrow });
         saveDailyGuessesToStorage();
         renderDailyGuessHistory({ success: false });
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
-        endDailySession();
+        const titleEl = document.getElementById('target-panel-title');
+        if (titleEl) titleEl.textContent = '❌ Défi échoué';
       } else {
         dailyGuessHistory.push({ streetName: clickedFeature.properties.name, distance, arrow });
         saveDailyGuessesToStorage();
@@ -3168,35 +3173,34 @@ function startDailySession(data) {
 
   const status = data.userStatus || {};
 
-  // Game already completed — show result
+  let isAlreadyFinished = false;
+  let finalResultObj = null;
+
   if (status.success) {
-    showMessage(`🎉 Déjà réussi aujourd'hui en ${status.attempts_count} essai${status.attempts_count > 1 ? 's' : ''} !`, 'success');
-    if (data.targetGeometry) {
-      highlightDailyTarget(data.targetGeometry, true);
-    }
-    return;
-  }
-  if (status.attempts_count >= 5) {
-    showMessage(`❌ Plus d'essais pour aujourd'hui. La rue était « ${data.streetName} ».`, 'error');
-    if (data.targetGeometry) {
-      highlightDailyTarget(data.targetGeometry, false);
-    }
-    return;
+    isAlreadyFinished = true;
+    finalResultObj = { success: true, attempts: status.attempts_count };
+  } else if (status.attempts_count >= 5) {
+    isAlreadyFinished = true;
+    finalResultObj = { success: false, attempts: status.attempts_count };
   }
 
-  // Start daily session
+  // Start daily session context
   isDailyMode = true;
 
   // Restore guess history from localStorage if resuming
   dailyGuessHistory = [];
   const historyEl = document.getElementById('daily-guesses-history');
   if (historyEl) { historyEl.style.display = 'none'; historyEl.innerHTML = ''; }
+
   if ((status.attempts_count || 0) > 0 && !status.success) {
     restoreDailyGuessesFromStorage(data.date);
     if (dailyGuessHistory.length > 0) {
       renderDailyGuessHistory();
     }
+  } else if (isAlreadyFinished) {
+    restoreDailyGuessesFromStorage(data.date);
   }
+
   // Clean up old days from localStorage
   cleanOldDailyGuessStorage(data.date);
 
@@ -3223,10 +3227,14 @@ function startDailySession(data) {
   }
 
   // Update target panel title with attempts
-  const remaining = 5 - (status.attempts_count || 0);
+  const remaining = Math.max(0, 5 - (status.attempts_count || 0));
   const titleEl = document.getElementById('target-panel-title');
   if (titleEl) {
-    titleEl.textContent = `🎯 Défi quotidien — ${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+    if (isAlreadyFinished) {
+      titleEl.textContent = status.success ? '🎉 Défi réussi !' : '❌ Défi échoué';
+    } else {
+      titleEl.textContent = `🎯 Défi quotidien — ${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+    }
   }
 
   // Start game state
@@ -3253,7 +3261,23 @@ function startDailySession(data) {
     modeSelect.dispatchEvent(new Event('change'));
   }
 
-  showMessage(`Trouvez : ${data.streetName} (${remaining} essais restants)`, 'info');
+  // If already finished, display history and geometry immediately
+  if (isAlreadyFinished) {
+    if (dailyGuessHistory.length > 0) {
+      renderDailyGuessHistory(finalResultObj);
+    }
+    if (data.targetGeometry) {
+      highlightDailyTarget(data.targetGeometry, status.success);
+    }
+    if (status.success) {
+      showMessage(`🎉 Déjà réussi aujourd'hui en ${status.attempts_count} essai${status.attempts_count > 1 ? 's' : ''} !`, 'success');
+    } else {
+      showMessage(`❌ Plus d'essais pour aujourd'hui. La rue était « ${data.streetName} ».`, 'error');
+    }
+  } else {
+    showMessage(`Trouvez : ${data.streetName} (${remaining} essais restants)`, 'info');
+  }
+
   updateDailyUI();
 }
 
