@@ -3212,13 +3212,13 @@ function startDailySession(data) {
   const historyEl = document.getElementById('daily-guesses-history');
   if (historyEl) { historyEl.style.display = 'none'; historyEl.innerHTML = ''; }
 
-  if ((status.attempts_count || 0) > 0 && !status.success) {
+  if (isAlreadyFinished) {
+    restoreDailyGuessesFromStorage(data.date);
+  } else if ((status.attempts_count || 0) > 0 && !status.success) {
     restoreDailyGuessesFromStorage(data.date);
     if (dailyGuessHistory.length > 0) {
       renderDailyGuessHistory();
     }
-  } else if (isAlreadyFinished) {
-    restoreDailyGuessesFromStorage(data.date);
   }
 
   // Clean up old days from localStorage
@@ -3316,105 +3316,110 @@ function endDailySession() {
 }
 
 function renderDailyGuessHistory(finalResult) {
-  const container = document.getElementById('daily-guesses-history');
-  if (!container) return;
+  try {
+    const container = document.getElementById('daily-guesses-history');
+    if (!container) return;
 
-  // If success with no previous wrong guesses and no history, just show result
-  if (dailyGuessHistory.length === 0 && (!finalResult || !finalResult.success)) {
-    container.style.display = 'none';
-    container.innerHTML = '';
-    return;
-  }
-
-  container.style.display = 'block';
-
-  let html = '';
-
-  // Show guess table only if there are wrong attempts
-  if (dailyGuessHistory.length > 0) {
-    html += '<div class="daily-history-title">Essais précédents</div>';
-    html += '<table class="daily-history-table">';
-    html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th><th></th></tr></thead>';
-    html += '<tbody>';
-
-    dailyGuessHistory.forEach((g, i) => {
-      const distStr = g.distance >= 1000
-        ? `${(g.distance / 1000).toFixed(1)} km`
-        : `${Math.round(g.distance)} m`;
-      const isLast = (i === dailyGuessHistory.length - 1) && !finalResult;
-      // Color-coded distance class
-      let distClass = 'dist-cold';
-      if (g.distance < 500) distClass = 'dist-hot';
-      else if (g.distance < 2000) distClass = 'dist-warm';
-      html += `<tr class="${isLast ? 'daily-row-enter' : ''}">`;
-      html += `<td>${i + 1}</td>`;
-      html += `<td>${g.streetName}</td>`;
-      html += `<td class="${distClass}">${distStr}</td>`;
-      html += `<td class="daily-arrow">${g.arrow || ''}</td>`;
-      html += '</tr>';
-    });
-
-    html += '</tbody></table>';
-  }
-
-  // Progressive hints
-  const attemptsCount = dailyGuessHistory.length;
-  if (attemptsCount >= 2 && dailyTargetData && !finalResult) {
-    html += '<div class="daily-hints">';
-    html += '<div class="daily-hints-title">💡 Indices</div>';
-
-    // Hint 1 (after 2 attempts): Arrondissement
-    const quartierRaw = dailyTargetData.quartier || '';
-    const normQ = normalizeQuartierKey(quartierRaw);
-    const arr = arrondissementByQuartier.get(normQ);
-    if (arr) {
-      html += `<div class="daily-hint">📍 Arrondissement : <strong>${arr}</strong></div>`;
+    // If success with no previous wrong guesses and no history, just show result
+    if (dailyGuessHistory.length === 0 && (!finalResult || !finalResult.success)) {
+      container.style.display = 'none';
+      container.innerHTML = '';
+      return;
     }
 
-    // Hint 2 (after 4 attempts): Quartier
-    if (attemptsCount >= 4 && quartierRaw) {
-      html += `<div class="daily-hint">🏘️ Quartier : <strong>${quartierRaw}</strong></div>`;
+    container.style.display = 'block';
+
+    let html = '';
+
+    // Show guess table only if there are wrong attempts
+    if (dailyGuessHistory.length > 0) {
+      html += '<div class="daily-history-title">Essais précédents</div>';
+      html += '<table class="daily-history-table">';
+      html += '<thead><tr><th>#</th><th>Rue tentée</th><th>Distance</th><th></th></tr></thead>';
+      html += '<tbody>';
+
+      dailyGuessHistory.forEach((g, i) => {
+        const distStr = g.distance >= 1000
+          ? `${(g.distance / 1000).toFixed(1)} km`
+          : `${Math.round(g.distance)} m`;
+        const isLast = (i === dailyGuessHistory.length - 1) && !finalResult;
+        // Color-coded distance class
+        let distClass = 'dist-cold';
+        if (g.distance < 500) distClass = 'dist-hot';
+        else if (g.distance < 2000) distClass = 'dist-warm';
+        html += `<tr class="${isLast ? 'daily-row-enter' : ''}">`;
+        html += `<td>${i + 1}</td>`;
+        html += `<td>${g.streetName}</td>`;
+        html += `<td class="${distClass}">${distStr}</td>`;
+        html += `<td class="daily-arrow">${g.arrow || ''}</td>`;
+        html += '</tr>';
+      });
+
+      html += '</tbody></table>';
     }
 
-    // Hint 3 (after 6 attempts): Street length
-    if (attemptsCount >= 6 && dailyTargetData.streetName) {
-      const len = calculateStreetLength(dailyTargetData.streetName);
-      if (len > 0) {
-        const lenStr = len >= 1000 ? `${(len / 1000).toFixed(1)} km` : `${Math.round(len)} m`;
-        html += `<div class="daily-hint">📏 Longueur : <strong>~ ${lenStr}</strong></div>`;
+    // Progressive hints
+    const attemptsCount = dailyGuessHistory.length;
+    if (attemptsCount >= 2 && dailyTargetData && !finalResult) {
+      html += '<div class="daily-hints">';
+      html += '<div class="daily-hints-title">💡 Indices</div>';
+
+      // Hint 1 (after 2 attempts): Arrondissement
+      const quartierRaw = dailyTargetData.quartier || '';
+      const normQ = normalizeQuartierKey(quartierRaw);
+      const arr = arrondissementByQuartier.get(normQ);
+      if (arr) {
+        html += `<div class="daily-hint">📍 Arrondissement : <strong>${arr}</strong></div>`;
+      }
+
+      // Hint 2 (after 4 attempts): Quartier
+      if (attemptsCount >= 4 && quartierRaw) {
+        html += `<div class="daily-hint">🏘️ Quartier : <strong>${quartierRaw}</strong></div>`;
+      }
+
+      // Hint 3 (after 6 attempts): Street length
+      if (attemptsCount >= 6 && dailyTargetData.streetName) {
+        const len = calculateStreetLength(dailyTargetData.streetName);
+        if (len > 0) {
+          const lenStr = len >= 1000 ? `${(len / 1000).toFixed(1)} km` : `${Math.round(len)} m`;
+          html += `<div class="daily-hint">📏 Longueur : <strong>~ ${lenStr}</strong></div>`;
+        }
+      }
+
+      html += '</div>';
+    }
+
+    // Final result footer
+    if (finalResult) {
+      if (finalResult.success) {
+        const n = finalResult.attempts;
+        html += `<div class="daily-result daily-result--success">🎉 Bravo, vous avez trouvé la rue en ${n} essai${n > 1 ? 's' : ''} !</div>`;
+      } else {
+        const bestDist = Math.min(...dailyGuessHistory.map(g => g.distance));
+        const bestStr = bestDist >= 1000
+          ? `${(bestDist / 1000).toFixed(1)} km`
+          : `${Math.round(bestDist)} m`;
+        html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${bestStr} en sept essais</div>`;
+      }
+
+      // Share button
+      html += `<button id="daily-share-btn" class="btn-primary" style="margin-top: 15px; width: 100%; border-radius: 8px;">Partager 🔗</button>`;
+    }
+
+    container.innerHTML = html;
+
+    // Add share listener
+    if (finalResult) {
+      const shareBtn = document.getElementById('daily-share-btn');
+      if (shareBtn) {
+        shareBtn.addEventListener('click', () => {
+          handleDailyShare(finalResult);
+        });
       }
     }
 
-    html += '</div>';
-  }
-
-  // Final result footer
-  if (finalResult) {
-    if (finalResult.success) {
-      const n = finalResult.attempts;
-      html += `<div class="daily-result daily-result--success">🎉 Bravo, vous avez trouvé la rue en ${n} essai${n > 1 ? 's' : ''} !</div>`;
-    } else {
-      const bestDist = Math.min(...dailyGuessHistory.map(g => g.distance));
-      const bestStr = bestDist >= 1000
-        ? `${(bestDist / 1000).toFixed(1)} km`
-        : `${Math.round(bestDist)} m`;
-      html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${bestStr} en sept essais</div>`;
-    }
-
-    // Share button
-    html += `<button id="daily-share-btn" class="btn-primary" style="margin-top: 15px; width: 100%; border-radius: 8px;">Partager 🔗</button>`;
-  }
-
-  container.innerHTML = html;
-
-  // Add share listener
-  if (finalResult) {
-    const shareBtn = document.getElementById('daily-share-btn');
-    if (shareBtn) {
-      shareBtn.addEventListener('click', () => {
-        handleDailyShare(finalResult);
-      });
-    }
+  } catch (err) {
+    console.error("Error in renderDailyGuessHistory:", err);
   }
 }
 
@@ -3663,7 +3668,13 @@ function updateDailyUI() {
     // Update title with remaining attempts
     const titleEl = document.getElementById('target-panel-title');
     if (titleEl) {
-      titleEl.textContent = `🎯 Défi quotidien — ${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+      if (status.success) {
+        titleEl.textContent = '🎉 Défi réussi !';
+      } else if (remaining <= 0) {
+        titleEl.textContent = '❌ Défi échoué';
+      } else {
+        titleEl.textContent = `🎯 Défi quotidien — ${remaining} essai${remaining > 1 ? 's' : ''} restant${remaining > 1 ? 's' : ''}`;
+      }
     }
   }
 
