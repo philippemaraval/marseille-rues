@@ -139,27 +139,14 @@ body {
   background: transparent;
   /* Se fond dans le sidebar */
   border: none;
-  padding: 0 0 12px 0;
+  padding: 0 0 8px 0;
   box-shadow: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  text-align: center;
-}
-
-.header-left,
-.header-right {
-  flex: 0 0 40px;
-  display: flex;
-  align-items: center;
+  /* Center horizontally */
   justify-content: center;
-}
-
-.header-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-sm);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  /* Center horizontally */
+  text-align: center;
 }
 
 .header-main {
@@ -1232,11 +1219,10 @@ button {
 
 /* ========== STATUS CARTE (PILL) ========== */
 .map-status-pill {
-  position: relative;
-  /* position: absolute; REMOVED */
-  /* top: 8px; REMOVED */
-  /* right: 8px; REMOVED */
-  z-index: 10;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1000;
   padding: 3px 8px;
   background: white;
   border-radius: 999px;
