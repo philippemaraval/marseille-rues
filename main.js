@@ -2308,6 +2308,10 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
     const status = dailyTargetData.userStatus || {};
     if (status.success || (status.attempts_count || 0) >= 7) return;
 
+    // Empêcher les clics rapides pendant que le serveur traite
+    if (window._dailyGuessInFlight) return;
+    window._dailyGuessInFlight = true;
+
     // Compare street names
     const clickedName = normalizeName(clickedFeature.properties.name);
     const targetName = normalizeName(dailyTargetData.streetName);
@@ -2381,14 +2385,18 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
       const remaining = 7 - attempts;
 
       if (result.success) {
-        isSessionRunning = false; // Fin de partie naturelle (Victoire)
+        // Fin de partie : VICTOIRE
+        isSessionRunning = false;
+        isDailyMode = false;
         showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
         renderDailyGuessHistory({ success: true, attempts });
         highlightDailyTarget(result.targetGeometry, true);
         const titleEl = document.getElementById('target-panel-title');
         if (titleEl) titleEl.textContent = '🎉 Défi réussi !';
       } else if (remaining <= 0) {
-        isSessionRunning = false; // Fin de partie naturelle (Échec)
+        // Fin de partie : ÉCHEC (7 essais épuisés)
+        isSessionRunning = false;
+        isDailyMode = false;
         renderDailyGuessHistory({ success: false });
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
@@ -2402,10 +2410,13 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
         showMessage(`❌ Raté ! Distance : ${distStr}. Plus que ${remaining} essai${remaining > 1 ? 's' : ''}.`, 'warning');
       }
       updateDailyUI();
-      updateStartStopButton(); // Met à jour le bouton "Quitter" -> "Commencer"
+      updateStartStopButton();
+      updateLayoutSessionState();
     }).catch(err => {
       console.error('Daily guess error:', err);
       showMessage('Erreur de connexion. Réessayez.', 'error');
+    }).finally(() => {
+      window._dailyGuessInFlight = false;
     });
 
     return; // Stop normal logic
