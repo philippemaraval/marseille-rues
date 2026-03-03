@@ -2305,8 +2305,9 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
   if (isDailyMode) {
     if (!dailyTargetData || !dailyTargetGeoJson) return;
 
+    // Bloquer si le défi est déjà terminé (victoire ou 7 essais)
     const status = dailyTargetData.userStatus || {};
-    if (status.success || (status.attempts_count || 0) >= 7) return;
+    if (status.success || (status.attempts_count || 0) >= 7 || window._dailyGameOver) return;
 
     // Empêcher les clics rapides pendant que le serveur traite
     if (window._dailyGuessInFlight) return;
@@ -2385,23 +2386,37 @@ function handleStreetClick(clickedFeature, clickedLayer, event) {
       const remaining = 7 - attempts;
 
       if (result.success) {
-        // Fin de partie : VICTOIRE
+        // === FIN DE PARTIE : VICTOIRE ===
+        window._dailyGameOver = true;
         isSessionRunning = false;
-        isDailyMode = false;
         showMessage(`🎉 BRAVO ! Trouvé en ${attempts} essai${attempts > 1 ? 's' : ''} !`, 'success');
         renderDailyGuessHistory({ success: true, attempts });
         highlightDailyTarget(result.targetGeometry, true);
         const titleEl = document.getElementById('target-panel-title');
         if (titleEl) titleEl.textContent = '🎉 Défi réussi !';
+        // Remettre le bouton en mode "Commencer"
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) {
+          restartBtn.textContent = 'Commencer la session';
+          restartBtn.classList.remove('btn-stop');
+          restartBtn.classList.add('btn-primary');
+        }
       } else if (remaining <= 0) {
-        // Fin de partie : ÉCHEC (7 essais épuisés)
+        // === FIN DE PARTIE : ÉCHEC (7 essais épuisés) ===
+        window._dailyGameOver = true;
         isSessionRunning = false;
-        isDailyMode = false;
         renderDailyGuessHistory({ success: false });
         showMessage(`❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`, 'error');
         highlightDailyTarget(result.targetGeometry, false);
         const titleEl = document.getElementById('target-panel-title');
         if (titleEl) titleEl.textContent = '❌ Défi échoué';
+        // Remettre le bouton en mode "Commencer"
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) {
+          restartBtn.textContent = 'Commencer la session';
+          restartBtn.classList.remove('btn-stop');
+          restartBtn.classList.add('btn-primary');
+        }
       } else {
         renderDailyGuessHistory();
         const distStr = distance >= 1000
@@ -3328,6 +3343,8 @@ function startDailySession(data) {
 
   // Restore guess history from localStorage if resuming
   dailyGuessHistory = [];
+  window._dailyGameOver = false;
+  window._dailyGuessInFlight = false;
   const historyEl = document.getElementById('daily-guesses-history');
   if (historyEl) { historyEl.style.display = 'none'; historyEl.innerHTML = ''; }
 
@@ -3423,6 +3440,8 @@ function startDailySession(data) {
 function endDailySession() {
   isDailyMode = false;
   isSessionRunning = false;
+  window._dailyGameOver = false;
+  window._dailyGuessInFlight = false;
 
   // Restore target panel title
   const titleEl = document.getElementById('target-panel-title');
@@ -3564,7 +3583,7 @@ function handleDailyShare(finalResult) {
     }
   });
 
-  text += `\ncamino4.netlify.app`;
+  text += `\ncamino5.netlify.app`;
 
   // clipboard API
   if (navigator.clipboard && window.isSecureContext) {
