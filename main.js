@@ -9,6 +9,64 @@ const CHRONO_DURATION = 60;        // mode chrono : 60 secondes
 const HIGHLIGHT_DURATION_MS = 5000 // 5 secondes
 const MAX_POINTS_PER_ITEM = 10;
 
+// ── Sound Engine (Web Audio API) ──
+let soundEnabled = localStorage.getItem('camino-sound') !== 'off';
+let audioCtx = null;
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playTone(freq, duration, type, volume, delay) {
+  if (!soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume || 0.15, ctx.currentTime + (delay || 0));
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (delay || 0) + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + (delay || 0));
+    osc.stop(ctx.currentTime + (delay || 0) + duration);
+  } catch (e) { /* audio not supported */ }
+}
+
+function playDing() {
+  playTone(880, 0.15, 'sine', 0.12, 0);
+  playTone(1320, 0.2, 'sine', 0.1, 0.1);
+}
+
+function playBuzz() {
+  playTone(150, 0.25, 'sawtooth', 0.08, 0);
+  playTone(120, 0.3, 'square', 0.05, 0.05);
+}
+
+function playVictory() {
+  playTone(523, 0.15, 'sine', 0.12, 0);      // C
+  playTone(659, 0.15, 'sine', 0.12, 0.15);   // E
+  playTone(784, 0.15, 'sine', 0.12, 0.30);   // G
+  playTone(1047, 0.3, 'triangle', 0.1, 0.45); // C+
+}
+
+function playTick() {
+  playTone(1000, 0.03, 'square', 0.04, 0);
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem('camino-sound', soundEnabled ? 'on' : 'off');
+  const btn = document.getElementById('sound-toggle');
+  if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+  if (soundEnabled) playDing(); // feedback
+}
+
 // Infos historiques / descriptives pour les rues célèbres
 
 const FAMOUS_STREET_INFOS = {
@@ -593,6 +651,10 @@ function initUI() {
   // Recharger l'utilisateur courant depuis le stockage local
   currentUser = loadCurrentUserFromStorage();
   updateUserUI();
+
+  // Init sound toggle icon
+  const soundBtn = document.getElementById('sound-toggle');
+  if (soundBtn) soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
 
   if (restartBtn) {
     restartBtn.addEventListener('click', () => {
@@ -2697,6 +2759,9 @@ function showStreetInfo(feature) {
 // ── Feedback animations ──
 
 function feedbackCorrect() {
+  // Sound
+  playDing();
+
   // Confetti burst
   if (typeof confetti === 'function') {
     confetti({
@@ -2731,6 +2796,9 @@ function feedbackCorrect() {
 }
 
 function feedbackError() {
+  // Sound
+  playBuzz();
+
   // Map container shake
   const mapEl = document.getElementById('map');
   if (mapEl) {
@@ -2852,6 +2920,7 @@ function focusStreetByName(streetName) {
 // ------------------------
 
 function endSession() {
+  playVictory();
   const now = performance.now();
   const totalTimeSec = sessionStartTime ? (now - sessionStartTime) / 1000 : 0;
 
