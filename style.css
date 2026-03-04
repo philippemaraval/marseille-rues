@@ -1576,7 +1576,7 @@ button {
 /* ========== SOUND TOGGLE ========== */
 .sound-toggle {
   position: absolute;
-  top: 52px;
+  top: 44px;
   right: 10px;
   z-index: 10;
   background: var(--glass-bg);
