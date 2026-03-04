@@ -324,7 +324,7 @@ input:focus {
   display: none;
   max-height: 250px;
   overflow-y: auto;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1578,6 +1578,16 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ========== SIDEBAR CREDIT ========== */
+.sidebar-credit {
+  text-align: center;
+  font-size: 10px;
+  color: #b0b8c4;
+  margin: 12px 0 6px;
+  font-style: italic;
+  letter-spacing: 0.02em;
 }
 
 /* ========== SOUND TOGGLE ========== */
