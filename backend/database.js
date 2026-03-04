@@ -33,9 +33,13 @@ async function initDb() {
         items_correct INTEGER DEFAULT 0,
         items_total INTEGER DEFAULT 0,
         time_sec REAL DEFAULT 0,
+        quartier_name TEXT,
         timestamp TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+
+    // Retro-compatibility for existing DB:
+    await client.query(`ALTER TABLE scores ADD COLUMN IF NOT EXISTS quartier_name TEXT`);
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS daily_targets (
@@ -118,41 +122,58 @@ function verifyPassword(user, password) {
 
 // ── Score Helpers ──
 
-async function addScore(userId, username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec) {
+async function addScore(userId, username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName) {
   await pool.query(
-    `INSERT INTO scores (user_id, username, mode, game_type, score, items_correct, items_total, time_sec)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [userId, username, mode, gameType, score, itemsCorrect || 0, itemsTotal || 0, timeSec || 0]
+    `INSERT INTO scores (user_id, username, mode, game_type, score, items_correct, items_total, time_sec, quartier_name)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [userId, username, mode, gameType, score, itemsCorrect || 0, itemsTotal || 0, timeSec || 0, quartierName || null]
   );
 }
 
-async function getLeaderboard(mode, gameType, limit = 10) {
-  const res = await pool.query(
-    `SELECT username,
-            MAX(score) as high_score,
-            MAX(items_correct) as items_correct,
-            MAX(items_total) as items_total,
-            MAX(time_sec) as time_sec,
-            COUNT(*) as games_played
-     FROM scores
-     WHERE mode = $1 AND game_type = $2
-     GROUP BY user_id, username
-     ORDER BY high_score DESC
-     LIMIT $3`,
-    [mode, gameType, limit]
-  );
+async function getLeaderboard(mode, gameType, quartierName = null, limit = 10) {
+  let query = `
+    SELECT username,
+           MAX(score) as high_score,
+           MAX(items_correct) as items_correct,
+           MAX(items_total) as items_total,
+           MAX(time_sec) as time_sec,
+           COUNT(*) as games_played
+    FROM scores
+    WHERE mode = $1 AND game_type = $2 `;
+
+  const params = [mode, gameType];
+
+  if (quartierName) {
+    query += ` AND quartier_name = $3 `;
+    params.push(quartierName);
+  } else if (mode === 'quartier') {
+    // Legacy scores with no quartier_name fallback
+    query += ` AND quartier_name IS NULL `;
+  }
+
+  query += `
+    GROUP BY user_id, username
+    ORDER BY high_score DESC
+    LIMIT $${params.length + 1}
+  `;
+  params.push(limit);
+
+  const res = await pool.query(query, params);
   return res.rows;
 }
 
-async function getAllLeaderboards(limit = 5) {
+async function getAllLeaderboards(limit = 100) { // Increased limit since client truncates it
   const combos = await pool.query(
-    'SELECT DISTINCT mode, game_type FROM scores ORDER BY mode, game_type'
+    'SELECT DISTINCT mode, game_type, quartier_name FROM scores ORDER BY mode, game_type, quartier_name'
   );
 
   const result = {};
-  for (const { mode, game_type } of combos.rows) {
-    const key = `${mode}|${game_type}`;
-    result[key] = await getLeaderboard(mode, game_type, limit);
+  for (const { mode, game_type, quartier_name } of combos.rows) {
+    let key = `${mode}|${game_type}`;
+    if (quartier_name) key += `|${quartier_name}`;
+    else if (mode === 'quartier') key += `|unknown`; // fallback for old scores
+
+    result[key] = await getLeaderboard(mode, game_type, quartier_name, limit);
   }
   return result;
 }

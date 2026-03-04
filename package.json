@@ -17,5 +17,8 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "clean-css-cli": "^5.6.3"
   }
 }

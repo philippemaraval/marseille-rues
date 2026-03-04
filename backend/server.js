@@ -108,12 +108,12 @@ app.get('/api/leaderboards', async (req, res) => {
 });
 
 app.post('/api/scores', authenticateToken, async (req, res) => {
-    const { mode, gameType, score, itemsCorrect, itemsTotal, timeSec } = req.body;
+    const { mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName } = req.body;
     if (!mode || !gameType || score === undefined) {
         return res.status(400).json({ error: 'Invalid data' });
     }
 
-    await db.addScore(req.user.id, req.user.username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec);
+    await db.addScore(req.user.id, req.user.username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName);
     res.json({ success: true });
 });
 
