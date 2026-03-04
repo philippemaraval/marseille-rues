@@ -4,6 +4,7 @@
   "main": "main.js",
   "scripts": {
     "sync-osm": "node scripts/sync_osm.js",
+    "build": "node scripts/build.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

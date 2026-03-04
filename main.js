@@ -1239,37 +1239,34 @@ function loadStreets() {
           // Buffer tactile élargi pour les appareils tactiles
           addTouchBufferForLayer(layer);
 
-          layer.on('mouseover', () => {
-            const fq = feature.properties.quartier || null;
-            if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
+          let hoverTimer = null;
 
-            // O(1) lookup via name index
-            const sameName = streetLayersByName.get(nameNorm) || [];
-            sameName.forEach(l => {
-              l.setStyle({
-                weight: 7,
-                color: '#ffffff'
+          layer.on('mouseover', () => {
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(() => {
+              const fq = feature.properties.quartier || null;
+              if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
+
+              const sameName = streetLayersByName.get(nameNorm) || [];
+              sameName.forEach(l => {
+                l.setStyle({ weight: 7, color: '#ffffff' });
               });
-            });
+            }, 50);
           });
 
           layer.on('mouseout', () => {
-            const fq = feature.properties.quartier || null;
-            if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(() => {
+              const fq = feature.properties.quartier || null;
+              if (!isStreetVisibleInCurrentMode(nameNorm, fq)) return;
 
-            // O(1) lookup via name index
-            const sameNameOut = streetLayersByName.get(nameNorm) || [];
-            sameNameOut.forEach(l => {
-              if (highlightedLayers && highlightedLayers.includes(l)) {
-                return;
-              }
-
-              const base = getBaseStreetStyle(l);
-              l.setStyle({
-                weight: base.weight,
-                color: base.color
+              const sameNameOut = streetLayersByName.get(nameNorm) || [];
+              sameNameOut.forEach(l => {
+                if (highlightedLayers && highlightedLayers.includes(l)) return;
+                const base = getBaseStreetStyle(l);
+                l.setStyle({ weight: base.weight, color: base.color });
               });
-            });
+            }, 50);
           });
 
           layer.on('click', (e) => {
@@ -4442,3 +4439,12 @@ window.addEventListener("resize", () => {
 window.addEventListener("orientationchange", () => {
   requestAnimationFrame(fitTargetStreetText);
 });
+
+// ── Service Worker registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
