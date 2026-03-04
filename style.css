@@ -1600,8 +1600,8 @@ button {
   content: attr(data-tooltip);
   position: absolute;
   bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+
   background: #1e293b;
   color: #f1f5f9;
   font-size: 11px;
@@ -1617,7 +1617,7 @@ button {
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s, visibility 0.15s;
-  z-index: 9999;
+  z-index: 10000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
