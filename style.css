@@ -1575,6 +1575,10 @@ button {
 
 /* ========== SOUND TOGGLE ========== */
 .sound-toggle {
+  position: absolute;
+  top: 52px;
+  right: 10px;
+  z-index: 10;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: 8px;
@@ -1587,6 +1591,7 @@ button {
   justify-content: center;
   transition: background 0.2s, transform 0.15s;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .sound-toggle:hover {
