@@ -1041,10 +1041,15 @@ button {
     visibility: hidden;
   }
 
-  body.app-ready:not(.session-running) .info-panel,
-  body.app-ready:not(.session-running) .panel-feedback,
-  body.app-ready:not(.session-running) .stats-panel,
-  body.app-ready:not(.session-running) .target-panel {
+  body.app-ready:not(.session-running):not(.session-ended) .info-panel,
+  body.app-ready:not(.session-running):not(.session-ended) .panel-feedback,
+  body.app-ready:not(.session-running):not(.session-ended) .stats-panel,
+  body.app-ready:not(.session-running):not(.session-ended) .target-panel {
+    display: none !important;
+  }
+
+  body.session-ended .info-panel,
+  body.session-ended .target-panel {
     display: none !important;
   }
 

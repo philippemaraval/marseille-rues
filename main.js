@@ -1407,6 +1407,7 @@ function exitLectureModeToMenu() {
     showMessage("Retour au menu.", "info"));
 }
 function startNewSession() {
+  document.body.classList.remove("session-ended");
   const e = document.getElementById("quartier-select"),
     t = getZoneMode(),
     r = getGameMode(),
@@ -2160,6 +2161,7 @@ function focusStreetByName(e) {
     map.fitBounds(r, { padding: [40, 40], animate: !0, duration: 1.5 }));
 }
 function endSession() {
+  document.body.classList.add("session-ended");
   playVictory();
   const e = performance.now(),
     t = sessionStartTime ? (e - sessionStartTime) / 1e3 : 0;
@@ -2912,6 +2914,7 @@ let dailyTargetData = null,
   dailyHighlightLayer = null,
   dailyGuessHistory = [];
 function startDailySession(e) {
+  document.body.classList.remove("session-ended");
   ((dailyTargetData = e), (dailyTargetGeoJson = JSON.parse(e.targetGeoJson)));
   const t = e.userStatus || {};
   let r = !1,
