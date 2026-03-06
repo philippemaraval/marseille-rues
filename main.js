@@ -3091,11 +3091,10 @@ function renderDailyGuessHistory(e) {
       }
     }
     if (window.innerWidth <= 900) {
-      const sidebarElement = document.getElementById("sidebar");
-      if (sidebarElement) {
+      if (historyContainer) {
         setTimeout(() => {
-          sidebarElement.scrollTo({
-            top: sidebarElement.scrollHeight,
+          historyContainer.scrollTo({
+            top: historyContainer.scrollHeight,
             behavior: "smooth",
           });
         }, 150);

@@ -1060,12 +1060,19 @@ button {
 
   body.session-running #sidebar {
     flex: 0 0 auto;
-    max-height: 200px;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+    max-height: none;
+    overflow-y: visible;
     padding: 8px 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
+  }
+
+  body.session-running #daily-guesses-history {
+    max-height: 110px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+    margin-bottom: 2px;
   }
 
   body.session-running #map {
