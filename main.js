@@ -1758,6 +1758,7 @@ function updateLayoutSessionState() {
           }, 200)))
       : ((t.style.display = "none"), (t.__didAutoFocus = !1));
   }
+  updateDailyResultPanel();
 }
 function computeItemPoints(e) {
   return Math.max(0, 10 - e);
@@ -2761,15 +2762,71 @@ function loadAllLeaderboards() {
   e &&
     ((e.innerHTML =
       '<div class="skeleton skeleton-line" style="width:50%"></div><div class="skeleton skeleton-block"></div><div class="skeleton skeleton-block"></div>'),
-      fetch(API_URL + "/api/leaderboards")
-        .then((e) => {
-          if (!e.ok) throw new Error("HTTP " + e.status);
-          return e.json();
-        })
-        .then((t) => {
+      Promise.all([
+        fetch(API_URL + "/api/leaderboards").then(res => {
+          if (!res.ok) throw new Error("HTTP " + res.status);
+          return res.json();
+        }),
+        fetch(API_URL + "/api/daily/leaderboard").then(res => {
+          if (!res.ok) return [];
+          return res.json();
+        }).catch(() => [])
+      ])
+        .then(([t, dailyRows]) => {
           const r = Object.keys(t);
-          if (0 === r.length)
+          if (0 === r.length && 0 === dailyRows.length)
             return void (e.innerHTML = "<p>Aucun score enregistré.</p>");
+
+          (e.innerHTML = "");
+
+          // 1. Build Daily Leaderboard first
+          if (dailyRows && dailyRows.length > 0) {
+            const dailyDetails = document.createElement("details");
+            dailyDetails.className = "leaderboard-zone-details";
+            dailyDetails.open = true; // explicitly keep daily open by default
+            const dailySummary = document.createElement("summary");
+
+            const todayStr = new Intl.DateTimeFormat('fr-FR', {
+              day: '2-digit', month: '2-digit', year: '2-digit'
+            }).format(new Date());
+
+            dailySummary.innerHTML = `<span class="leaderboard-zone-title">Daily du ${todayStr}</span>`;
+            dailyDetails.appendChild(dailySummary);
+
+            const dailyContent = document.createElement("div");
+            dailyContent.className = "leaderboard-zone-content";
+
+            const table = document.createElement("table");
+            table.className = "leaderboard-table";
+            table.innerHTML = "<thead><tr><th>#</th><th>Joueur</th><th>Essais</th></tr></thead>";
+
+            const tbody = document.createElement("tbody");
+            dailyRows.forEach((row, i) => {
+              const tr = document.createElement("tr");
+              const rank = (0 === i ? "🥇 " : 1 === i ? "🥈 " : 2 === i ? "🥉 " : "") || `${i + 1}`;
+              tr.innerHTML = `<td>${rank}</td><td>${row.username || "Anonyme"}</td><td>${row.attempts_count}/7</td>`;
+              tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+
+            const modeContainer = document.createElement("div");
+            modeContainer.className = "leaderboard-mode-container";
+            const modeTitle = document.createElement("h4");
+            modeTitle.className = "leaderboard-mode-title";
+            modeTitle.textContent = "Défi du Jour";
+            modeContainer.appendChild(modeTitle);
+
+            const section = document.createElement("div");
+            section.className = "leaderboard-section";
+            section.appendChild(table);
+            modeContainer.appendChild(section);
+
+            dailyContent.appendChild(modeContainer);
+            dailyDetails.appendChild(dailyContent);
+            e.appendChild(dailyDetails);
+          }
+
+          // 2. Process all other leaderboards
           const a = {};
           (r.forEach((e) => {
             const r = e.split("|"),
@@ -2783,7 +2840,6 @@ function loadAllLeaderboards() {
                 a[n][s] || (a[n][s] = []),
                 a[n][s].push({ quartierName: i, rows: l }));
           }),
-            (e.innerHTML = ""),
             ZONE_ORDER.forEach((t) => {
               if (!a[t]) return;
               const r = a[t],
@@ -2885,8 +2941,12 @@ function loadAllLeaderboards() {
                 n.appendChild(l),
                 e.appendChild(n));
             }));
-          const n = e.querySelector("details");
-          n && (n.open = !0);
+
+          // 3. Fallback open logic if Daily isn't present
+          if (!dailyRows || dailyRows.length === 0) {
+            const n = e.querySelector("details");
+            n && (n.open = !0);
+          }
         })
         .catch((t) => {
           (console.warn("Leaderboard indisponible :", t.message),
@@ -2998,7 +3058,8 @@ function endDailySession() {
     updateStartStopButton(),
     updatePauseButton(),
     updateLayoutSessionState(),
-    updateDailyUI());
+    updateDailyUI(),
+    updateDailyResultPanel());
 }
 function renderDailyGuessHistory(e) {
   try {
@@ -3065,33 +3126,9 @@ function renderDailyGuessHistory(e) {
         }
       r += "</div>";
     }
-    if (e) {
-      if (e.success) {
-        const t = e.attempts;
-        r += `<div class="daily-result daily-result--success">🎉 Bravo, vous avez trouvé la rue en ${t} essai${t > 1 ? "s" : ""} !</div>`;
-      } else {
-        const e = Math.min(...dailyGuessHistory.map((e) => e.distance)),
-          t = e >= 1e3 ? `${(e / 1e3).toFixed(1)} km` : `${Math.round(e)} m`;
-        r += `<div class="daily-result daily-result--fail">Votre meilleur score est ${t} en sept essais</div>`;
-      }
-      ((r += '<div class="daily-share-buttons">'),
-        (r +=
-          '<button id="daily-share-text" class="btn-secondary daily-share-btn">📋 Copier le texte</button>'),
-        (r +=
-          '<button id="daily-share-image" class="btn-primary daily-share-btn">📸 Partager l\'image</button>'),
-        (r += "</div>"),
-        (r +=
-          '<p class="daily-share-hint">L\'image est plus impactante sur les réseaux !</p>'));
-    }
     const historyContainer = document.getElementById("daily-guesses-history");
     if (historyContainer) {
       historyContainer.innerHTML = r;
-      if (e) {
-        const shareTextBtn = document.getElementById("daily-share-text"),
-          shareImageBtn = document.getElementById("daily-share-image");
-        if (shareTextBtn) shareTextBtn.onclick = () => handleDailyShareText(e);
-        if (shareImageBtn) shareImageBtn.onclick = () => handleDailyShareImage(e);
-      }
     }
     if (window.innerWidth <= 900) {
       const targetPanel = document.querySelector(".target-panel");
@@ -3108,6 +3145,52 @@ function renderDailyGuessHistory(e) {
     console.error("Error in renderDailyGuessHistory:", err);
   }
 }
+
+function updateDailyResultPanel() {
+  const panel = document.getElementById("daily-result-panel");
+  const content = document.getElementById("daily-result-content");
+  if (!panel || !content) return;
+
+  // We show it only if not in a session, and if today's daily was played
+  if (isSessionRunning || dailyGuessHistory.length === 0 || !window._dailyGameOver) {
+    panel.style.display = "none";
+    return;
+  }
+
+  const e = {
+    success: dailyGuessHistory[dailyGuessHistory.length - 1]?.distance < 20, // rough heuristic or rely on stored status
+    attempts: dailyGuessHistory.length
+  };
+
+  // if the last guess distance is < 20 (meaning success), or we have window._dailyGameOver, let's look at the stored state
+  const isSuccess = dailyGuessHistory.some(g => g.distance < 20);
+  e.success = isSuccess;
+
+  let r = "";
+  if (isSuccess) {
+    const t = e.attempts;
+    r += `<div class="daily-result daily-result--success">🎉 Bravo, vous avez trouvé la rue en ${t} essai${t > 1 ? "s" : ""} !</div>`;
+  } else {
+    const minDistance = Math.min(...dailyGuessHistory.map((g) => g.distance));
+    const t = minDistance >= 1e3 ? `${(minDistance / 1e3).toFixed(1)} km` : `${Math.round(minDistance)} m`;
+    r += `<div class="daily-result daily-result--fail">Votre meilleur score est ${t} en sept essais</div>`;
+  }
+
+  r += '<div class="daily-share-buttons">';
+  r += '<button id="daily-share-text" class="btn-secondary daily-share-btn">📋 Copier le texte</button>';
+  r += '<button id="daily-share-image" class="btn-primary daily-share-btn">📸 Partager l\'image</button>';
+  r += "</div>";
+  r += '<p class="daily-share-hint">L\'image est plus impactante sur les réseaux !</p>';
+
+  content.innerHTML = r;
+  panel.style.display = "block";
+
+  const shareTextBtn = document.getElementById("daily-share-text"),
+    shareImageBtn = document.getElementById("daily-share-image");
+  if (shareTextBtn) shareTextBtn.onclick = () => handleDailyShareText(e);
+  if (shareImageBtn) shareImageBtn.onclick = () => handleDailyShareImage(e);
+}
+
 function handleDailyShareText(e) {
   if (!dailyTargetData) return;
   const t = e.success ? e.attempts : "X";
