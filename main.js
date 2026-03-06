@@ -1828,6 +1828,8 @@ function handleStreetClick(e, t, r) {
     if (n) {
       ((window._dailyGameOver = !0),
         (isSessionRunning = !1),
+        document.body.classList.add("daily-game-over"),
+        typeof confetti === "function" && confetti({ particleCount: 150, zIndex: 10000, spread: 80, origin: { y: 0.6 } }),
         showMessage(
           `🎉 BRAVO ! Trouvé en ${u} essai${u > 1 ? "s" : ""} !`,
           "success",
@@ -1848,6 +1850,7 @@ function handleStreetClick(e, t, r) {
     } else if (d <= 0) {
       ((window._dailyGameOver = !0),
         (isSessionRunning = !1),
+        document.body.classList.add("daily-game-over"),
         showMessage(
           `❌ Dommage ! C'était « ${dailyTargetData.streetName} ». Fin du défi.`,
           "error",
@@ -2806,14 +2809,13 @@ function loadAllLeaderboards() {
                         : 0,
                     ),
                     a.forEach((r) => {
-                      const a = document.createElement("div");
+                      const isQuartier = "quartier" === t && r.quartierName && "unknown" !== r.quartierName;
+                      const a = document.createElement(isQuartier ? "details" : "div");
                       if (
                         ((a.className = "leaderboard-section"),
-                          "quartier" === t &&
-                          r.quartierName &&
-                          "unknown" !== r.quartierName)
+                          isQuartier)
                       ) {
-                        const e = document.createElement("h5");
+                        const e = document.createElement("summary");
                         ((e.className = "leaderboard-quartier-title"),
                           (e.textContent = r.quartierName),
                           a.appendChild(e));
@@ -2914,7 +2916,7 @@ let dailyTargetData = null,
   dailyHighlightLayer = null,
   dailyGuessHistory = [];
 function startDailySession(e) {
-  document.body.classList.remove("session-ended");
+  document.body.classList.remove("session-ended", "daily-game-over");
   ((dailyTargetData = e), (dailyTargetGeoJson = JSON.parse(e.targetGeoJson)));
   const t = e.userStatus || {};
   let r = !1,
@@ -2986,6 +2988,7 @@ function startDailySession(e) {
     updateDailyUI());
 }
 function endDailySession() {
+  document.body.classList.remove("daily-game-over");
   ((isDailyMode = !1),
     (isSessionRunning = !1),
     (window._dailyGameOver = !1),

@@ -1099,6 +1099,10 @@ button {
     -webkit-overflow-scrolling: touch;
   }
 
+  body.daily-game-over .target-panel {
+    max-height: 50vh !important;
+  }
+
   body.session-running .actions-row {
     order: 2;
     padding: 0;
@@ -1431,6 +1435,15 @@ button {
   font-size: 10px;
   color: #94a3b8;
   margin-top: 2px;
+}
+
+.leaderboard-quartier-title {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.leaderboard-quartier-title:hover {
+  color: var(--primary);
 }
 
 .profile-daily-summary {
