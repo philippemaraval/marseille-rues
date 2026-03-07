@@ -991,7 +991,7 @@ function addTouchBufferForLayer(e) {
 }
 function loadStreets() {
   const e = performance.now();
-  fetch("data/marseille_rues_light.geojson?v=6")
+  fetch("data/marseille_rues_light.geojson?v=7")
     .then((e) => {
       if (!e.ok) throw new Error("Erreur HTTP " + e.status);
       return e.json();

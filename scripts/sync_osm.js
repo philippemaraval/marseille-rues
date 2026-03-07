@@ -21,7 +21,7 @@ const http = require('http');
 const PROJECT_DIR = path.resolve(__dirname, '..');
 const DATA_DIR = path.join(PROJECT_DIR, 'data');
 const BACKEND_DATA_DIR = path.join(PROJECT_DIR, 'backend', 'data');
-const QUARTIERS_FILE = path.join(DATA_DIR, 'marseille_quartiers_111.geojson');
+const QUARTIERS_FILE = path.join(BACKEND_DATA_DIR, 'marseille_quartiers_111.geojson');
 const OUTPUT_ENRICHI = path.join(DATA_DIR, 'marseille_rues_enrichi.geojson');
 const OUTPUT_LIGHT = path.join(DATA_DIR, 'marseille_rues_light.geojson');
 const BACKEND_LIGHT = path.join(BACKEND_DATA_DIR, 'marseille_rues_light.geojson');
@@ -38,6 +38,8 @@ const OVERPASS_QUERY = `
 area["ref:INSEE"="13055"]->.marseille;
 (
   way["highway"]["name"](area.marseille);
+  way["place"="square"]["name"](area.marseille);
+  way["area"="yes"]["name"](area.marseille);
 );
 out body;
 >;
@@ -177,16 +179,31 @@ function overpassToGeoJSON(data, quartiers) {
             quartier: quartier || 'HORS QUARTIER'
         };
 
+        // Determine if it should be a Polygon (closed area)
+        let geomType = 'LineString';
+        let geomCoords = coords;
+        
+        const isClosed = coords.length > 3 && 
+                         coords[0][0] === coords[coords.length - 1][0] && 
+                         coords[0][1] === coords[coords.length - 1][1];
+                         
+        const isArea = (el.tags.area === 'yes' || el.tags.place === 'square' || el.tags.highway === 'pedestrian');
+
+        if (isClosed && isArea) {
+            geomType = 'Polygon';
+            geomCoords = [coords]; // Polygons require an array of linear rings
+        }
+
         features.push({
             full: {
                 type: 'Feature',
                 properties,
-                geometry: { type: 'LineString', coordinates: coords }
+                geometry: { type: geomType, coordinates: geomCoords }
             },
             light: {
                 type: 'Feature',
                 properties: lightProperties,
-                geometry: { type: 'LineString', coordinates: coords }
+                geometry: { type: geomType, coordinates: geomCoords }
             },
             name,
             quartier: quartier || 'HORS QUARTIER',
@@ -257,9 +274,33 @@ async function main() {
         type: 'FeatureCollection',
         features: features.map(f => f.full)
     };
+
+    // Filtre des préfixes de noms indésirables pour le jeu
+    const typeMap = {
+      'résidence': 'Résidence', 'lotissement': 'Résidence', 'domaine': 'Résidence',
+      'gare': 'Gare', 'station': 'Gare', 'métro': 'Gare',
+      'cité': 'Cité', 'accès': 'Accès', 'campagne': 'Campagne',
+      'parc': 'Parc', 'sentier': 'Sentier'
+    };
+    const excludedCategories = new Set(['Résidence', 'Gare', 'Cité', 'Accès', 'Campagne', 'Parc', 'Sentier']);
+
+    const lightFeatures = features.filter(f => {
+        if (!f.name) return false;
+        
+        // Always exclude platform (bus/metro stops)
+        if (f.light.properties.highway === 'platform') return false;
+
+        let firstWord = f.name.trim().split(/[\s']/)[0].toLowerCase();
+        const categoryMatch = typeMap[firstWord];
+        if (categoryMatch && excludedCategories.has(categoryMatch)) {
+            return false;
+        }
+        return true;
+    }).map(f => f.light);
+
     const lightCollection = {
         type: 'FeatureCollection',
-        features: features.map(f => f.light)
+        features: lightFeatures
     };
 
     // Enrichi (full, compact JSON)
