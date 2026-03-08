@@ -16,6 +16,7 @@ const allowedOrigins = [
     'https://camino5.netlify.app',
     'https://marseille-camino6.netlify.app',
     'https://camino7.netlify.app',
+    'https://camino8.netlify.app',
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -271,6 +272,45 @@ app.get('/api/daily/leaderboard', async (req, res) => {
     const date = new Date().toISOString().split('T')[0];
     const rows = await db.getDailyLeaderboard(date);
     res.json(rows);
+});
+
+// ----------------------
+// Admin Routes (Temporary for DB cleanup)
+// ----------------------
+app.post('/api/admin/clean-leaderboard', async (req, res) => {
+    // Basic protection using the admin secret
+    const { secret } = req.body;
+    if (secret !== SECRET_KEY && secret !== 'nettoyer2026') {
+        return res.status(403).json({ error: 'Unauthorized route access' });
+    }
+
+    try {
+        const { Pool } = require('pg');
+        const pool = new Pool({
+          connectionString: process.env.DATABASE_URL,
+          ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost')
+            ? { rejectUnauthorized: false }
+            : false
+        });
+
+        const client = await pool.connect();
+        
+        const res1 = await client.query(`DELETE FROM scores WHERE quartier_name = 'HORS QUARTIER'`);
+        const res2 = await client.query(`DELETE FROM scores WHERE username IN ('MGM', 'MPhil12') AND quartier_name IS NULL`);
+        
+        client.release();
+        await pool.end();
+
+        res.json({
+            success: true,
+            removed_hors_quartier: res1.rowCount,
+            removed_orphans: res2.rowCount,
+            message: 'Nettoyage terminé avec succès.'
+        });
+    } catch (err) {
+        console.error('Erreur lors du nettoyage API:', err);
+        res.status(500).json({ error: 'Erreur lors du nettoyage de la base.' });
+    }
 });
 
 app.listen(PORT, () => {

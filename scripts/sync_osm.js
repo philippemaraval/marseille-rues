@@ -140,7 +140,7 @@ function overpassToGeoJSON(data, quartiers) {
 
     // Convert ways to GeoJSON features
     const features = [];
-    const skipped = { noName: 0, noNodes: 0 };
+    const skipped = { noName: 0, noNodes: 0, noQuartier: 0 };
 
     for (const el of elements) {
         if (el.type !== 'way') continue;
@@ -163,11 +163,17 @@ function overpassToGeoJSON(data, quartiers) {
         const centroid = computeCentroid(coords);
         const quartier = findQuartier(centroid[0], centroid[1], quartiers);
 
+        // Discard if not inside any known quartier
+        if (!quartier) {
+            skipped.noQuartier++;
+            continue;
+        }
+
         // Build full properties (enrichi)
         const properties = {
             name,
             highway,
-            quartier: quartier || 'HORS QUARTIER',
+            quartier,
             osm_id: el.id,
             ...el.tags
         };
@@ -176,7 +182,7 @@ function overpassToGeoJSON(data, quartiers) {
         const lightProperties = {
             name,
             highway,
-            quartier: quartier || 'HORS QUARTIER'
+            quartier
         };
 
         // Determine if it should be a Polygon (closed area)
@@ -206,7 +212,7 @@ function overpassToGeoJSON(data, quartiers) {
                 geometry: { type: geomType, coordinates: geomCoords }
             },
             name,
-            quartier: quartier || 'HORS QUARTIER',
+            quartier,
             centroid
         });
     }
@@ -254,7 +260,7 @@ async function main() {
     console.log('🔄 Conversion en GeoJSON...');
     const { features, skipped } = overpassToGeoJSON(overpassData, quartiers);
     console.log(`   ${features.length} rues avec nom et géométrie.`);
-    console.log(`   Ignorées : ${skipped.noName} sans nom, ${skipped.noNodes} sans nœuds.\n`);
+    console.log(`   Ignorées : ${skipped.noName} sans nom, ${skipped.noNodes} sans nœuds, ${skipped.noQuartier} hors quartier.\n`);
 
     // Highway type breakdown
     const typeCounts = {};

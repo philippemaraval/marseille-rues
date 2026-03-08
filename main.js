@@ -3219,7 +3219,7 @@ function handleDailyShareText(e) {
           (r += `${e} ${t.arrow || ""}\n`));
       }
     }),
-      (r += "\nmarseille-camino6.netlify.app"),
+      (r += "\ncamino8.netlify.app"),
       navigator.clipboard && window.isSecureContext)
   )
     navigator.clipboard
@@ -3311,7 +3311,7 @@ function handleDailyShareImage(e) {
     (r.textAlign = "center"),
     (r.fillStyle = "#6366f1"),
     (r.font = "bold 14px system-ui, sans-serif"),
-    r.fillText("marseille-camino6.netlify.app", 300, 460),
+    r.fillText("camino8.netlify.app", 300, 460),
     t.toBlob(async (e) => {
       if (!e) return void showMessage("Erreur lors de la génération", "error");
       const t = new File([e], "camino-daily.png", { type: "image/png" });
