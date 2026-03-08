@@ -2669,10 +2669,10 @@ function loadProfile() {
           ((d += `<div class="profile-badges-title">Succès (${m.length}/${c.length})</div>`),
             (d += '<div class="profile-badges-grid">'),
             m.forEach((e) => {
-              d += `<div class="profile-badge unlocked" title="${e.name}: ${e.desc}">\n          <span class="badge-emoji">${e.emoji}</span>\n          <span class="badge-name">${e.name}</span>\n        </div>`;
+              d += `<div class="profile-badge unlocked" title="${e.name}\n✅ ${e.desc}">\n          <span class="badge-emoji">${e.emoji}</span>\n          <span class="badge-name">${e.name}</span>\n        </div>`;
             }),
             p.forEach((e) => {
-              d += `<div class="profile-badge locked" title="${e.desc}">\n          <span class="badge-emoji">🔒</span>\n          <span class="badge-name">${e.name}</span>\n        </div>`;
+              d += `<div class="profile-badge locked" title="${e.name}\n🔒 ${e.desc}">\n          <span class="badge-emoji">🔒</span>\n          <span class="badge-name">${e.name}</span>\n        </div>`;
             }),
             (d += "</div>"),
             (d += `<div class="profile-member-since">Membre depuis le ${u}</div>`),
