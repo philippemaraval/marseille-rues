@@ -159,6 +159,12 @@ function overpassToGeoJSON(data, quartiers) {
              continue; 
         }
 
+        const allowedGeometries = ['LineString', 'Polygon', 'MultiPolygon', 'MultiLineString'];
+        if (!allowedGeometries.includes(f.geometry.type)) {
+             skipped.noGeometry++;
+             continue;
+        }
+
         const highway = properties.highway || properties.place || 'unknown';
 
         // Retain original OSM ID logic: if it's a way/relation, osmtogeojson puts id on the feature.
