@@ -281,14 +281,21 @@ async function main() {
         features: features.map(f => f.full)
     };
 
-    // Filtre des préfixes de noms indésirables pour le jeu
-    const typeMap = {
-      'résidence': 'Résidence', 'lotissement': 'Résidence', 'domaine': 'Résidence',
-      'gare': 'Gare', 'station': 'Gare', 'métro': 'Gare',
-      'cité': 'Cité', 'accès': 'Accès', 'campagne': 'Campagne',
-      'parc': 'Parc', 'sentier': 'Sentier'
-    };
-    const excludedCategories = new Set(['Résidence', 'Gare', 'Cité', 'Accès', 'Campagne', 'Parc', 'Sentier']);
+    // Filtre des noms indésirables pour le jeu
+    const excludedPrefixes = new Set([
+        'résidence', 'lotissement', 'domaine', 
+        'gare', 'station', 'métro', 
+        'cité', 'accès', 'campagne', 
+        'parc', 'sentier', 'cour'
+    ]);
+    
+    // Mots-clés qui excluent la voie peu importe où ils se trouvent dans le nom (sous-catégories)
+    const excludedKeywords = [
+        'hameau', 'parking', 'groupe', 'entrée', 'entree', 
+        'dépose', 'depose', 'copropriété', 'copropriete', 
+        'lycée', 'lycee', 'hlm', 'hôpital', 'hopital', 
+        'centre', 'complexe'
+    ];
 
     const lightFeatures = features.filter(f => {
         if (!f.name) return false;
@@ -296,11 +303,20 @@ async function main() {
         // Always exclude platform (bus/metro stops)
         if (f.light.properties.highway === 'platform') return false;
 
+        let lowerName = f.name.toLowerCase();
         let firstWord = f.name.trim().split(/[\s']/)[0].toLowerCase();
-        const categoryMatch = typeMap[firstWord];
-        if (categoryMatch && excludedCategories.has(categoryMatch)) {
-            return false;
+        
+        if (excludedPrefixes.has(firstWord)) return false;
+
+        for (const kw of excludedKeywords) {
+            // Regex to ensure we match whole words for short acronyms like HLM to prevent matching e.g. "Vehlmann"
+            if (kw === 'hlm') {
+                 if (/\bhlm\b/.test(lowerName)) return false;
+            } else {
+                 if (lowerName.includes(kw)) return false;
+            }
         }
+
         return true;
     }).map(f => f.light);
 
