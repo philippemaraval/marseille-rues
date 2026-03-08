@@ -1728,22 +1728,35 @@ function showStreetInfo(e) {
     r = document.getElementById("street-info");
   if (!t || !r || !e) return;
   const a = getZoneMode();
-  if ("rues-principales" !== a && "main" !== a)
+  
+  const isMain = "rues-principales" === a || "main" === a;
+  const isFamous = "rues-celebres" === a || "famous" === a;
+  
+  if (!isMain && !isFamous)
     return (
       (t.style.display = "none"),
       t.classList.remove("is-visible"),
       (r.textContent = ""),
       void r.classList.remove("is-visible")
     );
+    
   const n = e.properties.name || "",
     s = normalizeName(n);
-  let i = MAIN_STREET_INFOS[s];
-  if (
-    (!i &&
-      MAIN_STREET_NAMES.has(s) &&
-      (i = "Rue principale : informations historiques à compléter."),
-      !i)
-  )
+    
+  let i;
+  if (isMain) {
+    i = MAIN_STREET_INFOS[s];
+    if (!i && MAIN_STREET_NAMES.has(s)) {
+      i = "Rue principale : informations historiques à compléter.";
+    }
+  } else if (isFamous) {
+    i = FAMOUS_STREET_INFOS[s];
+    if (!i && FAMOUS_STREET_NAMES.has(s)) {
+      i = "Rue célèbre : informations historiques à compléter.";
+    }
+  }
+  
+  if (!i)
     return (
       (t.style.display = "none"),
       t.classList.remove("is-visible"),
