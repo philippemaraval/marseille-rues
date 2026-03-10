@@ -143,15 +143,10 @@ body {
   font-family: var(--font-heading);
   font-size: var(--fs-xxl);
   font-weight: 800;
-  color: var(--primary-dark);
+  color: var(--brand-sea-900);
   margin: 0;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg,
-      var(--primary-dark) 0,
-      var(--primary) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .header-subtitle {
