@@ -191,22 +191,18 @@ body {
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.03em;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  text-shadow: none;
   line-height: 1;
 }
 
 .header-title-link {
-  color: var(--brand-sea-900);
-  background: linear-gradient(135deg, var(--primary-dark) 0, var(--primary) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary);
   text-decoration: none;
-  transition: filter var(--motion-fast) var(--easing-standard);
+  transition: color var(--motion-fast) var(--easing-standard);
 }
 
 .header-title-link:hover {
-  filter: brightness(0.96);
+  color: var(--primary-dark);
 }
 
 .header-subtitle {
