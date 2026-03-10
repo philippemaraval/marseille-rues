@@ -1704,6 +1704,11 @@ button {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .profile-mode-row {
@@ -1789,6 +1794,12 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  align-content: start;
+  -webkit-overflow-scrolling: touch;
 }
 
 .profile-badge {
@@ -2180,6 +2191,8 @@ select:focus:not(:focus-visible) {
   padding: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
   animation: slideDown var(--motion-base) var(--easing-standard);
+  max-height: 280px;
+  overflow: hidden;
 }
 
 .avatar-modal-header {
@@ -2364,8 +2377,7 @@ select:focus:not(:focus-visible) {
   .sound-toggle,
   .haptics-toggle,
   .weighted-score-help-btn,
-  .avatar-modal-close,
-  .edit-avatar-badge {
+  .avatar-modal-close {
     min-width: 40px;
     min-height: 40px;
   }
@@ -2373,6 +2385,33 @@ select:focus:not(:focus-visible) {
   .avatar-item {
     width: 48px;
     height: 48px;
+  }
+}
+
+@media (max-width: 900px) {
+  .edit-avatar-badge {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    bottom: -1px;
+    right: -1px;
+  }
+
+  .avatar-selector-modal {
+    max-height: 210px;
+  }
+
+  .avatar-grid {
+    max-height: 138px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .profile-modes {
+    max-height: 150px;
+  }
+
+  .profile-badges-grid {
+    max-height: 160px;
   }
 }
 
