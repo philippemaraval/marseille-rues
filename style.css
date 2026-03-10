@@ -156,7 +156,7 @@ body {
 
 .header-title {
   font-family: var(--font-heading);
-  font-size: clamp(26px, 2.2vw, 32px);
+  font-size: clamp(24px, 2vw, 29px);
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.03em;
@@ -166,7 +166,7 @@ body {
 
 .header-title-link {
   color: var(--brand-sea-900);
-  background: linear-gradient(125deg, var(--brand-sea-950) 0%, var(--brand-sea-900) 58%, var(--brand-sea-600) 100%);
+  background: linear-gradient(125deg, var(--brand-sea-950) 0%, #10256f 56%, var(--brand-sea-900) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -175,7 +175,7 @@ body {
 }
 
 .header-title-link:hover {
-  filter: saturate(1.1) brightness(0.95);
+  filter: brightness(0.96);
 }
 
 .header-subtitle {
@@ -1319,7 +1319,7 @@ button {
   }
 
   .header-title {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .header-subtitle {
