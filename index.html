@@ -20,7 +20,7 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="theme-color" content="#ffffff">
 
-  <link rel="stylesheet" href="style.css?v=20260310d">
+  <link rel="stylesheet" href="style.css?v=20260310e">
 
   <!-- Preload heavy GeoJSON data as early as possible -->
   <link rel="preload" href="data/marseille_rues_light.geojson?v=3" as="fetch" crossorigin>
@@ -209,6 +209,12 @@
         <section class="panel target-panel">
           <div id="target-panel-title" class="panel-title">Rue à trouver</div>
           <div id="target-street" class="target-name">—</div>
+          <div id="lecture-search" class="lecture-search hidden" role="search">
+            <label for="lecture-search-input" class="sr-only">Rechercher une rue</label>
+            <input id="lecture-search-input" class="lecture-search-input" type="search"
+              placeholder="Rechercher une rue (nom ou mot)" autocomplete="off" spellcheck="false">
+            <div id="lecture-search-results" class="lecture-search-results hidden"></div>
+          </div>
           <div id="daily-guesses-history" class="hidden"></div>
           <div id="daily-tries-counter" class="tries-counter hidden"></div>
         </section>
@@ -320,7 +326,7 @@
   <script src="https://cdn.jsdelivr.net/npm/leaflet-minimap@3.6.1/dist/Control.MiniMap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.js"></script>
   <script src="data_rules.js?v=20260304y"></script>
-  <script src="main.js?v=20260310d"></script>
+  <script src="main.js?v=20260310e"></script>
 </body>
 
 </html>

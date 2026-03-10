@@ -9,7 +9,8 @@ const API_URL =
   MAX_TIME_SECONDS = 500,
   CHRONO_DURATION = 60,
   HIGHLIGHT_DURATION_MS = 5e3,
-  MAX_POINTS_PER_ITEM = 10;
+  MAX_POINTS_PER_ITEM = 10,
+  MAX_LECTURE_SEARCH_RESULTS = 8;
 const UI_THEME = {
   mapStreet: "#f2a900",
   mapStreetHover: "#f8c870",
@@ -92,6 +93,9 @@ async function loadStreetInfos() {
 function normalizeName(e) {
   return (e || "").trim().toLowerCase();
 }
+function normalizeSearchText(e) {
+  return normalizeName(e).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 let map = null,
   currentZoneMode = "ville",
   streetsLayer = null,
@@ -149,7 +153,9 @@ let sessionStreets = [],
   messageTimeoutId = null,
   currentUser = null,
   isLectureMode = !1,
-  hasAnsweredCurrentItem = !1;
+  hasAnsweredCurrentItem = !1,
+  lectureStreetSearchIndex = [],
+  lectureStreetSearchMatches = [];
 function getSessionScoreValue(e = getGameMode()) {
   return "classique" === e ? weightedScore : correctCount;
 }
@@ -249,7 +255,9 @@ function updateTargetPanelTitle() {
     document.querySelector(".target-panel .panel-title");
   if (!e) return;
   const t = getZoneMode();
-  e.textContent = "monuments" === t ? "Monument à trouver" : "Rue à trouver";
+  isLectureMode
+    ? (e.textContent = "monuments" === t ? "Monument à explorer" : "Recherche de rue")
+    : (e.textContent = "monuments" === t ? "Monument à trouver" : "Rue à trouver");
 }
 function getGameMode() {
   const e = document.getElementById("game-mode-select");
@@ -267,7 +275,176 @@ function updateGameModeControls() {
       : (t.style.display = ""),
       updateScoreMetricUI(),
       updateWeightedScoreUI(),
-      updateSessionProgressBar());
+      updateSessionProgressBar(),
+      refreshLectureStreetSearchForCurrentMode({ preserveQuery: !0 }));
+}
+function getLectureSearchElements() {
+  return {
+    container: document.getElementById("lecture-search"),
+    input: document.getElementById("lecture-search-input"),
+    results: document.getElementById("lecture-search-results"),
+    target: document.getElementById("target-street"),
+  };
+}
+function closeLectureStreetSearchResults() {
+  const { results } = getLectureSearchElements();
+  results && (results.innerHTML = "", results.classList.add("hidden"));
+  lectureStreetSearchMatches = [];
+}
+function setLectureStreetSearchVisible(e, t = !1) {
+  const { container, input, target } = getLectureSearchElements();
+  if (!container || !target) return;
+  if (e) {
+    target.classList.add("hidden");
+    container.classList.remove("hidden");
+    return;
+  }
+  (container.classList.add("hidden"),
+    target.classList.remove("hidden"),
+    closeLectureStreetSearchResults(),
+    input &&
+    !0 !== t &&
+    ((input.value = ""), input.blur()));
+}
+function buildLectureStreetSearchIndex() {
+  if ("monuments" === getZoneMode())
+    return void (lectureStreetSearchIndex = []);
+  const e = buildUniqueStreetList(getCurrentZoneStreets()),
+    t = new Set();
+  lectureStreetSearchIndex = e
+    .map((e) =>
+      "string" == typeof e?.properties?.name ? e.properties.name.trim() : "",
+    )
+    .filter((e) => !!e)
+    .filter((e) => {
+      const r = normalizeSearchText(e);
+      return !!r && (!t.has(r) && (t.add(r), !0));
+    })
+    .map((e) => {
+      const t = normalizeSearchText(e);
+      return {
+        name: e,
+        normalized: t,
+        words: t.split(/[\s'’-]+/).filter(Boolean),
+      };
+    })
+    .sort((e, t) => e.name.localeCompare(t.name, "fr", { sensitivity: "base" }));
+}
+function getLectureStreetMatchScore(e, t) {
+  return e.normalized === t
+    ? 0
+    : e.normalized.startsWith(t)
+      ? 1
+      : e.words.some((e) => e.startsWith(t))
+        ? 2
+        : 3;
+}
+function findLectureStreetMatches(e) {
+  const t = normalizeSearchText(e);
+  if (!t) return [];
+  return lectureStreetSearchIndex
+    .filter((e) => e.normalized.includes(t))
+    .sort((e, r) => {
+      const a = getLectureStreetMatchScore(e, t),
+        n = getLectureStreetMatchScore(r, t);
+      return a - n || e.name.localeCompare(r.name, "fr", { sensitivity: "base" });
+    })
+    .slice(0, MAX_LECTURE_SEARCH_RESULTS);
+}
+function renderLectureStreetSearchResults(e) {
+  const { results } = getLectureSearchElements();
+  if (!results) return;
+  if (!e || 0 === e.length) {
+    const e = document.createElement("div");
+    return (
+      (e.className = "lecture-search-empty"),
+      (e.textContent = "Aucune rue trouvée."),
+      (results.innerHTML = ""),
+      results.appendChild(e),
+      void results.classList.remove("hidden")
+    );
+  }
+  (results.innerHTML = "",
+    e.forEach((e) => {
+      const t = document.createElement("button");
+      ((t.type = "button"),
+        (t.className = "lecture-search-result"),
+        (t.textContent = e.name),
+        t.addEventListener("click", () => {
+          focusLectureStreetBySearchName(e.name);
+        }),
+        results.appendChild(t));
+    }),
+    results.classList.remove("hidden"));
+}
+function focusLectureStreetBySearchName(e) {
+  if (!e) return;
+  const t = focusStreetByName(e);
+  if (!t) return void showMessage("Rue introuvable dans la zone actuelle.", "error");
+  const { input } = getLectureSearchElements();
+  (input && (input.value = e), closeLectureStreetSearchResults());
+}
+function updateLectureStreetSearchResults() {
+  const { input } = getLectureSearchElements();
+  if (!input) return;
+  const e = input.value.trim();
+  return e
+    ? (lectureStreetSearchMatches = findLectureStreetMatches(e),
+      void renderLectureStreetSearchResults(lectureStreetSearchMatches))
+    : void closeLectureStreetSearchResults();
+}
+function refreshLectureStreetSearchForCurrentMode(e = {}) {
+  const t = !0 === e.preserveQuery,
+    r = isLectureMode && "monuments" !== getZoneMode(),
+    { input } = getLectureSearchElements();
+  if (!r)
+    return void setLectureStreetSearchVisible(!1, t);
+  (setLectureStreetSearchVisible(!0, t),
+    buildLectureStreetSearchIndex(),
+    input &&
+    ((input.disabled = 0 === lectureStreetSearchIndex.length),
+      (input.placeholder =
+        0 === lectureStreetSearchIndex.length
+          ? "Aucune rue disponible pour cette zone"
+          : "Rechercher une rue (nom ou mot)"),
+      t && input.value.trim() && lectureStreetSearchIndex.length > 0
+        ? updateLectureStreetSearchResults()
+        : closeLectureStreetSearchResults()));
+}
+function initLectureStreetSearch() {
+  const { container, input } = getLectureSearchElements();
+  if (!container || !input || input.__lectureSearchBound) return;
+  ((input.__lectureSearchBound = !0),
+    input.addEventListener("input", () => {
+      updateLectureStreetSearchResults();
+    }),
+    input.addEventListener("focus", () => {
+      input.value.trim() && updateLectureStreetSearchResults();
+    }),
+    input.addEventListener("keydown", (e) => {
+      if ("Escape" === e.key) {
+        closeLectureStreetSearchResults();
+        return;
+      }
+      if ("Enter" === e.key) {
+        e.preventDefault();
+        const t = input.value.trim();
+        if (!t) return;
+        if (0 === lectureStreetSearchIndex.length)
+          return void showMessage("Aucune rue disponible pour cette zone.", "warning");
+        0 === lectureStreetSearchMatches.length &&
+          (lectureStreetSearchMatches = findLectureStreetMatches(t));
+        const r =
+          lectureStreetSearchMatches[0] ||
+          lectureStreetSearchIndex.find((e) => e.normalized === normalizeSearchText(t));
+        r
+          ? focusLectureStreetBySearchName(r.name)
+          : showMessage("Rue introuvable dans la zone actuelle.", "error");
+      }
+    }),
+    document.addEventListener("click", (e) => {
+      container.contains(e.target) || closeLectureStreetSearchResults();
+    }));
 }
 function updateStreetInfoPanelVisibility() {
   const e = document.getElementById("street-info-panel"),
@@ -374,6 +551,13 @@ function initUI() {
           }
           ((b.value = t),
             isSessionRunning && endSession(),
+            "lecture" !== t &&
+            isLectureMode &&
+            ((isLectureMode = !1),
+              setLectureTooltipsEnabled(!1),
+              refreshLectureStreetSearchForCurrentMode(),
+              updateTargetPanelTitle(),
+              updateLayoutSessionState()),
             updateGameModeControls(),
             (v.scrollTop = 0),
             v.classList.remove("visible"),
@@ -403,7 +587,8 @@ function initUI() {
         l.classList.remove("visible"));
     }),
     (currentUser = loadCurrentUserFromStorage()),
-    updateUserUI());
+    updateUserUI(),
+    initLectureStreetSearch());
   const S = document.getElementById("sound-toggle");
   if (
     (S && (S.textContent = soundEnabled ? "🔊" : "🔇"),
@@ -527,7 +712,9 @@ function initUI() {
             !map.hasLayer(streetsLayer) &&
             streetsLayer.addTo(map)),
         updateStreetInfoPanelVisibility(),
-        refreshLectureTooltipsIfNeeded());
+        refreshLectureTooltipsIfNeeded(),
+        isLectureMode &&
+        refreshLectureStreetSearchForCurrentMode({ preserveQuery: !0 }));
       const n = document.getElementById("street-info");
       n &&
         ("rues-principales" === e ||
@@ -547,7 +734,9 @@ function initUI() {
           (e.setStyle({ color: t.color, weight: t.weight }),
             (e.options.interactive = r),
             e.touchBuffer && (e.touchBuffer.options.interactive = r));
-        }));
+        }),
+        isLectureMode &&
+        refreshLectureStreetSearchForCurrentMode({ preserveQuery: !0 }));
     }));
   const T = document.getElementById("auth-feedback");
   function E(e, t) {
@@ -822,6 +1011,7 @@ function loadStreets() {
         },
       }).addTo(map)),
         refreshLectureTooltipsIfNeeded(),
+        refreshLectureStreetSearchForCurrentMode({ preserveQuery: !0 }),
         populateQuartiers());
       const n = document.getElementById("mode-select");
       (n && n.dispatchEvent(new Event("change")),
@@ -1175,10 +1365,12 @@ function exitLectureModeToMenu() {
   }
   const a = document.getElementById("target-street");
   (a && (a.textContent = "—"),
+    updateTargetPanelTitle(),
     updateTimeUI(0, 0),
     updateStartStopButton(),
     updatePauseButton(),
     updateGameModeControls(),
+    refreshLectureStreetSearchForCurrentMode(),
     updateLayoutSessionState(),
     showMessage("Retour au menu.", "info"));
 }
@@ -1223,6 +1415,7 @@ function startNewSession() {
       (isPaused = !1),
       (pauseStartTime = null),
       (remainingChronoMs = null),
+      updateTargetPanelTitle(),
       updateLayoutSessionState(),
       "monuments" === t
         ? (streetsLayer &&
@@ -1241,9 +1434,15 @@ function startNewSession() {
           "quartier" === t && e && e.value
             ? highlightQuartier(e.value)
             : clearQuartierOverlay()),
-      targetStreetEl &&
-      ((targetStreetEl.textContent = "Mode lecture : survolez la carte"),
-        requestAnimationFrame(fitTargetStreetText)));
+      (() => {
+        const r = document.getElementById("target-street");
+        r &&
+          ("monuments" === t
+            ? ((r.textContent = "Mode lecture : survolez la carte"),
+              requestAnimationFrame(fitTargetStreetText))
+            : (r.textContent = "—"));
+      })(),
+      refreshLectureStreetSearchForCurrentMode());
     const r = document.getElementById("pause-btn");
     r && ((r.disabled = !0), (r.textContent = "Pause"));
     const a = document.getElementById("skip-btn");
@@ -1254,12 +1453,17 @@ function startNewSession() {
       updateTimeUI(0, 0),
       setLectureTooltipsEnabled(!0),
       void showMessage(
-        "Mode lecture : survolez les rues ou monuments pour voir leurs noms.",
+        "Mode lecture : utilisez la recherche ou survolez la carte pour voir les noms.",
         "info",
       )
     );
   }
-  if (((isLectureMode = !1), "monuments" === t)) {
+  if (
+    ((isLectureMode = !1),
+      updateTargetPanelTitle(),
+      refreshLectureStreetSearchForCurrentMode(),
+      "monuments" === t)
+  ) {
     if (!allMonuments.length)
       return void showMessage(
         "Aucun monument disponible (vérifiez data/marseille_monuments.geojson).",
@@ -1998,6 +2202,7 @@ function endSession() {
     (chronoEndTime = null),
     isDailyMode && ((isDailyMode = !1), updateDailyUI()),
     (isLectureMode = !1),
+    updateTargetPanelTitle(),
     updateLayoutSessionState(),
     (isPaused = !1),
     (pauseStartTime = null),
@@ -2145,6 +2350,7 @@ function endSession() {
     showMessage("Session terminée.", "info"));
   const T = document.getElementById("target-street");
   (T && ((T.textContent = "—"), requestAnimationFrame(fitTargetStreetText)),
+    refreshLectureStreetSearchForCurrentMode(),
     currentUser &&
     currentUser.token &&
     sendScoreToServer({
@@ -3084,6 +3290,8 @@ function startDailySession(e) {
     : t.attempts_count >= 7 &&
     ((r = !0), (a = { success: !1, attempts: t.attempts_count })),
     (isDailyMode = !0),
+    (isLectureMode = !1),
+    setLectureTooltipsEnabled(!1),
     (dailyGuessHistory = []),
     (window._dailyGameOver = !1),
     (window._dailyGuessInFlight = !1));
@@ -3119,6 +3327,7 @@ function startDailySession(e) {
         : "❌ Défi échoué"
       : `🎯 Défi quotidien — ${o} essai${o > 1 ? "s" : ""} restant${o > 1 ? "s" : ""}`),
     (isSessionRunning = !0),
+    refreshLectureStreetSearchForCurrentMode(),
     updateLayoutSessionState());
   const d = document.getElementById("skip-btn"),
     c = document.getElementById("pause-btn");
@@ -3151,8 +3360,8 @@ function endDailySession() {
     (isSessionRunning = !1),
     (window._dailyGameOver = !1),
     (window._dailyGuessInFlight = !1));
-  const e = document.getElementById("target-panel-title");
-  (e && (e.textContent = "Rue à trouver"),
+  (updateTargetPanelTitle(),
+    refreshLectureStreetSearchForCurrentMode(),
     updateStartStopButton(),
     updatePauseButton(),
     updateLayoutSessionState(),
