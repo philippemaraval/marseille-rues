@@ -10,6 +10,18 @@ const API_URL =
   CHRONO_DURATION = 60,
   HIGHLIGHT_DURATION_MS = 5e3,
   MAX_POINTS_PER_ITEM = 10;
+const UI_THEME = {
+  mapStreet: "#f2a900",
+  mapStreetHover: "#f8c870",
+  mapCorrect: "#1f9d66",
+  mapWrong: "#d2463c",
+  mapQuartier: "#2596be",
+  mapMonumentStroke: "#d7eff6",
+  mapMonumentFill: "#5dbdd9",
+  timerSafe: "#1f9d66",
+  timerWarn: "#e08a00",
+  timerDanger: "#d2463c",
+};
 let soundEnabled = "off" !== localStorage.getItem("camino-sound"),
   audioCtx = null;
 function getAudioCtx() {
@@ -699,7 +711,7 @@ function showMessage(e, t) {
 function getBaseStreetStyleFromName(e) {
   const t = getZoneMode(),
     r = normalizeName(e || "");
-  let a = "#ffd500",
+  let a = UI_THEME.mapStreet,
     n = 5;
   return (
     ("rues-principales" !== t && "main" !== t) ||
@@ -786,7 +798,7 @@ function loadStreets() {
                 const t = e.properties.quartier || null;
                 isStreetVisibleInCurrentMode(r, t) &&
                   (streetLayersByName.get(r) || []).forEach((e) => {
-                    e.setStyle({ weight: 7, color: "#ffffff" });
+                    e.setStyle({ weight: 7, color: UI_THEME.mapStreetHover });
                   });
               }, 50)));
           }),
@@ -860,9 +872,9 @@ function loadMonuments() {
             pointToLayer: (e, t) => {
               const r = L.circleMarker(t, {
                 radius: 8,
-                color: "#e3f2fd",
+                color: UI_THEME.mapMonumentStroke,
                 weight: 3,
-                fillColor: "#90caf9",
+                fillColor: UI_THEME.mapMonumentFill,
                 fillOpacity: 1,
                 pane: "markerPane",
               });
@@ -1026,7 +1038,7 @@ function highlightQuartier(e) {
   if (!t)
     return void console.warn("Aucun polygone trouvé pour le quartier :", e);
   quartierOverlay = L.geoJSON(t, {
-    style: { color: "#0077ff", weight: 2, fill: !1 },
+    style: { color: UI_THEME.mapQuartier, weight: 2, fill: !1 },
     interactive: !1,
   }).addTo(map);
   const r = quartierOverlay.getBounds();
@@ -1579,7 +1591,7 @@ function handleStreetClick(e, t, r) {
     }
     if (!n && t && "function" == typeof t.setStyle) {
       const e = getBaseStreetStyle(t);
-      (t.setStyle({ color: "#f97316", weight: 6, opacity: 1 }),
+      (t.setStyle({ color: UI_THEME.timerWarn, weight: 6, opacity: 1 }),
         setTimeout(() => {
           t && map.hasLayer(t) && t.setStyle(e);
         }, 2e3));
@@ -1702,7 +1714,7 @@ function handleStreetClick(e, t, r) {
       );
     } else showMessage(`Correct (${correctCount} trouvées)`, "success");
     (updateSessionProgressBar(),
-      highlightStreet("#00aa00"),
+      highlightStreet(UI_THEME.mapCorrect),
       triggerHaptic('success'),
       feedbackCorrect());
   } else
@@ -1713,7 +1725,7 @@ function handleStreetClick(e, t, r) {
           : "Incorrect",
         "error",
       ),
-      highlightStreet("#d00"),
+      highlightStreet(UI_THEME.mapWrong),
       "classique" === n ? updateWeightedBar(0) : updateSessionProgressBar(),
       triggerHaptic('error'),
       feedbackError());
@@ -1766,7 +1778,7 @@ function handleMonumentClick(e, t) {
       );
     } else showMessage(`Correct (${correctCount} trouvés)`, "success");
     (updateSessionProgressBar(),
-      highlightMonument(i, "#00aa00"),
+      highlightMonument(i, UI_THEME.mapCorrect),
       triggerHaptic('success'),
       feedbackCorrect());
   } else
@@ -1777,7 +1789,7 @@ function handleMonumentClick(e, t) {
           : "Incorrect",
         "error",
       ),
-      highlightMonument(i, "#d00"),
+      highlightMonument(i, UI_THEME.mapWrong),
       "classique" === r ? updateWeightedBar(0) : updateSessionProgressBar(),
       triggerHaptic('error'),
       feedbackError());
@@ -1794,7 +1806,11 @@ function highlightMonument(e, t) {
   e &&
     (e.setStyle({ color: t, fillColor: t }),
       setTimeout(() => {
-        e.setStyle && e.setStyle({ color: "#e3f2fd", fillColor: "#90caf9" });
+        e.setStyle &&
+          e.setStyle({
+            color: UI_THEME.mapMonumentStroke,
+            fillColor: UI_THEME.mapMonumentFill,
+          });
       }, 5e3));
 }
 function showStreetInfo(e) {
@@ -1861,7 +1877,7 @@ function feedbackCorrect() {
         particleCount: 60,
         spread: 55,
         origin: { y: 0.7 },
-        colors: ["#00aa00", "#22c55e", "#86efac", "#ffd500"],
+        colors: [UI_THEME.mapCorrect, "#5dbdd9", "#9ad6e8", UI_THEME.mapStreet],
         gravity: 1.2,
         scalar: 0.8,
         ticks: 120,
@@ -1924,7 +1940,7 @@ function highlightStreetByName(e, t) {
     map.fitBounds(n, { padding: [60, 60], animate: !0, duration: 1.5 }),
     (highlightTimeoutId = setTimeout(() => {
       (highlightedLayers.forEach((e) => {
-        e.setStyle({ color: "#ffd500", weight: 5 });
+        e.setStyle({ color: UI_THEME.mapStreet, weight: 5 });
       }),
         (highlightedLayers = []),
         (highlightTimeoutId = null));
@@ -1949,12 +1965,12 @@ function clearHighlight() {
     highlightedLayers &&
     highlightedLayers.length > 0 &&
     (highlightedLayers.forEach((e) => {
-      e.setStyle({ color: "#ffd500", weight: 5 });
+      e.setStyle({ color: UI_THEME.mapStreet, weight: 5 });
     }),
       (highlightedLayers = [])));
 }
 function focusStreetByName(e) {
-  const t = highlightStreetByName(e, "#ffcc00");
+  const t = highlightStreetByName(e, UI_THEME.mapStreetHover);
   if (!t || 0 === t.length) return;
   let r = null;
   (t.forEach((e) => {
@@ -2169,10 +2185,12 @@ function updateTimeUI(e, t, r) {
     (null != r
       ? ((a.textContent = r.toFixed(1) + " s"),
         r > 30
-          ? ((a.style.color = "#22c55e"), a.classList.remove("chrono-blink"))
+          ? ((a.style.color = UI_THEME.timerSafe),
+            a.classList.remove("chrono-blink"))
           : r > 10
-            ? ((a.style.color = "#f59e0b"), a.classList.remove("chrono-blink"))
-            : ((a.style.color = "#ef4444"),
+            ? ((a.style.color = UI_THEME.timerWarn),
+              a.classList.remove("chrono-blink"))
+            : ((a.style.color = UI_THEME.timerDanger),
               r <= 5 && a.classList.add("chrono-blink")))
       : ((a.textContent = e.toFixed(1) + " s"),
         (a.style.color = ""),
@@ -2509,7 +2527,7 @@ function loadProfile() {
               }),
               (d += "</div>")),
             i > 0 &&
-            (d += `\n          <div class="profile-daily-summary">\n            <span>📅 Daily : ${o} essais en moyenne</span>\n            ${t.daily?.current_streak > 0 ? `<br><span style="color:#f59e0b;font-weight:bold;">🔥 Série actuelle : ${t.daily.current_streak}</span>` : ''}\n            ${t.daily?.max_streak > 0 ? `<br><span style="color:#64748b;font-size:10px;">🏆 Meilleure série : ${t.daily.max_streak}</span>` : ''}\n          </div>`));
+            (d += `\n          <div class="profile-daily-summary">\n            <span>📅 Daily : ${o} essais en moyenne</span>\n            ${t.daily?.current_streak > 0 ? `<br><span style="color:#e08a00;font-weight:bold;">🔥 Série actuelle : ${t.daily.current_streak}</span>` : ''}\n            ${t.daily?.max_streak > 0 ? `<br><span style="color:#64748b;font-size:10px;">🏆 Meilleure série : ${t.daily.max_streak}</span>` : ''}\n          </div>`));
           const c = computeBadges(t),
             m = c.filter((e) => e.unlocked),
             p = c.filter((e) => !e.unlocked);
@@ -3385,10 +3403,10 @@ function handleDailyShareImage(e) {
     return d;
   }
   const m = r.createLinearGradient(0, 0, 0, n);
-  (m.addColorStop(0, "#f8c46b"),
-    m.addColorStop(0.35, "#fb923c"),
-    m.addColorStop(0.68, "#f97316"),
-    m.addColorStop(1, "#0b3458"),
+  (m.addColorStop(0, "#f8dca5"),
+    m.addColorStop(0.35, "#f2a900"),
+    m.addColorStop(0.68, "#2596be"),
+    m.addColorStop(1, "#1e6e8b"),
     (r.fillStyle = m),
     r.fillRect(0, 0, a, n));
   const p = n * 0.47;
@@ -3451,7 +3469,7 @@ function handleDailyShareImage(e) {
     (r.font = '700 42px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
     c(l, s, r, 820, 338, 54, 2));
   const y = { x: s - 150, y: 410, w: 300, h: 170 };
-  ((r.fillStyle = e.success ? "#16a34a" : "#dc2626"),
+  ((r.fillStyle = e.success ? "#1f9d66" : "#d2463c"),
     r.beginPath(),
     r.roundRect(y.x, y.y, y.w, y.h, 28),
     r.fill(),
@@ -3468,10 +3486,10 @@ function handleDailyShareImage(e) {
     dailyGuessHistory.slice(0, 7).forEach((t, a) => {
       const n = S + a * (b + 12),
         i = e.success && a === dailyGuessHistory.length - 1;
-      let l = "#ef4444";
+      let l = "#d2463c";
       (i || t.distance < 500
-        ? (l = "#22c55e")
-        : t.distance < 2e3 && (l = "#eab308"),
+        ? (l = "#1f9d66")
+        : t.distance < 2e3 && (l = "#e08a00"),
         (r.fillStyle = "rgba(15,23,42,0.62)"),
         r.beginPath(),
         r.roundRect(v, n, f, b, 20),
@@ -3595,7 +3613,7 @@ function highlightDailyTarget(e, t) {
   } catch (e) {
     return void console.error("Invalid target geometry:", e);
   }
-  const a = t ? "#4caf50" : "#f44336";
+  const a = t ? UI_THEME.mapCorrect : UI_THEME.mapWrong;
   dailyHighlightLayer = L.geoJSON(
     { type: "Feature", geometry: r, properties: {} },
     {
