@@ -1507,8 +1507,7 @@ button {
 
 .leaderboard-section {
   margin-bottom: 12px;
-  max-height: var(--leaderboard-section-max-h);
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
   padding: 6px;
   border: 1px solid rgba(18, 41, 122, 0.08);
@@ -1533,8 +1532,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: calc(var(--leaderboard-zone-max-h) - 44px);
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
   padding-right: 4px;
   overscroll-behavior: auto;
@@ -1542,8 +1540,7 @@ button {
 }
 
 .leaderboard-mode-container {
-  max-height: var(--leaderboard-mode-max-h);
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
   padding: 6px;
   border: 1px solid rgba(18, 41, 122, 0.08);
@@ -1644,8 +1641,7 @@ button {
 }
 
 .leaderboard-zone-details {
-  max-height: var(--leaderboard-zone-max-h);
-  overflow-y: auto;
+  overflow-y: visible;
   overflow-x: hidden;
   padding: 0 8px 8px;
   border: 1px solid rgba(18, 41, 122, 0.1);
