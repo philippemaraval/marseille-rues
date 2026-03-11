@@ -3768,7 +3768,7 @@ function handleDailyShareText(e) {
     null !== n &&
     Number.isFinite(n) &&
     (s += `\n🎯 Meilleure distance: ${formatDailyDistanceForShare(n)}\n`),
-    (s += "Essaie de faire mieux sur camino8.netlify.app"));
+    (s += "Essaie de faire mieux sur camino-ajm.pages.dev"));
   if (navigator.clipboard && window.isSecureContext)
     navigator.clipboard
       .writeText(s)
@@ -3942,24 +3942,27 @@ function handleDailyShareImage(e) {
     ((r.fillStyle = "rgba(226,232,240,0.9)"),
       (r.font = '600 30px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
       r.fillText("Aucun essai enregistré", v, S + 44));
-  const L = { x: h.x + 90, y: h.y + h.h - 250, w: h.w - 180, h: 170 };
-  ((r.fillStyle = "rgba(15,23,42,0.72)"),
+  const L = { x: s + 20, y: S + 2 * (b + 12) - 6, w: h.x + h.w - 70 - (s + 20), h: 3 * (b + 12) + 12 };
+  ((r.fillStyle = "rgba(15,23,42,0.82)"),
     r.beginPath(),
-    r.roundRect(L.x, L.y, L.w, L.h, 24),
+    r.roundRect(L.x, L.y, L.w, L.h, 20),
     r.fill(),
     (r.strokeStyle = "rgba(148,163,184,0.3)"),
     (r.lineWidth = 1.5),
-    r.stroke(),
-    (r.textAlign = "center"),
+    r.stroke());
+  const Lcx = L.x + L.w / 2;
+  ((r.textAlign = "center"),
     (r.fillStyle = "#f8fafc"),
-    (r.font = '700 34px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
-    r.fillText(`🎯 Meilleure distance : ${d}`, s, L.y + 55),
+    (r.font = '700 28px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
+    r.fillText(`🎯 Meilleure`, Lcx, L.y + 42),
+    r.fillText(`distance : ${d}`, Lcx, L.y + 76),
     (r.fillStyle = "#cbd5e1"),
-    (r.font = '600 30px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
-    r.fillText("Essaie de faire mieux sur", s, L.y + 108),
+    (r.font = '500 22px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
+    r.fillText("Essaie de faire", Lcx, L.y + 130),
+    r.fillText("mieux sur", Lcx, L.y + 158),
     (r.fillStyle = "#93c5fd"),
-    (r.font = '700 34px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
-    r.fillText("camino8.netlify.app", s, L.y + 150));
+    (r.font = '700 24px "Nunito", "Avenir Next", "Segoe UI", sans-serif'),
+    r.fillText("camino-ajm.pages.dev", Lcx, L.y + 200));
   t.toBlob(async (e) => {
     if (!e) return void showMessage("Erreur lors de la génération", "error");
     const t = new File([e], "camino-daily.png", { type: "image/png" });
@@ -3968,7 +3971,7 @@ function handleDailyShareImage(e) {
         return (
           await navigator.share({
             title: "Camino - Défi Quotidien",
-            text: `${dailyTargetData.streetName} • ${i}/7\nEssaie de faire mieux sur camino8.netlify.app`,
+            text: `${dailyTargetData.streetName} • ${i}/7\nEssaie de faire mieux sur camino-ajm.pages.dev`,
             files: [t],
           }),
           void showMessage("Partagé !", "success")
