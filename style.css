@@ -1514,7 +1514,7 @@ button {
   border: 1px solid rgba(18, 41, 122, 0.08);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.8);
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1537,7 +1537,7 @@ button {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1549,7 +1549,7 @@ button {
   border: 1px solid rgba(18, 41, 122, 0.08);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.75);
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1651,7 +1651,7 @@ button {
   border: 1px solid rgba(18, 41, 122, 0.1);
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.82);
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1665,7 +1665,7 @@ button {
 .leaderboard-panel {
   max-height: var(--leaderboard-panel-max-h);
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1680,7 +1680,7 @@ button {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 4px;
-  overscroll-behavior: contain;
+  overscroll-behavior: auto;
   -webkit-overflow-scrolling: touch;
 }
 
