@@ -3247,27 +3247,39 @@ const AVATAR_UNLOCKS = [
   
   // Ville Spécial 
   { 
-    emoji: '🛸',
-    name: "Extraterrestre",
-    desc: "Atteindre Maire sur la Ville Entière (Tous modes)",
-    check: (user) => isMayorOfVille(user)
-  },
-  { 
     emoji: '🚀',
     name: "Astronaute",
+    desc: "Atteindre Minot sur la Ville Entière (Tous modes)",
+    check: (user) => hasReachedVilleRank(user, "M")
+  },
+  { 
+    emoji: '⭐️',
+    name: "Étoile",
+    desc: "Atteindre Habitué sur la Ville Entière (Tous modes)",
+    check: (user) => hasReachedVilleRank(user, "H")
+  },
+  { 
+    emoji: '🛸',
+    name: "Extraterrestre",
+    desc: "Atteindre Vrai Marseillais sur la Ville Entière (Tous modes)",
+    check: (user) => hasReachedVilleRank(user, "V")
+  },
+  { 
+    emoji: '👽',
+    name: "Alien",
     desc: "Atteindre Maire sur la Ville Entière (Tous modes)",
-    check: (user) => isMayorOfVille(user)
+    check: (user) => hasReachedVilleRank(user, "MV")
   }
 ];
 
-function isMayorOfVille(user) {
+function hasReachedVilleRank(user, rankLetter) {
   const r = buildScoringComboMap(user);
   return SCORING_GAME_TYPES.every((gameType) => {
     const s = r.get(`ville|${gameType}`);
     if (!s) return false;
     const i = getTitleThresholds("ville", gameType, s.best_items_total || 0),
       l = getTitleScoreValue(s.high_score, s.best_items_correct, gameType);
-    return typeof i?.MV === "number" && l >= i.MV;
+    return typeof i?.[rankLetter] === "number" && l >= i[rankLetter];
   });
 }
 function getPlayerTitle(e, t, r = "classique", a = 0, n = null) {
