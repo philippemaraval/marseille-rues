@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const path = require('path');
 const db = require('./database');
 
@@ -182,6 +183,25 @@ app.get('/api/analytics', async (req, res) => {
     } catch (err) {
         console.error('Analytics error:', err);
         res.status(500).json({ error: 'Failed to load analytics' });
+    }
+});
+
+app.post('/api/visitors/hit', async (req, res) => {
+    const visitorId = typeof req.body?.visitorId === 'string'
+        ? req.body.visitorId.trim()
+        : '';
+
+    if (!/^[a-zA-Z0-9_-]{16,128}$/.test(visitorId)) {
+        return res.status(400).json({ error: 'Invalid visitor id' });
+    }
+
+    try {
+        const visitorHash = crypto.createHash('sha256').update(visitorId).digest('hex');
+        const uniqueVisitors = await db.recordUniqueVisitorHit(visitorHash);
+        res.json({ uniqueVisitors });
+    } catch (err) {
+        console.error('Visitor counter error:', err);
+        res.status(500).json({ error: 'Failed to update visitor counter' });
     }
 });
 

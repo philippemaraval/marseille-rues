@@ -29,6 +29,7 @@ const ONBOARDING_LEGACY_KEY = "camino-onboarded";
 const ONBOARDING_COOKIE_MAX_AGE_SECONDS = 31536000;
 const DAILY_GUESSES_STORAGE_PREFIX = "camino_daily_guesses_";
 const DAILY_META_STORAGE_PREFIX = "camino_daily_meta_";
+const VISITOR_ID_STORAGE_KEY = "camino_visitor_id";
 
 function readPersistentFlag(flagKey) {
   try {
@@ -63,6 +64,54 @@ function hasSeenOnboarding() {
 function markOnboardingSeen() {
   (writePersistentFlag(ONBOARDING_SEEN_KEY),
     writePersistentFlag(ONBOARDING_LEGACY_KEY));
+}
+
+function isValidVisitorId(e) {
+  return "string" == typeof e && /^[a-zA-Z0-9_-]{16,128}$/.test(e);
+}
+
+function generateVisitorId() {
+  if (window.crypto && "function" == typeof window.crypto.randomUUID)
+    return window.crypto.randomUUID().replace(/-/g, "");
+  const e = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+  return e.slice(0, 64);
+}
+
+function getOrCreateVisitorId() {
+  try {
+    const e = localStorage.getItem(VISITOR_ID_STORAGE_KEY);
+    if (isValidVisitorId(e)) return e;
+  } catch (e) { }
+  const e = generateVisitorId();
+  if (!isValidVisitorId(e)) return "";
+  try {
+    localStorage.setItem(VISITOR_ID_STORAGE_KEY, e);
+  } catch (e) { }
+  return e;
+}
+
+function updateVisitorCounterLabel(e) {
+  const t = document.getElementById("visitor-counter");
+  if (!t || !Number.isFinite(e) || e < 0) return;
+  t.textContent = `Visiteurs uniques : ${new Intl.NumberFormat("fr-FR").format(Math.trunc(e))}`;
+}
+
+async function loadUniqueVisitorCounter() {
+  const e = document.getElementById("visitor-counter");
+  if (!e) return;
+  const t = getOrCreateVisitorId();
+  if (!t) return;
+  try {
+    const e = await fetch(API_URL + "/api/visitors/hit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visitorId: t }),
+    });
+    if (!e.ok) return;
+    const r = await e.json(),
+      a = Number(r.uniqueVisitors);
+    Number.isFinite(a) && updateVisitorCounterLabel(a);
+  } catch (e) { }
 }
 
 function setOnboardingVisibility(showBanner) {
@@ -893,7 +942,9 @@ function initUI() {
     updateUserUI(),
     initLectureStreetSearch());
   const S = document.getElementById("sound-toggle");
-  (S && (S.textContent = soundEnabled ? "🔊" : "🔇"), initOnboardingBanner());
+  (S && (S.textContent = soundEnabled ? "🔊" : "🔇"),
+    initOnboardingBanner(),
+    loadUniqueVisitorCounter());
   function L(e) {
     const t = document.getElementById("offline-banner");
     t && (t.style.display = e ? "block" : "none");

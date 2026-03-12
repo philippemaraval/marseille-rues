@@ -89,6 +89,15 @@ async function initDb() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS visitors_unique (
+        visitor_hash TEXT PRIMARY KEY,
+        first_seen TIMESTAMPTZ DEFAULT NOW(),
+        last_seen TIMESTAMPTZ DEFAULT NOW(),
+        hits INTEGER DEFAULT 1
+      )
+    `);
+
     console.log('Database initialized successfully.');
   } finally {
     client.release();
@@ -534,6 +543,22 @@ async function getAnalytics(limit = 20) {
   };
 }
 
+async function recordUniqueVisitorHit(visitorHash) {
+  await pool.query(
+    `INSERT INTO visitors_unique (visitor_hash)
+     VALUES ($1)
+     ON CONFLICT (visitor_hash) DO UPDATE SET
+       last_seen = NOW(),
+       hits = visitors_unique.hits + 1`,
+    [visitorHash]
+  );
+
+  const total = await pool.query(
+    'SELECT COUNT(*)::int AS unique_visitors FROM visitors_unique'
+  );
+  return total.rows[0]?.unique_visitors || 0;
+}
+
 async function clearAllScores() {
   await pool.query('DELETE FROM scores');
 }
@@ -555,6 +580,7 @@ module.exports = {
   getUserStats,
   trackStreetAnswer,
   getAnalytics,
+  recordUniqueVisitorHit,
   clearAllScores,
   updateUserAvatar
 };
