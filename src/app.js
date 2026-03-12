@@ -2230,6 +2230,32 @@ function endSession() {
     zoneLabels: ZONE_LABELS,
     host: shareHost,
   });
+  d.appendChild(c);
+  const y = document.createElement("div");
+  y.className = "summary-detail";
+  const v = document.createElement("div");
+  v.className = "summary-detail-header";
+  const f = document.createElement("h3");
+  ((f.textContent = "Détail par item (cliquable pour zoomer et voir la fiche)"),
+    v.appendChild(f));
+  const b = document.createElement("div");
+  b.className = "summary-filters";
+  let S = "all";
+  ([
+    { value: "all", label: "Tous" },
+    { value: "correct", label: "Corrects" },
+    { value: "incorrect", label: "Incorrects" },
+  ].forEach((e) => {
+    const t = document.createElement("button");
+    ((t.type = "button"),
+      (t.className = "summary-filter-btn"),
+      (t.dataset.filter = e.value),
+      (t.textContent = e.label),
+      e.value === S && t.classList.add("is-active"),
+      b.appendChild(t));
+  }),
+    v.appendChild(b),
+    y.appendChild(v));
   const sessionSharePanel = document.createElement("div");
   sessionSharePanel.className = "session-share";
   const sessionShareButtons = document.createElement("div");
@@ -2265,33 +2291,7 @@ function endSession() {
   ((sessionShareHint.className = "daily-share-hint session-share-hint"),
     (sessionShareHint.textContent = "Résumé en grille emoji (format type Wordle)."),
     sessionSharePanel.appendChild(sessionShareHint),
-    c.appendChild(sessionSharePanel),
-    d.appendChild(c));
-  const y = document.createElement("div");
-  y.className = "summary-detail";
-  const v = document.createElement("div");
-  v.className = "summary-detail-header";
-  const f = document.createElement("h3");
-  ((f.textContent = "Détail par item (cliquable pour zoomer et voir la fiche)"),
-    v.appendChild(f));
-  const b = document.createElement("div");
-  b.className = "summary-filters";
-  let S = "all";
-  ([
-    { value: "all", label: "Tous" },
-    { value: "correct", label: "Corrects" },
-    { value: "incorrect", label: "Incorrects" },
-  ].forEach((e) => {
-    const t = document.createElement("button");
-    ((t.type = "button"),
-      (t.className = "summary-filter-btn"),
-      (t.dataset.filter = e.value),
-      (t.textContent = e.label),
-      e.value === S && t.classList.add("is-active"),
-      b.appendChild(t));
-  }),
-    v.appendChild(b),
-    y.appendChild(v));
+    y.appendChild(sessionSharePanel));
   const L = document.createElement("ul");
   function M(e) {
     L.querySelectorAll(".summary-item").forEach((t) => {

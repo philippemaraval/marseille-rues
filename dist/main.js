@@ -4063,6 +4063,24 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       zoneLabels: ZONE_LABELS,
       host: shareHost
     });
+    d.appendChild(c);
+    const y = document.createElement("div");
+    y.className = "summary-detail";
+    const v = document.createElement("div");
+    v.className = "summary-detail-header";
+    const f = document.createElement("h3");
+    f.textContent = "D\xE9tail par item (cliquable pour zoomer et voir la fiche)", v.appendChild(f);
+    const b = document.createElement("div");
+    b.className = "summary-filters";
+    let S = "all";
+    [
+      { value: "all", label: "Tous" },
+      { value: "correct", label: "Corrects" },
+      { value: "incorrect", label: "Incorrects" }
+    ].forEach((e2) => {
+      const t2 = document.createElement("button");
+      t2.type = "button", t2.className = "summary-filter-btn", t2.dataset.filter = e2.value, t2.textContent = e2.label, e2.value === S && t2.classList.add("is-active"), b.appendChild(t2);
+    }), v.appendChild(b), y.appendChild(v);
     const sessionSharePanel = document.createElement("div");
     sessionSharePanel.className = "session-share";
     const sessionShareButtons = document.createElement("div");
@@ -4084,24 +4102,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     else nativeShareBtn.style.display = "none";
     sessionShareButtons.appendChild(copyShareBtn), sessionShareButtons.appendChild(nativeShareBtn), sessionSharePanel.appendChild(sessionShareButtons);
     const sessionShareHint = document.createElement("p");
-    sessionShareHint.className = "daily-share-hint session-share-hint", sessionShareHint.textContent = "R\xE9sum\xE9 en grille emoji (format type Wordle).", sessionSharePanel.appendChild(sessionShareHint), c.appendChild(sessionSharePanel), d.appendChild(c);
-    const y = document.createElement("div");
-    y.className = "summary-detail";
-    const v = document.createElement("div");
-    v.className = "summary-detail-header";
-    const f = document.createElement("h3");
-    f.textContent = "D\xE9tail par item (cliquable pour zoomer et voir la fiche)", v.appendChild(f);
-    const b = document.createElement("div");
-    b.className = "summary-filters";
-    let S = "all";
-    [
-      { value: "all", label: "Tous" },
-      { value: "correct", label: "Corrects" },
-      { value: "incorrect", label: "Incorrects" }
-    ].forEach((e2) => {
-      const t2 = document.createElement("button");
-      t2.type = "button", t2.className = "summary-filter-btn", t2.dataset.filter = e2.value, t2.textContent = e2.label, e2.value === S && t2.classList.add("is-active"), b.appendChild(t2);
-    }), v.appendChild(b), y.appendChild(v);
+    sessionShareHint.className = "daily-share-hint session-share-hint", sessionShareHint.textContent = "R\xE9sum\xE9 en grille emoji (format type Wordle).", sessionSharePanel.appendChild(sessionShareHint), y.appendChild(sessionSharePanel);
     const L2 = document.createElement("ul");
     function M(e2) {
       L2.querySelectorAll(".summary-item").forEach((t2) => {
