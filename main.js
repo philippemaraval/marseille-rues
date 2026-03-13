@@ -1300,6 +1300,44 @@
     normalized = normalized.replace(/\s+/g, " ").toLowerCase();
     return normalized;
   }
+  var FREE_MODE_EXCLUDED_WORDS = /* @__PURE__ */ new Set([
+    "residence",
+    "residences",
+    "metro",
+    "parking",
+    "acces",
+    "entree",
+    "depose",
+    "lotissement",
+    "domaine",
+    "copropriete",
+    "coproprietes",
+    "groupe",
+    "groupes",
+    "hlm",
+    "hopital",
+    "lycee",
+    "hameau",
+    "station",
+    "gare",
+    "cite",
+    "campagne",
+    "sentier"
+  ]);
+  function normalizeStreetTextForFilters(streetName) {
+    return (streetName || "").toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9' ]+/g, " ").replace(/’/g, "'").replace(/\s+/g, " ");
+  }
+  function isExcludedFromVilleAndQuartier(streetName) {
+    const normalized = normalizeStreetTextForFilters(streetName);
+    if (!normalized) {
+      return true;
+    }
+    const tokens = normalized.split(/[\s']/).filter(Boolean);
+    if (tokens.length === 0) {
+      return true;
+    }
+    return tokens.some((token) => FREE_MODE_EXCLUDED_WORDS.has(token));
+  }
   function createArrondissementByQuartierMap(arrondissementByQuartier2) {
     const map2 = /* @__PURE__ */ new Map();
     Object.entries(arrondissementByQuartier2).forEach(([quartierName, arrondissement]) => {
@@ -1370,10 +1408,16 @@
       return mainStreetNames.has(normalizedStreetName);
     }
     if (zoneMode === "quartier") {
+      if (isExcludedFromVilleAndQuartier(normalizedStreetName)) {
+        return false;
+      }
       const cleanQuartierName = typeof quartierName === "string" ? quartierName.trim() : null;
       if (selectedQuartier && cleanQuartierName !== selectedQuartier) {
         return false;
       }
+    }
+    if (zoneMode === "ville" && isExcludedFromVilleAndQuartier(normalizedStreetName)) {
+      return false;
     }
     return true;
   }
@@ -1387,7 +1431,7 @@
   }) {
     if (zoneMode === "quartier" && selectedQuartier) {
       return allStreetFeatures2.filter(
-        (feature) => feature.properties && typeof feature.properties.quartier === "string" && feature.properties.quartier === selectedQuartier
+        (feature) => feature.properties && typeof feature.properties.quartier === "string" && feature.properties.quartier === selectedQuartier && !isExcludedFromVilleAndQuartier(normalizeName2(feature.properties.name))
       );
     }
     if (zoneMode === "rues-principales" || zoneMode === "main") {
@@ -1402,7 +1446,12 @@
         return famousStreetNames.has(normalizedStreetName);
       });
     }
-    return allStreetFeatures2;
+    return allStreetFeatures2.filter(
+      (feature) => {
+        var _a;
+        return !isExcludedFromVilleAndQuartier(normalizeName2((_a = feature == null ? void 0 : feature.properties) == null ? void 0 : _a.name));
+      }
+    );
   }
   function buildUniqueStreetList(features, normalizeName2) {
     const byNormalizedName = /* @__PURE__ */ new Map();
