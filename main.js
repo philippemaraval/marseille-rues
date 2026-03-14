@@ -2087,14 +2087,15 @@
     }
     return newVisitorId;
   }
-  function updateVisitorCounterLabel(uniqueVisitors) {
+  function updateVisitorCounterLabel(visits) {
     const counter = document.getElementById("visitor-counter");
-    if (!counter || !Number.isFinite(uniqueVisitors) || uniqueVisitors < 0) {
+    if (!counter || !Number.isFinite(visits) || visits < 0) {
       return;
     }
-    counter.textContent = `Visiteurs uniques : ${new Intl.NumberFormat("fr-FR").format(Math.trunc(uniqueVisitors))}`;
+    counter.textContent = `Visites : ${new Intl.NumberFormat("fr-FR").format(Math.trunc(visits))}`;
   }
   async function loadUniqueVisitorCounter() {
+    var _a;
     const counter = document.getElementById("visitor-counter");
     if (!counter) {
       return;
@@ -2113,9 +2114,9 @@
         return;
       }
       const payload = await response.json();
-      const uniqueVisitors = Number(payload.uniqueVisitors);
-      if (Number.isFinite(uniqueVisitors)) {
-        updateVisitorCounterLabel(uniqueVisitors);
+      const visits = Number((_a = payload.visits) != null ? _a : payload.uniqueVisitors);
+      if (Number.isFinite(visits)) {
+        updateVisitorCounterLabel(visits);
       }
     } catch (error) {
     }

@@ -98,6 +98,25 @@ async function initDb() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS visitors_counter (
+        id SMALLINT PRIMARY KEY,
+        total_visits BIGINT NOT NULL DEFAULT 0,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    // Seed total visits from current unique visitors once,
+    // so historical count starts from existing production value.
+    await client.query(`
+      INSERT INTO visitors_counter (id, total_visits)
+      SELECT 1, COUNT(*)::BIGINT
+      FROM visitors_unique
+      WHERE NOT EXISTS (
+        SELECT 1 FROM visitors_counter WHERE id = 1
+      )
+    `);
+
     console.log('Database initialized successfully.');
   } finally {
     client.release();
@@ -654,7 +673,7 @@ async function getAnalytics(limit = 20) {
   };
 }
 
-async function recordUniqueVisitorHit(visitorHash) {
+async function recordVisitHit(visitorHash) {
   await pool.query(
     `INSERT INTO visitors_unique (visitor_hash)
      VALUES ($1)
@@ -665,9 +684,14 @@ async function recordUniqueVisitorHit(visitorHash) {
   );
 
   const total = await pool.query(
-    'SELECT COUNT(*)::int AS unique_visitors FROM visitors_unique'
+    `INSERT INTO visitors_counter (id, total_visits, updated_at)
+     VALUES (1, (SELECT COUNT(*)::BIGINT FROM visitors_unique) + 1, NOW())
+     ON CONFLICT (id) DO UPDATE SET
+       total_visits = visitors_counter.total_visits + 1,
+       updated_at = NOW()
+     RETURNING total_visits`
   );
-  return total.rows[0]?.unique_visitors || 0;
+  return Number(total.rows[0]?.total_visits || 0);
 }
 
 async function clearAllScores() {
@@ -691,7 +715,7 @@ module.exports = {
   getUserStats,
   trackStreetAnswer,
   getAnalytics,
-  recordUniqueVisitorHit,
+  recordVisitHit,
   clearAllScores,
   updateUserAvatar
 };

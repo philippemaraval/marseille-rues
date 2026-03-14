@@ -254,8 +254,8 @@ app.post('/api/visitors/hit', async (req, res) => {
 
     try {
         const visitorHash = crypto.createHash('sha256').update(visitorId).digest('hex');
-        const uniqueVisitors = await db.recordUniqueVisitorHit(visitorHash);
-        res.json({ uniqueVisitors });
+        const visits = await db.recordVisitHit(visitorHash);
+        res.json({ visits });
     } catch (err) {
         console.error('Visitor counter error:', err);
         res.status(500).json({ error: 'Failed to update visitor counter' });
