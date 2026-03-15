@@ -181,6 +181,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
       margin-top: 8px;
       font-size: 14px;
       border: 1px solid var(--border);
@@ -194,6 +195,7 @@
       padding: 9px 10px;
       border-bottom: 1px solid rgba(18, 41, 122, 0.08);
       vertical-align: top;
+      overflow-wrap: anywhere;
     }
 
     th {
@@ -264,6 +266,12 @@
       td {
         font-size: 13px;
         padding: 8px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
     }
   </style>

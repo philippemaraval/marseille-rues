@@ -374,7 +374,7 @@ select:focus {
 
 .custom-select-list {
   position: absolute;
-  top: Calc(100% + 4px);
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   z-index: 2000;
@@ -437,6 +437,9 @@ select:focus {
   font-size: 9.5px;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .actions-row .btn-primary {
@@ -470,18 +473,6 @@ select:focus {
 
 .panel-params .info-block:nth-child(4) {
   z-index: 70 !important;
-}
-
-.panel-params .info-block:first-child {
-  z-index: 100 !important;
-}
-
-.panel-params .info-block:nth-child(2) {
-  z-index: 90 !important;
-}
-
-.panel-params .info-block:nth-child(3) {
-  z-index: 80 !important;
 }
 
 .tries-counter {
@@ -794,6 +785,14 @@ button {
   pointer-events: none;
 }
 
+#target-panel-title {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
+}
+
 .target-name {
   font-family: var(--font-heading);
   font-size: var(--fs-xl);
@@ -801,10 +800,14 @@ button {
   color: var(--primary-dark);
   line-height: 1.2;
   margin-top: 4px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .target-panel-title-text {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .target-item-counter {
@@ -825,6 +828,7 @@ button {
   line-height: 1;
   letter-spacing: 0.02em;
   text-transform: none;
+  justify-self: end;
 }
 
 .lecture-search {
@@ -1635,6 +1639,7 @@ button {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--fs-xs);
+  table-layout: fixed;
 }
 
 .leaderboard-table th {
@@ -1647,6 +1652,7 @@ button {
 
 .leaderboard-table td {
   padding: 3px 6px;
+  overflow-wrap: anywhere;
 }
 
 .leaderboard-player-meta {
@@ -2593,6 +2599,7 @@ select:focus:not(:focus-visible) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
   min-height: 13px;
 }
 
@@ -2604,6 +2611,10 @@ select:focus:not(:focus-visible) {
   color: var(--primary);
   opacity: 1;
   letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .sidebar-rules-link {
@@ -2634,6 +2645,10 @@ select:focus:not(:focus-visible) {
 }
 
 @media (max-width: 900px) {
+  #target-panel-title {
+    column-gap: 6px;
+  }
+
   body.session-running .sidebar-footer {
     display: none !important;
   }
