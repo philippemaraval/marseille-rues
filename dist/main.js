@@ -2207,6 +2207,208 @@
     setOnboardingVisibility(true);
   }
 
+  // src/install-prompt.js
+  var INSTALL_BANNER_SEEN_KEY = "camino_install_banner_seen";
+  var INSTALL_BANNER_REMIND_AT_KEY = "camino_install_banner_remind_at";
+  var INSTALL_INSTALLED_KEY = "camino_install_done";
+  var LATER_REMIND_DELAY_MS = 7 * 24 * 60 * 60 * 1e3;
+  var IOS_SHEET_REMIND_DELAY_MS = 3 * 24 * 60 * 60 * 1e3;
+  var MOBILE_WIDTH_QUERY = "(max-width: 900px)";
+  var COARSE_POINTER_QUERY = "(pointer: coarse)";
+  var deferredInstallPromptEvent = null;
+  var installPromptInitialized = false;
+  function readStorage(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (error) {
+      return null;
+    }
+  }
+  function writeStorage(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (error) {
+    }
+  }
+  function removeStorage(key) {
+    try {
+      window.localStorage.removeItem(key);
+    } catch (error) {
+    }
+  }
+  function readReminderTimestamp() {
+    const raw = readStorage(INSTALL_BANNER_REMIND_AT_KEY);
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value <= 0) {
+      return 0;
+    }
+    return Math.trunc(value);
+  }
+  function scheduleReminder(delayMs) {
+    writeStorage(INSTALL_BANNER_REMIND_AT_KEY, String(Date.now() + delayMs));
+  }
+  function clearReminder() {
+    removeStorage(INSTALL_BANNER_REMIND_AT_KEY);
+  }
+  function setHidden(element, shouldHide) {
+    if (!element) {
+      return;
+    }
+    element.classList.toggle("hidden", shouldHide);
+  }
+  function setIosSheetVisibility(show) {
+    const sheet = document.getElementById("install-ios-sheet");
+    if (!sheet) {
+      return;
+    }
+    setHidden(sheet, !show);
+    sheet.setAttribute("aria-hidden", show ? "false" : "true");
+  }
+  function isStandaloneDisplayMode(isStandaloneDisplayModeFn) {
+    if (typeof isStandaloneDisplayModeFn !== "function") {
+      return false;
+    }
+    try {
+      return !!isStandaloneDisplayModeFn();
+    } catch (error) {
+      return false;
+    }
+  }
+  function isIOSDevice() {
+    const ua = window.navigator.userAgent || "";
+    const platform = window.navigator.platform || "";
+    const iPhoneOrIPad = /iPad|iPhone|iPod/i.test(ua);
+    const ipadOnDesktop = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+    return iPhoneOrIPad || ipadOnDesktop;
+  }
+  function isIOSSafari() {
+    if (!isIOSDevice()) {
+      return false;
+    }
+    const ua = window.navigator.userAgent || "";
+    const isSafari = /Safari/i.test(ua);
+    const isOtherIOSBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo/i.test(ua);
+    return isSafari && !isOtherIOSBrowser;
+  }
+  function isMobileWebContext() {
+    const widthMatches = typeof window.matchMedia === "function" ? window.matchMedia(MOBILE_WIDTH_QUERY).matches : window.innerWidth <= 900;
+    const coarsePointer = typeof window.matchMedia === "function" ? window.matchMedia(COARSE_POINTER_QUERY).matches : "ontouchstart" in window || window.navigator.maxTouchPoints > 0;
+    return widthMatches && coarsePointer;
+  }
+  function isInstallSupportedForCurrentDevice() {
+    return Boolean(deferredInstallPromptEvent) || isIOSSafari();
+  }
+  function isInstalled(isStandaloneDisplayModeFn) {
+    if (isStandaloneDisplayMode(isStandaloneDisplayModeFn)) {
+      writeStorage(INSTALL_INSTALLED_KEY, "1");
+      return true;
+    }
+    return readStorage(INSTALL_INSTALLED_KEY) === "1";
+  }
+  function showBannerIfEligible(isStandaloneDisplayModeFn) {
+    const banner = document.getElementById("install-banner");
+    const sticky = document.getElementById("install-sticky-btn");
+    if (!banner || !sticky) {
+      return;
+    }
+    const installed = isInstalled(isStandaloneDisplayModeFn);
+    const eligibleContext = isMobileWebContext() && !installed;
+    const canInstall = eligibleContext && isInstallSupportedForCurrentDevice();
+    setHidden(sticky, !canInstall);
+    if (!canInstall) {
+      setHidden(banner, true);
+      setIosSheetVisibility(false);
+      return;
+    }
+    const hasSeenBanner = readStorage(INSTALL_BANNER_SEEN_KEY) === "1";
+    const reminderAt = readReminderTimestamp();
+    const reminderDue = reminderAt > 0 && Date.now() >= reminderAt;
+    let showBanner = false;
+    if (!hasSeenBanner) {
+      showBanner = true;
+      writeStorage(INSTALL_BANNER_SEEN_KEY, "1");
+    } else if (reminderDue) {
+      showBanner = true;
+      clearReminder();
+    }
+    setHidden(banner, !showBanner);
+  }
+  function hideInstallBanner() {
+    const banner = document.getElementById("install-banner");
+    setHidden(banner, true);
+  }
+  async function handleInstallAction({ isStandaloneDisplayModeFn, showMessage: showMessage2 }) {
+    if (isInstalled(isStandaloneDisplayModeFn)) {
+      showBannerIfEligible(isStandaloneDisplayModeFn);
+      return;
+    }
+    if (deferredInstallPromptEvent) {
+      const promptEvent = deferredInstallPromptEvent;
+      deferredInstallPromptEvent = null;
+      try {
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if ((choice == null ? void 0 : choice.outcome) === "dismissed") {
+          scheduleReminder(LATER_REMIND_DELAY_MS);
+        }
+        hideInstallBanner();
+      } catch (error) {
+      }
+      showBannerIfEligible(isStandaloneDisplayModeFn);
+      return;
+    }
+    if (isIOSSafari()) {
+      setIosSheetVisibility(true);
+      return;
+    }
+    if (typeof showMessage2 === "function") {
+      showMessage2(
+        "Pour installer, ouvrez le menu du navigateur puis choisissez \u201CInstaller l\u2019application\u201D.",
+        "info"
+      );
+    }
+  }
+  function initInstallPrompt({ isStandaloneDisplayModeFn, showMessage: showMessage2 } = {}) {
+    if (!installPromptInitialized) {
+      installPromptInitialized = true;
+      const installBannerActionButton = document.getElementById("install-banner-action");
+      const installBannerLaterButton = document.getElementById("install-banner-later");
+      const installStickyButton = document.getElementById("install-sticky-btn");
+      const installIosCloseButton = document.getElementById("install-ios-close");
+      const installIosBackdrop = document.getElementById("install-ios-backdrop");
+      const refreshUI = () => showBannerIfEligible(isStandaloneDisplayModeFn);
+      const onInstallClick = () => handleInstallAction({ isStandaloneDisplayModeFn, showMessage: showMessage2 });
+      installBannerActionButton && installBannerActionButton.addEventListener("click", onInstallClick);
+      installStickyButton && installStickyButton.addEventListener("click", onInstallClick);
+      installBannerLaterButton && installBannerLaterButton.addEventListener("click", () => {
+        scheduleReminder(LATER_REMIND_DELAY_MS);
+        hideInstallBanner();
+      });
+      const closeIosSheetWithCooldown = () => {
+        scheduleReminder(IOS_SHEET_REMIND_DELAY_MS);
+        hideInstallBanner();
+        setIosSheetVisibility(false);
+      };
+      installIosCloseButton && installIosCloseButton.addEventListener("click", closeIosSheetWithCooldown);
+      installIosBackdrop && installIosBackdrop.addEventListener("click", closeIosSheetWithCooldown);
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredInstallPromptEvent = event;
+        refreshUI();
+      });
+      window.addEventListener("appinstalled", () => {
+        writeStorage(INSTALL_INSTALLED_KEY, "1");
+        deferredInstallPromptEvent = null;
+        hideInstallBanner();
+        setIosSheetVisibility(false);
+        refreshUI();
+      });
+      window.addEventListener("resize", refreshUI, { passive: true });
+      window.addEventListener("orientationchange", refreshUI);
+    }
+    showBannerIfEligible(isStandaloneDisplayModeFn);
+  }
+
   // src/daily.js
   function getTodayDailyStorageDate() {
     return (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
@@ -3286,13 +3488,13 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   var PULL_TO_REFRESH_TOP_ZONE_PX = 96;
   var PULL_TO_REFRESH_TOP_ZONE_STANDALONE_PX = 220;
   var isPullToRefreshBound = false;
-  function isStandaloneDisplayMode() {
+  function isStandaloneDisplayMode2() {
     if (window.navigator.standalone === true) return true;
     if ("function" != typeof window.matchMedia) return false;
     return window.matchMedia("(display-mode: standalone)").matches || window.matchMedia("(display-mode: fullscreen)").matches || window.matchMedia("(display-mode: minimal-ui)").matches;
   }
   function getPullToRefreshTopZonePx() {
-    return isStandaloneDisplayMode() ? PULL_TO_REFRESH_TOP_ZONE_STANDALONE_PX : PULL_TO_REFRESH_TOP_ZONE_PX;
+    return isStandaloneDisplayMode2() ? PULL_TO_REFRESH_TOP_ZONE_STANDALONE_PX : PULL_TO_REFRESH_TOP_ZONE_PX;
   }
   function getScrollableAncestor(e) {
     let t = e instanceof Element ? e : null;
@@ -3628,7 +3830,10 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       toggleSound();
     })), N && (updateHapticsUI(), N.addEventListener("click", () => {
       toggleHaptics();
-    })), initOnboardingBanner(), loadUniqueVisitorCounter();
+    })), initOnboardingBanner(), initInstallPrompt({
+      isStandaloneDisplayModeFn: isStandaloneDisplayMode2,
+      showMessage
+    }), loadUniqueVisitorCounter();
     function L2(e2) {
       const t2 = document.getElementById("offline-banner");
       t2 && (t2.style.display = e2 ? "block" : "none");

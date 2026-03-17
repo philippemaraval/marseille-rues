@@ -63,6 +63,7 @@ import {
   toggleSound,
 } from "./audio.js";
 import { initOnboardingBanner, loadUniqueVisitorCounter } from "./onboarding.js";
+import { initInstallPrompt } from "./install-prompt.js";
 import { toggleHaptics, triggerHaptic, updateHapticsUI } from "./haptics.js";
 import {
   formatDailyDistanceForShare,
@@ -870,6 +871,10 @@ function initUI() {
         toggleHaptics();
       })),
     initOnboardingBanner(),
+    initInstallPrompt({
+      isStandaloneDisplayModeFn: isStandaloneDisplayMode,
+      showMessage,
+    }),
     loadUniqueVisitorCounter());
   function L(e) {
     const t = document.getElementById("offline-banner");

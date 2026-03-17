@@ -117,6 +117,22 @@
           <button id="onboarding-close" class="onboarding-close" title="Fermer">✕</button>
         </div>
 
+        <!-- Incitation installation PWA (mobile web uniquement) -->
+        <div id="install-banner" class="install-banner hidden" role="region" aria-label="Installer Camino">
+          <div class="install-banner-content">
+            <strong>Installer Camino</strong><br>
+            Accès plus rapide depuis votre écran d’accueil.
+          </div>
+          <div class="install-banner-actions">
+            <button id="install-banner-action" class="btn-primary install-banner-btn" type="button">
+              Installer
+            </button>
+            <button id="install-banner-later" class="btn-tertiary install-banner-later-btn" type="button">
+              Plus tard
+            </button>
+          </div>
+        </div>
+
         <!-- Panneau paramètres -->
         <section class="panel panel-params">
           <div class="panel-title-row">
@@ -360,6 +376,25 @@
       </div>
     </div>
     <div id="map"></div>
+  </div>
+
+  <button id="install-sticky-btn" class="install-sticky-btn hidden" type="button">
+    Installer l’app
+  </button>
+
+  <div id="install-ios-sheet" class="install-ios-sheet hidden" aria-hidden="true">
+    <div id="install-ios-backdrop" class="install-ios-backdrop"></div>
+    <section class="install-ios-panel" role="dialog" aria-modal="true" aria-labelledby="install-ios-title">
+      <h2 id="install-ios-title" class="install-ios-title">Ajouter Camino à l’écran d’accueil</h2>
+      <ol class="install-ios-steps">
+        <li>Touchez <strong>Partager</strong> dans Safari.</li>
+        <li>Choisissez <strong>Sur l’écran d’accueil</strong>.</li>
+        <li>Validez avec <strong>Ajouter</strong>.</li>
+      </ol>
+      <button id="install-ios-close" class="btn-secondary install-ios-close-btn" type="button">
+        Fermer
+      </button>
+    </section>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
