@@ -1,9 +1,9 @@
 const INSTALL_BANNER_SEEN_KEY = "camino_install_banner_seen";
 const INSTALL_BANNER_REMIND_AT_KEY = "camino_install_banner_remind_at";
-const INSTALL_INSTALLED_KEY = "camino_install_done";
 
 const LATER_REMIND_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
 const IOS_SHEET_REMIND_DELAY_MS = 3 * 24 * 60 * 60 * 1000;
+const INSTALLED_REMIND_DELAY_MS = 30 * 24 * 60 * 60 * 1000;
 
 const MOBILE_WIDTH_QUERY = "(max-width: 900px)";
 const COARSE_POINTER_QUERY = "(pointer: coarse)";
@@ -93,6 +93,10 @@ function isIOSSafari() {
   return isSafari && !isOtherIOSBrowser;
 }
 
+function isAndroidDevice() {
+  return /Android/i.test(window.navigator.userAgent || "");
+}
+
 function isMobileWebContext() {
   const widthMatches =
     typeof window.matchMedia === "function"
@@ -106,15 +110,11 @@ function isMobileWebContext() {
 }
 
 function isInstallSupportedForCurrentDevice() {
-  return Boolean(deferredInstallPromptEvent) || isIOSSafari();
+  return Boolean(deferredInstallPromptEvent) || isIOSSafari() || isAndroidDevice();
 }
 
 function isInstalled(isStandaloneDisplayModeFn) {
-  if (isStandaloneDisplayMode(isStandaloneDisplayModeFn)) {
-    writeStorage(INSTALL_INSTALLED_KEY, "1");
-    return true;
-  }
-  return readStorage(INSTALL_INSTALLED_KEY) === "1";
+  return isStandaloneDisplayMode(isStandaloneDisplayModeFn);
 }
 
 function showBannerIfEligible(isStandaloneDisplayModeFn) {
@@ -172,6 +172,8 @@ async function handleInstallAction({ isStandaloneDisplayModeFn, showMessage }) {
       const choice = await promptEvent.userChoice;
       if (choice?.outcome === "dismissed") {
         scheduleReminder(LATER_REMIND_DELAY_MS);
+      } else if (choice?.outcome === "accepted") {
+        scheduleReminder(INSTALLED_REMIND_DELAY_MS);
       }
       hideInstallBanner();
     } catch (error) {}
@@ -182,6 +184,16 @@ async function handleInstallAction({ isStandaloneDisplayModeFn, showMessage }) {
 
   if (isIOSSafari()) {
     setIosSheetVisibility(true);
+    return;
+  }
+
+  if (isAndroidDevice()) {
+    if (typeof showMessage === "function") {
+      showMessage(
+        "Sur Android: menu du navigateur (⋮) puis “Installer l’application” ou “Ajouter à l’écran d’accueil”.",
+        "info",
+      );
+    }
     return;
   }
 
@@ -233,8 +245,8 @@ export function initInstallPrompt({ isStandaloneDisplayModeFn, showMessage } = {
     });
 
     window.addEventListener("appinstalled", () => {
-      writeStorage(INSTALL_INSTALLED_KEY, "1");
       deferredInstallPromptEvent = null;
+      scheduleReminder(INSTALLED_REMIND_DELAY_MS);
       hideInstallBanner();
       setIosSheetVisibility(false);
       refreshUI();

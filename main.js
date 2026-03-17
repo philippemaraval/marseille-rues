@@ -2210,9 +2210,9 @@
   // src/install-prompt.js
   var INSTALL_BANNER_SEEN_KEY = "camino_install_banner_seen";
   var INSTALL_BANNER_REMIND_AT_KEY = "camino_install_banner_remind_at";
-  var INSTALL_INSTALLED_KEY = "camino_install_done";
   var LATER_REMIND_DELAY_MS = 7 * 24 * 60 * 60 * 1e3;
   var IOS_SHEET_REMIND_DELAY_MS = 3 * 24 * 60 * 60 * 1e3;
+  var INSTALLED_REMIND_DELAY_MS = 30 * 24 * 60 * 60 * 1e3;
   var MOBILE_WIDTH_QUERY = "(max-width: 900px)";
   var COARSE_POINTER_QUERY = "(pointer: coarse)";
   var deferredInstallPromptEvent = null;
@@ -2290,20 +2290,19 @@
     const isOtherIOSBrowser = /CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser|DuckDuckGo/i.test(ua);
     return isSafari && !isOtherIOSBrowser;
   }
+  function isAndroidDevice() {
+    return /Android/i.test(window.navigator.userAgent || "");
+  }
   function isMobileWebContext() {
     const widthMatches = typeof window.matchMedia === "function" ? window.matchMedia(MOBILE_WIDTH_QUERY).matches : window.innerWidth <= 900;
     const coarsePointer = typeof window.matchMedia === "function" ? window.matchMedia(COARSE_POINTER_QUERY).matches : "ontouchstart" in window || window.navigator.maxTouchPoints > 0;
     return widthMatches && coarsePointer;
   }
   function isInstallSupportedForCurrentDevice() {
-    return Boolean(deferredInstallPromptEvent) || isIOSSafari();
+    return Boolean(deferredInstallPromptEvent) || isIOSSafari() || isAndroidDevice();
   }
   function isInstalled(isStandaloneDisplayModeFn) {
-    if (isStandaloneDisplayMode(isStandaloneDisplayModeFn)) {
-      writeStorage(INSTALL_INSTALLED_KEY, "1");
-      return true;
-    }
-    return readStorage(INSTALL_INSTALLED_KEY) === "1";
+    return isStandaloneDisplayMode(isStandaloneDisplayModeFn);
   }
   function showBannerIfEligible(isStandaloneDisplayModeFn) {
     const banner = document.getElementById("install-banner");
@@ -2350,6 +2349,8 @@
         const choice = await promptEvent.userChoice;
         if ((choice == null ? void 0 : choice.outcome) === "dismissed") {
           scheduleReminder(LATER_REMIND_DELAY_MS);
+        } else if ((choice == null ? void 0 : choice.outcome) === "accepted") {
+          scheduleReminder(INSTALLED_REMIND_DELAY_MS);
         }
         hideInstallBanner();
       } catch (error) {
@@ -2359,6 +2360,15 @@
     }
     if (isIOSSafari()) {
       setIosSheetVisibility(true);
+      return;
+    }
+    if (isAndroidDevice()) {
+      if (typeof showMessage2 === "function") {
+        showMessage2(
+          "Sur Android: menu du navigateur (\u22EE) puis \u201CInstaller l\u2019application\u201D ou \u201CAjouter \xE0 l\u2019\xE9cran d\u2019accueil\u201D.",
+          "info"
+        );
+      }
       return;
     }
     if (typeof showMessage2 === "function") {
@@ -2397,8 +2407,8 @@
         refreshUI();
       });
       window.addEventListener("appinstalled", () => {
-        writeStorage(INSTALL_INSTALLED_KEY, "1");
         deferredInstallPromptEvent = null;
+        scheduleReminder(INSTALLED_REMIND_DELAY_MS);
         hideInstallBanner();
         setIosSheetVisibility(false);
         refreshUI();
