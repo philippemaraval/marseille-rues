@@ -33,12 +33,12 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 const PUSH_REMINDER_HOUR = readEnvIntegerInRange('PUSH_REMINDER_HOUR', 10, 0, 23);
 const PUSH_REMINDER_MINUTE = readEnvIntegerInRange('PUSH_REMINDER_MINUTE', 0, 0, 59);
 const PUSH_REMINDER_TIMEZONE = process.env.PUSH_REMINDER_TIMEZONE || 'Europe/Paris';
-const VAPID_SUBJECT = readFirstDefinedEnv([
+const ENV_VAPID_SUBJECT = readFirstDefinedEnv([
     'VAPID_SUBJECT',
     'WEB_PUSH_VAPID_SUBJECT',
     'WEBPUSH_VAPID_SUBJECT',
 ], 'mailto:noreply@camino.app');
-const VAPID_PUBLIC_KEY = readFirstDefinedEnv([
+const ENV_VAPID_PUBLIC_KEY = readFirstDefinedEnv([
     'VAPID_PUBLIC_KEY',
     'WEB_PUSH_VAPID_PUBLIC_KEY',
     'WEBPUSH_VAPID_PUBLIC_KEY',
@@ -46,13 +46,19 @@ const VAPID_PUBLIC_KEY = readFirstDefinedEnv([
     'PUBLIC_VAPID_KEY',
     'PUSH_PUBLIC_KEY',
 ]);
-const VAPID_PRIVATE_KEY = readFirstDefinedEnv([
+const ENV_VAPID_PRIVATE_KEY = readFirstDefinedEnv([
     'VAPID_PRIVATE_KEY',
     'WEB_PUSH_VAPID_PRIVATE_KEY',
     'WEBPUSH_VAPID_PRIVATE_KEY',
     'PUSH_PRIVATE_KEY',
 ]);
-const PUSH_ENABLED = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+const pushRuntime = {
+    enabled: false,
+    subject: ENV_VAPID_SUBJECT,
+    publicKey: '',
+    privateKey: '',
+    source: 'none',
+};
 
 if (!JWT_SECRET_KEY) {
     if (IS_PRODUCTION) {
@@ -63,10 +69,58 @@ if (!JWT_SECRET_KEY) {
 
 const EFFECTIVE_JWT_SECRET = JWT_SECRET_KEY || crypto.randomBytes(32).toString('hex');
 
-if (PUSH_ENABLED) {
-    webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
-} else {
-    console.warn('Push notifications disabled: missing VAPID public/private key env vars.');
+async function initializePushRuntime() {
+    try {
+        let subject = ENV_VAPID_SUBJECT;
+        let publicKey = ENV_VAPID_PUBLIC_KEY;
+        let privateKey = ENV_VAPID_PRIVATE_KEY;
+        let source = 'env';
+
+        if (!(publicKey && privateKey)) {
+            const [storedPublic, storedPrivate, storedSubject] = await Promise.all([
+                db.getAppSetting('vapid_public_key'),
+                db.getAppSetting('vapid_private_key'),
+                db.getAppSetting('vapid_subject'),
+            ]);
+
+            if (storedPublic && storedPrivate) {
+                publicKey = storedPublic;
+                privateKey = storedPrivate;
+                subject = storedSubject || subject;
+                source = 'db';
+            } else {
+                const generated = webPush.generateVAPIDKeys();
+                publicKey = generated.publicKey;
+                privateKey = generated.privateKey;
+                source = 'generated';
+
+                await Promise.all([
+                    db.setAppSetting('vapid_public_key', publicKey),
+                    db.setAppSetting('vapid_private_key', privateKey),
+                    db.setAppSetting('vapid_subject', subject),
+                ]);
+            }
+        }
+
+        webPush.setVapidDetails(subject, publicKey, privateKey);
+
+        pushRuntime.enabled = true;
+        pushRuntime.subject = subject;
+        pushRuntime.publicKey = publicKey;
+        pushRuntime.privateKey = privateKey;
+        pushRuntime.source = source;
+
+        console.log(`Push notifications enabled (source: ${source}).`);
+        if (source === 'generated') {
+            console.warn('Push VAPID keys were auto-generated and saved in DB settings.');
+        }
+    } catch (error) {
+        pushRuntime.enabled = false;
+        pushRuntime.publicKey = '';
+        pushRuntime.privateKey = '';
+        pushRuntime.source = 'error';
+        console.error('Push notifications init failed:', error.message);
+    }
 }
 
 // CORS configuration
@@ -126,9 +180,13 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '..')));
 
 // Initialize database then start server
-db.initDb().then(() => {
+db.initDb().then(async () => {
     console.log('Database ready.');
+    await initializePushRuntime();
     startPushReminderScheduler();
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
 }).catch(err => {
     console.error('Database init failed:', err);
     process.exit(1);
@@ -263,8 +321,8 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/notifications/public-key', (req, res) => {
     res.json({
-        enabled: PUSH_ENABLED,
-        publicKey: PUSH_ENABLED ? VAPID_PUBLIC_KEY : null,
+        enabled: pushRuntime.enabled,
+        publicKey: pushRuntime.enabled ? pushRuntime.publicKey : null,
         reminder: {
             hour: PUSH_REMINDER_HOUR,
             minute: PUSH_REMINDER_MINUTE,
@@ -275,7 +333,7 @@ app.get('/api/notifications/public-key', (req, res) => {
 
 app.get('/api/notifications/status', authenticateToken, async (req, res) => {
     try {
-        if (!PUSH_ENABLED) {
+        if (!pushRuntime.enabled) {
             return res.json({
                 enabled: false,
                 subscribed: false,
@@ -305,7 +363,7 @@ app.get('/api/notifications/status', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/notifications/subscribe', authenticateToken, async (req, res) => {
-    if (!PUSH_ENABLED) {
+    if (!pushRuntime.enabled) {
         return res.status(503).json({ error: 'Push notifications are not configured on server' });
     }
 
@@ -663,7 +721,7 @@ app.get('/api/daily/leaderboard', async (req, res) => {
 });
 
 async function sendDailyReminderPushesForDate(dateStr) {
-    if (!PUSH_ENABLED) {
+    if (!pushRuntime.enabled) {
         return { sent: 0, removed: 0, failed: 0 };
     }
 
@@ -704,7 +762,7 @@ async function sendDailyReminderPushesForDate(dateStr) {
 let lastReminderMinuteKey = '';
 
 async function runPushReminderSchedulerTick() {
-    if (!PUSH_ENABLED) {
+    if (!pushRuntime.enabled) {
         return;
     }
 
@@ -734,7 +792,8 @@ async function runPushReminderSchedulerTick() {
 }
 
 function startPushReminderScheduler() {
-    if (!PUSH_ENABLED) {
+    if (!pushRuntime.enabled) {
+        console.warn('Push reminder scheduler disabled: push runtime is not ready.');
         return;
     }
     runPushReminderSchedulerTick().catch((err) => {
@@ -764,8 +823,4 @@ app.post('/api/admin/clean-leaderboard', requireAdminApiKey, async (req, res) =>
         console.error('Erreur lors du nettoyage API:', err);
         res.status(500).json({ error: 'Erreur lors du nettoyage de la base.' });
     }
-});
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
 });

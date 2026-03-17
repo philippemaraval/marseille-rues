@@ -127,6 +127,14 @@ async function initDb() {
       )
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value_text TEXT NOT NULL,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
     // Seed total visits from current unique visitors once.
     // ON CONFLICT avoids duplicate-key crashes on concurrent starts.
     await client.query(`
@@ -817,6 +825,33 @@ async function getVisitCount() {
   return Number(total.rows[0]?.total_visits || 0);
 }
 
+async function getAppSetting(key) {
+  const normalizedKey = String(key || '').trim();
+  if (!normalizedKey) {
+    return null;
+  }
+  const result = await pool.query(
+    'SELECT value_text FROM app_settings WHERE key = $1',
+    [normalizedKey]
+  );
+  return result.rows[0]?.value_text || null;
+}
+
+async function setAppSetting(key, value) {
+  const normalizedKey = String(key || '').trim();
+  if (!normalizedKey) {
+    throw new Error('Invalid app setting key');
+  }
+  await pool.query(
+    `INSERT INTO app_settings (key, value_text, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (key) DO UPDATE SET
+       value_text = EXCLUDED.value_text,
+       updated_at = NOW()`,
+    [normalizedKey, String(value ?? '')]
+  );
+}
+
 async function clearAllScores() {
   await pool.query('DELETE FROM scores');
 }
@@ -847,6 +882,8 @@ module.exports = {
   getAnalytics,
   recordVisitHit,
   getVisitCount,
+  getAppSetting,
+  setAppSetting,
   clearAllScores,
   updateUserAvatar
 };
