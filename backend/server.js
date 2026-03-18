@@ -358,11 +358,139 @@ function getDailyReminderPayload() {
     });
 }
 
+function asyncHandler(handler) {
+    return (req, res, next) => {
+        Promise.resolve(handler(req, res, next)).catch(next);
+    };
+}
+
+function toFiniteNumber(value) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toFiniteInteger(value) {
+    const parsed = Number(value);
+    return Number.isInteger(parsed) ? parsed : null;
+}
+
+function normalizeOptionalText(value, maxLength = 120) {
+    if (typeof value !== 'string') {
+        return null;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+        return null;
+    }
+    return trimmed.slice(0, maxLength);
+}
+
+const SCORE_MODE_ALIASES = {
+    main: 'rues-principales',
+    famous: 'rues-celebres',
+};
+const ALLOWED_SCORE_MODES = new Set(['ville', 'quartier', 'rues-principales', 'rues-celebres', 'monuments']);
+const ALLOWED_SCORE_GAME_TYPES = new Set(['classique', 'marathon', 'chrono']);
+const MAX_SCORE_ITEMS = 100000;
+const MAX_SCORE_SECONDS = 24 * 60 * 60;
+const MAX_DAILY_DISTANCE_METERS = 1000000;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function parseScoreSubmission(body) {
+    const rawMode = String(body?.mode || '').trim();
+    const mode = SCORE_MODE_ALIASES[rawMode] || rawMode;
+    const gameType = String(body?.gameType || '').trim();
+    if (!ALLOWED_SCORE_MODES.has(mode) || !ALLOWED_SCORE_GAME_TYPES.has(gameType)) {
+        return { ok: false, error: 'Invalid mode or gameType' };
+    }
+
+    const score = toFiniteNumber(body?.score);
+    const itemsCorrect = toFiniteInteger(body?.itemsCorrect);
+    const itemsTotal = toFiniteInteger(body?.itemsTotal);
+    const timeSec = toFiniteNumber(body?.timeSec);
+
+    if (score === null || itemsCorrect === null || itemsTotal === null || timeSec === null) {
+        return { ok: false, error: 'Score payload contains invalid numeric values' };
+    }
+    if (itemsTotal < 1 || itemsTotal > MAX_SCORE_ITEMS) {
+        return { ok: false, error: 'itemsTotal out of allowed range' };
+    }
+    if (itemsCorrect < 0 || itemsCorrect > itemsTotal) {
+        return { ok: false, error: 'itemsCorrect must be between 0 and itemsTotal' };
+    }
+    if (timeSec < 0 || timeSec > MAX_SCORE_SECONDS) {
+        return { ok: false, error: 'timeSec out of allowed range' };
+    }
+
+    let normalizedScore = score;
+    if (gameType === 'classique') {
+        const maxClassiqueScore = itemsTotal * 10;
+        if (normalizedScore < 0 || normalizedScore > maxClassiqueScore + 0.001) {
+            return { ok: false, error: 'score out of allowed range for classique mode' };
+        }
+    } else {
+        if (score < 0 || score > MAX_SCORE_ITEMS) {
+            return { ok: false, error: 'score out of allowed range' };
+        }
+        normalizedScore = itemsCorrect;
+    }
+
+    const quartierNameRaw = normalizeOptionalText(body?.quartierName, 120);
+    const quartierName = mode === 'quartier' ? quartierNameRaw : null;
+    if (mode === 'quartier' && !quartierName) {
+        return { ok: false, error: 'quartierName is required for quartier mode' };
+    }
+
+    const sessionIdRaw = normalizeOptionalText(body?.sessionId, 96);
+    if (sessionIdRaw && !/^[a-zA-Z0-9_-]{8,96}$/.test(sessionIdRaw)) {
+        return { ok: false, error: 'Invalid sessionId format' };
+    }
+
+    return {
+        ok: true,
+        value: {
+            mode,
+            gameType,
+            score: normalizedScore,
+            itemsCorrect,
+            itemsTotal,
+            timeSec,
+            quartierName,
+            sessionId: sessionIdRaw,
+        },
+    };
+}
+
+function parseDailyGuessSubmission(body) {
+    const date = String(body?.date || '').trim();
+    if (!ISO_DATE_PATTERN.test(date)) {
+        return { ok: false, error: 'Invalid date format' };
+    }
+
+    const distanceMeters = toFiniteNumber(body?.distanceMeters);
+    if (distanceMeters === null || distanceMeters < 0 || distanceMeters > MAX_DAILY_DISTANCE_METERS) {
+        return { ok: false, error: 'Invalid distanceMeters value' };
+    }
+
+    if (typeof body?.isSuccess !== 'boolean') {
+        return { ok: false, error: 'isSuccess must be a boolean' };
+    }
+
+    return {
+        ok: true,
+        value: {
+            date,
+            distanceMeters: Math.round(distanceMeters),
+            isSuccess: body.isSuccess,
+        },
+    };
+}
+
 // ----------------------
 // Auth Routes
 // ----------------------
 
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', asyncHandler(async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
 
@@ -373,9 +501,9 @@ app.post('/api/register', async (req, res) => {
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
-});
+}));
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', asyncHandler(async (req, res) => {
     const { username, password } = req.body;
     const user = await db.getUser(username);
 
@@ -385,13 +513,13 @@ app.post('/api/login', async (req, res) => {
 
     const token = jwt.sign({ id: user.id, username: user.username }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, username: user.username, avatar: user.avatar || '👤' });
-});
+}));
 
 // ----------------------
 // Push Notification Routes
 // ----------------------
 
-app.get('/api/notifications/public-key', async (req, res) => {
+app.get('/api/notifications/public-key', asyncHandler(async (req, res) => {
     await ensurePushRuntimeReady();
     res.json({
         enabled: pushRuntime.enabled,
@@ -403,7 +531,7 @@ app.get('/api/notifications/public-key', async (req, res) => {
             timezone: PUSH_REMINDER_TIMEZONE,
         },
     });
-});
+}));
 
 app.get('/api/notifications/status', authenticateToken, async (req, res) => {
     try {
@@ -438,7 +566,7 @@ app.get('/api/notifications/status', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/notifications/subscribe', authenticateToken, async (req, res) => {
+app.post('/api/notifications/subscribe', authenticateToken, asyncHandler(async (req, res) => {
     await ensurePushRuntimeReady();
     if (!pushRuntime.enabled) {
         return res.status(503).json({ error: 'Push notifications are not configured on server' });
@@ -463,7 +591,7 @@ app.post('/api/notifications/subscribe', authenticateToken, async (req, res) => 
         console.error('Push subscribe error:', err);
         return res.status(500).json({ error: 'Failed to save push subscription' });
     }
-});
+}));
 
 app.post('/api/notifications/unsubscribe', authenticateToken, async (req, res) => {
     const endpoint = String(req.body?.endpoint || '').trim();
@@ -511,15 +639,27 @@ app.get('/api/leaderboards', async (req, res) => {
     }
 });
 
-app.post('/api/scores', authenticateToken, async (req, res) => {
-    const { mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName } = req.body;
-    if (!mode || !gameType || score === undefined) {
-        return res.status(400).json({ error: 'Invalid data' });
+app.post('/api/scores', authenticateToken, asyncHandler(async (req, res) => {
+    const parsed = parseScoreSubmission(req.body);
+    if (!parsed.ok) {
+        return res.status(400).json({ error: parsed.error });
     }
 
-    await db.addScore(req.user.id, req.user.username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName);
-    res.json({ success: true });
-});
+    const saved = await db.addScore(
+        req.user.id,
+        req.user.username,
+        parsed.value.mode,
+        parsed.value.gameType,
+        parsed.value.score,
+        parsed.value.itemsCorrect,
+        parsed.value.itemsTotal,
+        parsed.value.timeSec,
+        parsed.value.quartierName,
+        parsed.value.sessionId,
+    );
+
+    return res.json({ success: true, duplicate: !saved });
+}));
 
 // ----------------------
 // Profile Route
@@ -811,22 +951,36 @@ app.get('/api/daily', authenticateToken, async (req, res) => {
     }
 });
 
-app.post('/api/daily/guess', authenticateToken, async (req, res) => {
+app.post('/api/daily/guess', authenticateToken, asyncHandler(async (req, res) => {
     try {
-        const { date, distanceMeters, isSuccess } = req.body;
-        const result = await db.updateDailyUserAttempt(req.user.id, date, distanceMeters, isSuccess);
+        const parsed = parseDailyGuessSubmission(req.body);
+        if (!parsed.ok) {
+            return res.status(400).json({ error: parsed.error });
+        }
+
+        const expectedDate = await ensureDailyTarget();
+        if (parsed.value.date !== expectedDate) {
+            return res.status(400).json({ error: 'Invalid daily date for current challenge' });
+        }
+
+        const result = await db.updateDailyUserAttempt(
+            req.user.id,
+            parsed.value.date,
+            parsed.value.distanceMeters,
+            parsed.value.isSuccess,
+        );
 
         if (result.success || result.attempts_count >= 7) {
-            const target = await db.getDailyTarget(date);
+            const target = await db.getDailyTarget(parsed.value.date);
             result.targetGeometry = target ? await getTargetGeometry(target) : null;
         }
 
-        res.json(result);
+        return res.json(result);
     } catch (err) {
         console.error('Daily guess error:', err);
-        res.status(500).json({ error: 'Server error' });
+        return res.status(500).json({ error: 'Server error' });
     }
-});
+}));
 
 app.get('/api/daily/leaderboard', async (req, res) => {
     try {
@@ -879,6 +1033,8 @@ async function sendDailyReminderPushesForDate(dateStr) {
 }
 
 let lastReminderDateKey = '';
+let reminderRetryNotBeforeMs = 0;
+const PUSH_REMINDER_RETRY_BACKOFF_MS = 10 * 60 * 1000;
 
 function hasReachedReminderTime(nowParts) {
     return (
@@ -901,15 +1057,28 @@ async function runPushReminderSchedulerTick() {
     if (nowParts.dateStr === lastReminderDateKey) {
         return;
     }
+    if (Date.now() < reminderRetryNotBeforeMs) {
+        return;
+    }
 
     try {
         const result = await sendDailyReminderPushesForDate(nowParts.dateStr);
+        if (result.failed > 0) {
+            reminderRetryNotBeforeMs = Date.now() + PUSH_REMINDER_RETRY_BACKOFF_MS;
+            console.warn(
+                `[Push Daily ${nowParts.dateStr}] sent=${result.sent} removed=${result.removed} failed=${result.failed} (retry in ${Math.round(PUSH_REMINDER_RETRY_BACKOFF_MS / 60000)} min)`
+            );
+            return;
+        }
+
+        reminderRetryNotBeforeMs = 0;
         lastReminderDateKey = nowParts.dateStr;
         console.log(
             `[Push Daily ${nowParts.dateStr}] sent=${result.sent} removed=${result.removed} failed=${result.failed}`
         );
     } catch (err) {
         lastReminderDateKey = '';
+        reminderRetryNotBeforeMs = Date.now() + PUSH_REMINDER_RETRY_BACKOFF_MS;
         console.error('Daily push scheduler error:', err);
     }
 }
@@ -947,8 +1116,9 @@ app.post('/api/admin/push/send-daily-now', requireAdminApiKey, async (req, res) 
         }
 
         const result = await sendDailyReminderPushesForDate(targetDate);
-        if (targetDate === fallbackDate) {
+        if (targetDate === fallbackDate && result.failed === 0) {
             lastReminderDateKey = targetDate;
+            reminderRetryNotBeforeMs = 0;
         }
 
         return res.json({
@@ -976,4 +1146,12 @@ app.post('/api/admin/clean-leaderboard', requireAdminApiKey, async (req, res) =>
         console.error('Erreur lors du nettoyage API:', err);
         res.status(500).json({ error: 'Erreur lors du nettoyage de la base.' });
     }
+});
+
+app.use((err, req, res, next) => {
+    console.error('Unhandled route error:', err);
+    if (res.headersSent) {
+        return next(err);
+    }
+    return res.status(500).json({ error: 'Internal server error' });
 });

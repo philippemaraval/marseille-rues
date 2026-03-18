@@ -1,6 +1,7 @@
 (() => {
   // src/config.js
   var API_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:" ? "http://localhost:3000" : "https://camino2.onrender.com";
+  var MAX_ERRORS_MARATHON = 3;
   var MAX_POINTS_PER_ITEM = 10;
   var LEADERBOARD_VISIBLE_ROWS = 3;
   var MAX_LECTURE_SEARCH_RESULTS = 8;
@@ -1214,7 +1215,8 @@
           itemsCorrect: payload.itemsCorrect,
           itemsTotal: payload.itemsTotal,
           timeSec: payload.totalTimeSec,
-          quartierName: payload.quartierName
+          quartierName: payload.quartierName,
+          sessionId: payload.sessionId
         })
       }).then((response) => response.json()).then(() => {
         loadAllLeaderboards2();
@@ -3832,6 +3834,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   var currentIndex = 0;
   var currentTarget = null;
   var isSessionRunning = false;
+  var activeSessionId = null;
   var sessionStartTime = null;
   var streetStartTime = null;
   var isPaused = false;
@@ -3999,6 +4002,12 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     if (!e) return null;
     const t = e.value;
     return t && "" !== t.trim() ? t.trim() : null;
+  }
+  function generateSessionId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
+    }
+    return `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
   }
   function getZoneMode() {
     return currentZoneMode;
@@ -4260,20 +4269,54 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     });
     const M = document.getElementById("daily-mode-btn");
     M && M.addEventListener("click", handleDailyModeClick), n && n.addEventListener("click", () => {
+      const applyMarathonSkipPenalty = () => {
+        if ("marathon" !== getGameMode()) {
+          return false;
+        }
+        errorsCount += 1;
+        updateSessionProgressBar();
+        if (errorsCount >= MAX_ERRORS_MARATHON) {
+          showMessage(`Pass\xE9 (limite de ${MAX_ERRORS_MARATHON} erreurs atteinte)`, "error");
+          return true;
+        }
+        showMessage(`Pass\xE9 (${errorsCount}/${MAX_ERRORS_MARATHON} erreurs)`, "warning");
+        return false;
+      };
       if (isSessionRunning && !isPaused) {
         if ("monuments" === getZoneMode()) {
           if (!currentMonumentTarget) return;
-          return summaryData.push({
+          summaryData.push({
             name: currentMonumentTarget.properties.name,
             correct: false,
             time: 0
-          }), totalAnswered += 1, updateScoreUI(), currentMonumentIndex += 1, void setNewTarget();
+          });
+          totalAnswered += 1;
+          updateScoreUI();
+          updateWeightedScoreUI();
+          if (applyMarathonSkipPenalty()) {
+            endSession();
+            return;
+          }
+          currentMonumentIndex += 1;
+          setNewTarget();
+          return;
         }
-        currentTarget && (summaryData.push({
-          name: currentTarget.properties.name,
-          correct: false,
-          time: 0
-        }), totalAnswered += 1, updateScoreUI(), currentIndex += 1, setNewTarget());
+        if (currentTarget) {
+          summaryData.push({
+            name: currentTarget.properties.name,
+            correct: false,
+            time: 0
+          });
+          totalAnswered += 1;
+          updateScoreUI();
+          updateWeightedScoreUI();
+          if (applyMarathonSkipPenalty()) {
+            endSession();
+            return;
+          }
+          currentIndex += 1;
+          setNewTarget();
+        }
       }
     }), t && t.addEventListener("change", () => {
       currentZoneMode = t.value;
@@ -4533,7 +4576,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     t.id = "lecture-back-btn", t.type = "button", t.className = "btn btn-secondary lecture-back-btn", t.textContent = "Retour au menu", e.insertAdjacentElement("afterend", t), t.addEventListener("click", exitLectureModeToMenu), t.style.display = "none";
   }
   function exitLectureModeToMenu() {
-    isLectureMode = false, setLectureTooltipsEnabled(false), isSessionRunning = false, isChronoMode = false, chronoEndTime = null, sessionStartTime = null, streetStartTime = null, isPaused = false, pauseStartTime = null, remainingChronoMs = null;
+    isLectureMode = false, setLectureTooltipsEnabled(false), isSessionRunning = false, activeSessionId = null, isChronoMode = false, chronoEndTime = null, sessionStartTime = null, streetStartTime = null, isPaused = false, pauseStartTime = null, remainingChronoMs = null;
     const e = document.getElementById("game-mode-select");
     e && (e.value = "classique");
     const t = document.getElementById("game-mode-select-button"), r = document.getElementById("game-mode-select-list");
@@ -4554,7 +4597,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   function startNewSession() {
     document.body.classList.remove("session-ended");
     const e = document.getElementById("quartier-select"), t = getZoneMode(), r = getGameMode(), a = document.getElementById("street-info");
-    a && (a.textContent = "", a.style.display = "none"), clearHighlight(), correctCount = 0, totalAnswered = 0, summaryData = [], weightedScore = 0, errorsCount = 0, isPaused = false, pauseStartTime = null, remainingChronoMs = null, updateScoreUI(), updateTimeUI(0, 0), updateScoreMetricUI(), updateWeightedScoreUI(), updateSessionProgressBar();
+    a && (a.textContent = "", a.style.display = "none"), clearHighlight(), activeSessionId = generateSessionId(), correctCount = 0, totalAnswered = 0, summaryData = [], weightedScore = 0, errorsCount = 0, isPaused = false, pauseStartTime = null, remainingChronoMs = null, updateScoreUI(), updateTimeUI(0, 0), updateScoreMetricUI(), updateWeightedScoreUI(), updateSessionProgressBar();
     const n = document.getElementById("summary");
     if (n && (n.classList.add("hidden"), n.innerHTML = ""), clearSessionShareSlot(), isChronoMode = "chrono" === r, chronoEndTime = isChronoMode ? performance.now() + 6e4 : null, setLectureTooltipsEnabled(false), "lecture" === r) {
       isLectureMode = true, isSessionRunning = false, isChronoMode = false, chronoEndTime = null, sessionStartTime = null, streetStartTime = null, currentTarget = null, setLectureTooltipsEnabled(true), currentMonumentTarget = null, isPaused = false, pauseStartTime = null, remainingChronoMs = null, updateTargetPanelTitle(), updateLayoutSessionState(), "monuments" === t ? (streetsLayer && map.hasLayer(streetsLayer) && map.removeLayer(streetsLayer), monumentsLayer && !map.hasLayer(monumentsLayer) && monumentsLayer.addTo(map), clearQuartierOverlay()) : (monumentsLayer && map.hasLayer(monumentsLayer) && map.removeLayer(monumentsLayer), streetsLayer && !map.hasLayer(streetsLayer) && streetsLayer.addTo(map), "quartier" === t && e && e.value ? highlightQuartier(e.value) : clearQuartierOverlay()), (() => {
@@ -4822,14 +4865,14 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       updateSessionProgressBar(), highlightStreet(UI_THEME.mapCorrect), triggerHaptic("success"), feedbackCorrect();
     } else
       errorsCount += 1, showMessage(
-        "marathon" === n && errorsCount >= 3 ? "Incorrect (limite de 3 erreurs atteinte)" : "Incorrect",
+        "marathon" === n && errorsCount >= MAX_ERRORS_MARATHON ? `Incorrect (limite de ${MAX_ERRORS_MARATHON} erreurs atteinte)` : "Incorrect",
         "error"
       ), highlightStreet(UI_THEME.mapWrong), "classique" === n ? updateWeightedBar(0) : updateSessionProgressBar(), triggerHaptic("error"), feedbackError();
     totalAnswered += 1, summaryData.push({
       name: currentTarget.properties.name,
       correct: i,
       time: s.toFixed(1)
-    }), trackAnswer(currentTarget.properties.name, getZoneMode(), i, s), updateWeightedScoreUI(), updateScoreUI(), showStreetInfo(l), !i && "marathon" === n && errorsCount >= 3 ? endSession() : (currentIndex += 1, setNewTarget());
+    }), trackAnswer(currentTarget.properties.name, getZoneMode(), i, s), updateWeightedScoreUI(), updateScoreUI(), showStreetInfo(l), !i && "marathon" === n && errorsCount >= MAX_ERRORS_MARATHON ? endSession() : (currentIndex += 1, setNewTarget());
   }
   function handleMonumentClick(e, t) {
     if ("monuments" !== getZoneMode()) return;
@@ -4856,10 +4899,10 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       updateSessionProgressBar(), highlightMonument(i, UI_THEME.mapCorrect), triggerHaptic("success"), feedbackCorrect();
     } else
       errorsCount += 1, showMessage(
-        "marathon" === r && errorsCount >= 3 ? "Incorrect (limite de 3 erreurs atteinte)" : "Incorrect",
+        "marathon" === r && errorsCount >= MAX_ERRORS_MARATHON ? `Incorrect (limite de ${MAX_ERRORS_MARATHON} erreurs atteinte)` : "Incorrect",
         "error"
       ), highlightMonument(i, UI_THEME.mapWrong), "classique" === r ? updateWeightedBar(0) : updateSessionProgressBar(), triggerHaptic("error"), feedbackError();
-    totalAnswered += 1, summaryData.push({ name: s, correct: n, time: a.toFixed(1) }), trackAnswer(s, "monuments", n, a), updateWeightedScoreUI(), updateScoreUI(), !n && "marathon" === r && errorsCount >= 3 ? endSession() : (currentMonumentIndex += 1, setNewTarget());
+    totalAnswered += 1, summaryData.push({ name: s, correct: n, time: a.toFixed(1) }), trackAnswer(s, "monuments", n, a), updateWeightedScoreUI(), updateScoreUI(), !n && "marathon" === r && errorsCount >= MAX_ERRORS_MARATHON ? endSession() : (currentMonumentIndex += 1, setNewTarget());
   }
   function highlightMonument(e, t) {
     e && (e.setStyle({ color: t, fillColor: t }), setTimeout(() => {
@@ -5018,7 +5061,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     c.className = "summary-global";
     const m = document.createElement("h2");
     let p;
-    m.textContent = "R\xE9capitulatif de la session", c.appendChild(m), p = "marathon" === l ? "Mode : Marathon (max. 3 erreurs)" : "chrono" === l ? "Mode : Chrono (60 s)" : "Mode : Classique (20 items max)", p += ` \u2013 Zone : ${o}`, u && (p += ` \u2013 Quartier : ${u}`);
+    m.textContent = "R\xE9capitulatif de la session", c.appendChild(m), p = "marathon" === l ? `Mode : Marathon (max. ${MAX_ERRORS_MARATHON} erreurs)` : "chrono" === l ? "Mode : Chrono (60 s)" : "Mode : Classique (20 items max)", p += ` \u2013 Zone : ${o}`, u && (p += ` \u2013 Quartier : ${u}`);
     const g = document.createElement("p");
     g.textContent = p, c.appendChild(g);
     const h = document.createElement("div");
@@ -5113,6 +5156,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       zoneMode: o,
       quartierName: u,
       gameMode: l,
+      sessionId: activeSessionId || generateSessionId(),
       score: uScore,
       percentCorrect: s,
       totalTimeSec: t,

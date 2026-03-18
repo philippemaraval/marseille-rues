@@ -848,6 +848,7 @@ export function sendScoreToServerRuntime({
         itemsTotal: payload.itemsTotal,
         timeSec: payload.totalTimeSec,
         quartierName: payload.quartierName,
+        sessionId: payload.sessionId,
       }),
     })
       .then((response) => response.json())

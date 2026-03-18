@@ -30,6 +30,7 @@ async function initDb() {
         username TEXT,
         mode TEXT NOT NULL,
         game_type TEXT NOT NULL,
+        session_id TEXT,
         score REAL NOT NULL,
         items_correct INTEGER DEFAULT 0,
         items_total INTEGER DEFAULT 0,
@@ -89,6 +90,7 @@ async function initDb() {
       'ALTER TABLE scores ADD COLUMN IF NOT EXISTS items_correct INTEGER DEFAULT 0',
       'ALTER TABLE scores ADD COLUMN IF NOT EXISTS items_total INTEGER DEFAULT 0',
       'ALTER TABLE scores ADD COLUMN IF NOT EXISTS time_sec REAL DEFAULT 0',
+      'ALTER TABLE scores ADD COLUMN IF NOT EXISTS session_id TEXT',
       'ALTER TABLE daily_targets ADD COLUMN IF NOT EXISTS geometry_json TEXT',
       'ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS enabled BOOLEAN NOT NULL DEFAULT TRUE',
       'ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS last_notified_on DATE',
@@ -97,6 +99,11 @@ async function initDb() {
     for (const sql of migrations) {
       try { await client.query(sql); } catch (e) { /* already exists */ }
     }
+
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_scores_user_id_session_id
+      ON scores (user_id, session_id)
+    `);
 
     // Analytics table
     await client.query(`
@@ -179,12 +186,28 @@ function verifyPassword(user, password) {
 
 // ── Score Helpers ──
 
-async function addScore(userId, username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName) {
-  await pool.query(
-    `INSERT INTO scores (user_id, username, mode, game_type, score, items_correct, items_total, time_sec, quartier_name)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-    [userId, username, mode, gameType, score, itemsCorrect || 0, itemsTotal || 0, timeSec || 0, quartierName || null]
+async function addScore(userId, username, mode, gameType, score, itemsCorrect, itemsTotal, timeSec, quartierName, sessionId) {
+  const result = await pool.query(
+    `INSERT INTO scores (
+       user_id, username, mode, game_type, score, items_correct, items_total, time_sec, quartier_name, session_id
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     ON CONFLICT (user_id, session_id) DO NOTHING
+     RETURNING id`,
+    [
+      userId,
+      username,
+      mode,
+      gameType,
+      score,
+      itemsCorrect || 0,
+      itemsTotal || 0,
+      timeSec || 0,
+      quartierName || null,
+      sessionId || null,
+    ]
   );
+  return result.rowCount > 0;
 }
 
 function normalizeLeaderboardPeriod(period) {
@@ -338,32 +361,25 @@ async function getDailyUserStatus(userId, date) {
 }
 
 async function updateDailyUserAttempt(userId, date, distanceMeters, isSuccess) {
-  // Ensure record exists
-  await pool.query(
-    `INSERT INTO daily_user_attempts (user_id, date, attempts_count, best_distance_meters, success)
-     VALUES ($1, $2, 0, NULL, FALSE)
-     ON CONFLICT (user_id, date) DO NOTHING`,
-    [userId, date]
+  const result = await pool.query(
+    `INSERT INTO daily_user_attempts (
+       user_id, date, attempts_count, best_distance_meters, success, last_attempt_at
+     )
+     VALUES ($1, $2, 1, $3, $4, NOW())
+     ON CONFLICT (user_id, date) DO UPDATE SET
+       attempts_count = daily_user_attempts.attempts_count + 1,
+       best_distance_meters = CASE
+         WHEN daily_user_attempts.best_distance_meters IS NULL THEN EXCLUDED.best_distance_meters
+         WHEN EXCLUDED.best_distance_meters < daily_user_attempts.best_distance_meters THEN EXCLUDED.best_distance_meters
+         ELSE daily_user_attempts.best_distance_meters
+       END,
+       success = (daily_user_attempts.success OR EXCLUDED.success),
+       last_attempt_at = NOW()
+     RETURNING attempts_count, best_distance_meters, success`,
+    [userId, date, distanceMeters, Boolean(isSuccess)]
   );
 
-  const current = await getDailyUserStatus(userId, date);
-  const newCount = current.attempts_count + 1;
-
-  let newBestDist = current.best_distance_meters;
-  if (newBestDist === null || distanceMeters < newBestDist) {
-    newBestDist = distanceMeters;
-  }
-
-  const newSuccess = current.success || isSuccess;
-
-  await pool.query(
-    `UPDATE daily_user_attempts
-     SET attempts_count = $1, best_distance_meters = $2, success = $3, last_attempt_at = NOW()
-     WHERE user_id = $4 AND date = $5`,
-    [newCount, newBestDist, newSuccess, userId, date]
-  );
-
-  return { attempts_count: newCount, best_distance_meters: newBestDist, success: newSuccess };
+  return result.rows[0];
 }
 
 async function getDailyLeaderboard(date) {

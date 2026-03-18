@@ -650,6 +650,7 @@ let sessionStreets = [],
   currentIndex = 0,
   currentTarget = null,
   isSessionRunning = !1,
+  activeSessionId = null,
   sessionStartTime = null,
   streetStartTime = null,
   isPaused = !1,
@@ -863,6 +864,14 @@ function getSelectedQuartier() {
   const t = e.value;
   return t && "" !== t.trim() ? t.trim() : null;
 }
+
+function generateSessionId() {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return window.crypto.randomUUID();
+  }
+  return `sess_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function getZoneMode() {
   return currentZoneMode;
 }
@@ -1316,31 +1325,55 @@ function initUI() {
   (M && M.addEventListener("click", handleDailyModeClick),
     n &&
     n.addEventListener("click", () => {
+      const applyMarathonSkipPenalty = () => {
+        if ("marathon" !== getGameMode()) {
+          return !1;
+        }
+        errorsCount += 1;
+        updateSessionProgressBar();
+        if (errorsCount >= MAX_ERRORS_MARATHON) {
+          showMessage(`Passé (limite de ${MAX_ERRORS_MARATHON} erreurs atteinte)`, "error");
+          return !0;
+        }
+        showMessage(`Passé (${errorsCount}/${MAX_ERRORS_MARATHON} erreurs)`, "warning");
+        return !1;
+      };
+
       if (isSessionRunning && !isPaused) {
         if ("monuments" === getZoneMode()) {
           if (!currentMonumentTarget) return;
-          return (
-            summaryData.push({
-              name: currentMonumentTarget.properties.name,
-              correct: !1,
-              time: 0,
-            }),
-            (totalAnswered += 1),
-            updateScoreUI(),
-            (currentMonumentIndex += 1),
-            void setNewTarget()
-          );
+          summaryData.push({
+            name: currentMonumentTarget.properties.name,
+            correct: !1,
+            time: 0,
+          });
+          totalAnswered += 1;
+          updateScoreUI();
+          updateWeightedScoreUI();
+          if (applyMarathonSkipPenalty()) {
+            endSession();
+            return;
+          }
+          currentMonumentIndex += 1;
+          setNewTarget();
+          return;
         }
-        currentTarget &&
-          (summaryData.push({
+        if (currentTarget) {
+          summaryData.push({
             name: currentTarget.properties.name,
             correct: !1,
             time: 0,
-          }),
-            (totalAnswered += 1),
-            updateScoreUI(),
-            (currentIndex += 1),
-            setNewTarget());
+          });
+          totalAnswered += 1;
+          updateScoreUI();
+          updateWeightedScoreUI();
+          if (applyMarathonSkipPenalty()) {
+            endSession();
+            return;
+          }
+          currentIndex += 1;
+          setNewTarget();
+        }
       }
     }),
     t &&
@@ -1753,6 +1786,7 @@ function exitLectureModeToMenu() {
   ((isLectureMode = !1),
     setLectureTooltipsEnabled(!1),
     (isSessionRunning = !1),
+    (activeSessionId = null),
     (isChronoMode = !1),
     (chronoEndTime = null),
     (sessionStartTime = null),
@@ -1796,6 +1830,7 @@ function startNewSession() {
     a = document.getElementById("street-info");
   (a && ((a.textContent = ""), (a.style.display = "none")),
     clearHighlight(),
+    (activeSessionId = generateSessionId()),
     (correctCount = 0),
     (totalAnswered = 0),
     (summaryData = []),
@@ -2305,8 +2340,8 @@ function handleStreetClick(e, t, r) {
   } else
     ((errorsCount += 1),
       showMessage(
-        "marathon" === n && errorsCount >= 3
-          ? "Incorrect (limite de 3 erreurs atteinte)"
+        "marathon" === n && errorsCount >= MAX_ERRORS_MARATHON
+          ? `Incorrect (limite de ${MAX_ERRORS_MARATHON} erreurs atteinte)`
           : "Incorrect",
         "error",
       ),
@@ -2324,7 +2359,7 @@ function handleStreetClick(e, t, r) {
     updateWeightedScoreUI(),
     updateScoreUI(),
     showStreetInfo(l),
-    !i && "marathon" === n && errorsCount >= 3
+    !i && "marathon" === n && errorsCount >= MAX_ERRORS_MARATHON
       ? endSession()
       : ((currentIndex += 1), setNewTarget()));
 }
@@ -2369,8 +2404,8 @@ function handleMonumentClick(e, t) {
   } else
     ((errorsCount += 1),
       showMessage(
-        "marathon" === r && errorsCount >= 3
-          ? "Incorrect (limite de 3 erreurs atteinte)"
+        "marathon" === r && errorsCount >= MAX_ERRORS_MARATHON
+          ? `Incorrect (limite de ${MAX_ERRORS_MARATHON} erreurs atteinte)`
           : "Incorrect",
         "error",
       ),
@@ -2383,7 +2418,7 @@ function handleMonumentClick(e, t) {
     trackAnswer(s, "monuments", n, a),
     updateWeightedScoreUI(),
     updateScoreUI(),
-    !n && "marathon" === r && errorsCount >= 3
+    !n && "marathon" === r && errorsCount >= MAX_ERRORS_MARATHON
       ? endSession()
       : ((currentMonumentIndex += 1), setNewTarget()));
 }
@@ -2642,7 +2677,7 @@ function endSession() {
     c.appendChild(m),
     (p =
       "marathon" === l
-        ? "Mode : Marathon (max. 3 erreurs)"
+        ? `Mode : Marathon (max. ${MAX_ERRORS_MARATHON} erreurs)`
         : "chrono" === l
           ? "Mode : Chrono (60 s)"
           : "Mode : Classique (20 items max)"),
@@ -2804,6 +2839,7 @@ function endSession() {
       zoneMode: o,
       quartierName: u,
       gameMode: l,
+      sessionId: activeSessionId || generateSessionId(),
       score: uScore,
       percentCorrect: s,
       totalTimeSec: t,
