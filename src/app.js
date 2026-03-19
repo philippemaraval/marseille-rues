@@ -1663,6 +1663,7 @@ function loadStreets() {
       refreshLectureTooltipsIfNeeded();
       refreshLectureStreetSearchForCurrentMode({ preserveQuery: !0 });
       populateQuartiers();
+      refreshLectureTooltipsIfNeeded();
 
       const modeSelect = document.getElementById("mode-select");
       if (modeSelect) {
@@ -1723,6 +1724,8 @@ function setLectureTooltipsEnabled(e) {
     streetsLayer,
     monumentsLayer,
     getBaseStreetStyle,
+    isStreetVisibleInCurrentMode,
+    normalizeName,
     isTouchDevice: IS_TOUCH_DEVICE,
   });
 }

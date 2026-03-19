@@ -1,4 +1,4 @@
-const CACHE_NAME = "camino-v5";
+const CACHE_NAME = "camino-v6";
 
 const CORE_PRECACHE_URLS = [
   "/",

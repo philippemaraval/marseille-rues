@@ -1857,6 +1857,8 @@
     streetsLayer: streetsLayer2,
     monumentsLayer: monumentsLayer2,
     getBaseStreetStyle: getBaseStreetStyle3,
+    isStreetVisibleInCurrentMode: isStreetVisibleInCurrentMode3,
+    normalizeName: normalizeName2,
     isTouchDevice
   }) {
     function unbindLectureTap(layer) {
@@ -1870,13 +1872,16 @@
     }
     if (streetsLayer2) {
       streetsLayer2.eachLayer((layer) => {
-        var _a, _b;
+        var _a, _b, _c, _d;
         const streetName = ((_b = (_a = layer.feature) == null ? void 0 : _a.properties) == null ? void 0 : _b.name) || "";
         if (!streetName) {
           return;
         }
+        const normalizedStreetName = typeof normalizeName2 === "function" ? normalizeName2(streetName) : streetName;
+        const quartierName = typeof ((_d = (_c = layer.feature) == null ? void 0 : _c.properties) == null ? void 0 : _d.quartier) === "string" ? layer.feature.properties.quartier : null;
+        const isVisibleInCurrentMode = typeof isStreetVisibleInCurrentMode3 === "function" ? isStreetVisibleInCurrentMode3(normalizedStreetName, quartierName) : getBaseStreetStyle3(layer).weight > 0;
         if (enabled) {
-          if (getBaseStreetStyle3(layer).weight > 0) {
+          if (isVisibleInCurrentMode) {
             if (!layer.getTooltip()) {
               layer.bindTooltip(streetName, {
                 direction: "top",
@@ -4492,6 +4497,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       refreshLectureTooltipsIfNeeded();
       refreshLectureStreetSearchForCurrentMode({ preserveQuery: true });
       populateQuartiers();
+      refreshLectureTooltipsIfNeeded();
       const modeSelect = document.getElementById("mode-select");
       if (modeSelect) {
         modeSelect.dispatchEvent(new Event("change"));
@@ -4544,6 +4550,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       streetsLayer,
       monumentsLayer,
       getBaseStreetStyle: getBaseStreetStyle2,
+      isStreetVisibleInCurrentMode: isStreetVisibleInCurrentMode2,
+      normalizeName,
       isTouchDevice: IS_TOUCH_DEVICE
     });
   }

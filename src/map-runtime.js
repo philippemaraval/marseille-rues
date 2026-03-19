@@ -189,6 +189,8 @@ export function setLectureTooltipsEnabledRuntime(enabled, {
   streetsLayer,
   monumentsLayer,
   getBaseStreetStyle,
+  isStreetVisibleInCurrentMode,
+  normalizeName,
   isTouchDevice,
 }) {
   function unbindLectureTap(layer) {
@@ -208,8 +210,19 @@ export function setLectureTooltipsEnabledRuntime(enabled, {
         return;
       }
 
+      const normalizedStreetName =
+        typeof normalizeName === "function" ? normalizeName(streetName) : streetName;
+      const quartierName =
+        typeof layer.feature?.properties?.quartier === "string"
+          ? layer.feature.properties.quartier
+          : null;
+      const isVisibleInCurrentMode =
+        typeof isStreetVisibleInCurrentMode === "function"
+          ? isStreetVisibleInCurrentMode(normalizedStreetName, quartierName)
+          : getBaseStreetStyle(layer).weight > 0;
+
       if (enabled) {
-        if (getBaseStreetStyle(layer).weight > 0) {
+        if (isVisibleInCurrentMode) {
           if (!layer.getTooltip()) {
             layer.bindTooltip(streetName, {
               direction: "top",
