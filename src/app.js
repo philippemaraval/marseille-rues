@@ -103,6 +103,10 @@ const DEFAULT_REMINDER_CONFIG = {
   minute: 0,
   timezone: "Europe/Paris",
 };
+const MAP_REGION_MAX_BOUNDS = [
+  [43.17, 5.295], // SW: latitude de La Ciotat + longitude de Les Pennes-Mirabeau
+  [43.415, 5.63], // NE: latitude de Les Pennes-Mirabeau + longitude de La Ciotat
+];
 let swRegistrationPromise = null;
 let notificationConfigCache = null;
 
@@ -1160,6 +1164,9 @@ function initMap() {
       tap: !0,
       tapTolerance: IS_TOUCH_DEVICE ? 25 : 15,
       doubleTapZoom: !0,
+      minZoom: 10,
+      maxBounds: MAP_REGION_MAX_BOUNDS,
+      maxBoundsViscosity: 1,
       renderer: L.canvas({ padding: 0.5 }),
     }).setView([43.2965, 5.37], 13)),
       L.tileLayer(

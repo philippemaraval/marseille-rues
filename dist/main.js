@@ -3403,6 +3403,12 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     minute: 0,
     timezone: "Europe/Paris"
   };
+  var MAP_REGION_MAX_BOUNDS = [
+    [43.17, 5.295],
+    // SW: latitude de La Ciotat + longitude de Les Pennes-Mirabeau
+    [43.415, 5.63]
+    // NE: latitude de Les Pennes-Mirabeau + longitude de La Ciotat
+  ];
   var swRegistrationPromise = null;
   var notificationConfigCache = null;
   async function loadStreetInfos() {
@@ -4213,6 +4219,9 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       tap: true,
       tapTolerance: IS_TOUCH_DEVICE ? 25 : 15,
       doubleTapZoom: true,
+      minZoom: 10,
+      maxBounds: MAP_REGION_MAX_BOUNDS,
+      maxBoundsViscosity: 1,
       renderer: L.canvas({ padding: 0.5 })
     }).setView([43.2965, 5.37], 13), L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
