@@ -3404,10 +3404,10 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     timezone: "Europe/Paris"
   };
   var MAP_REGION_MAX_BOUNDS = [
-    [43.17, 5.295],
-    // SW: latitude de La Ciotat + longitude de Les Pennes-Mirabeau
-    [43.415, 5.63]
-    // NE: latitude de Les Pennes-Mirabeau + longitude de La Ciotat
+    [43.12, 5.22],
+    // SW élargi: plus de marge à l'ouest et au sud
+    [43.425, 5.64]
+    // NE: zone marseillaise jusqu'à La Ciotat / Les Pennes-Mirabeau
   ];
   var swRegistrationPromise = null;
   var notificationConfigCache = null;
@@ -4214,12 +4214,19 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     const t = document.getElementById("street-info-title");
     t && (t.textContent = getStreetInfoPanelTitle(e));
   }
+  function enforceRegionalMapBounds() {
+    if (!map) return;
+    const e = L.latLngBounds(MAP_REGION_MAX_BOUNDS);
+    map.setMaxBounds(e);
+    const t = map.getBoundsZoom(e, true);
+    Number.isFinite(t) && (map.setMinZoom(t), map.getZoom() < t && map.setZoom(t));
+    map.panInsideBounds(e, { animate: false });
+  }
   function initMap() {
     if (map = L.map("map", {
       tap: true,
       tapTolerance: IS_TOUCH_DEVICE ? 25 : 15,
       doubleTapZoom: true,
-      minZoom: 10,
       maxBounds: MAP_REGION_MAX_BOUNDS,
       maxBoundsViscosity: 1,
       renderer: L.canvas({ padding: 0.5 })
@@ -4243,6 +4250,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
         collapsedHeight: 24
       }).addTo(map);
     }
+    enforceRegionalMapBounds(), map.on("resize", enforceRegionalMapBounds);
   }
   function initUI() {
     IS_TOUCH_DEVICE && document.body.classList.add("touch-mode"), initMobilePullToRefresh();
