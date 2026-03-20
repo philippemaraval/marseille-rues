@@ -3277,7 +3277,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     } else {
       const minDistance = Math.min(...guesses.map((guess) => guess.distance));
       const minDistanceLabel = minDistance >= 1e3 ? `${(minDistance / 1e3).toFixed(1)} km` : `${Math.round(minDistance)} m`;
-      html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${minDistanceLabel} en sept essais</div>`;
+      const targetStreetName = (dailyTargetData2 == null ? void 0 : dailyTargetData2.streetName) || "Rue inconnue";
+      html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${minDistanceLabel} en sept essais.<br>La rue cible \xE9tait \xAB ${targetStreetName} \xBB.</div>`;
     }
     html += '<div class="daily-share-buttons">';
     html += '<button id="daily-share-text" class="btn-secondary daily-share-btn">\u{1F4CB} Copier le texte</button>';
@@ -4316,7 +4317,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     }), navigator.onLine ? fetch(API_URL + "/api/leaderboards", { method: "HEAD" }).catch(
       () => L2(true)
     ) : L2(true), e && e.addEventListener("click", () => {
-      isSessionRunning ? stopSessionManually() : startNewSession();
+      isDailyMode && window._dailyGameOver ? stopSessionManually() : isSessionRunning ? stopSessionManually() : startNewSession();
     }), updateTargetPanelTitle(), s && s.addEventListener("click", () => {
       isSessionRunning && togglePause();
     });
@@ -4756,7 +4757,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   function updateStartStopButton() {
     const e = document.getElementById("restart-btn"), t = document.getElementById("skip-btn");
     if (e)
-      return "lecture" === getGameMode() ? (e.style.display = "none", void (t && (t.style.display = "none"))) : (e.style.display = "", void (isSessionRunning ? (e.textContent = "Arr\xEAter la session", e.classList.remove("btn-primary"), e.classList.add("btn-stop"), t && (t.style.display = "block")) : (e.textContent = "Commencer la session", e.classList.remove("btn-stop"), e.classList.add("btn-primary"), t && (t.style.display = "none"))));
+      return "lecture" === getGameMode() ? (e.style.display = "none", void (t && (t.style.display = "none"))) : isDailyMode ? (e.style.display = "", void (window._dailyGameOver ? (e.textContent = "Retour au menu", e.classList.remove("btn-stop"), e.classList.remove("btn-primary"), e.classList.add("btn-secondary"), t && (t.style.display = "none")) : (e.textContent = "Quitter le d\xE9fi", e.classList.remove("btn-primary"), e.classList.remove("btn-secondary"), e.classList.add("btn-stop"), t && (t.style.display = "none")))) : (e.style.display = "", void (isSessionRunning ? (e.textContent = "Arr\xEAter la session", e.classList.remove("btn-primary"), e.classList.remove("btn-secondary"), e.classList.add("btn-stop"), t && (t.style.display = "block")) : (e.textContent = "Commencer la session", e.classList.remove("btn-stop"), e.classList.remove("btn-secondary"), e.classList.add("btn-primary"), t && (t.style.display = "none"))));
   }
   function stopSessionManually() {
     (isSessionRunning || isDailyMode) && ("function" == typeof handleDailyStop && handleDailyStop() || endSession());
@@ -4783,22 +4784,23 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   function updateLayoutSessionState() {
     const e = document.body;
     if (!e) return;
-    if (isSessionRunning || isLectureMode ? e.classList.add("session-running") : e.classList.remove("session-running"), isLectureMode ? e.classList.add("lecture-mode") : e.classList.remove("lecture-mode"), map && setTimeout(() => map.invalidateSize(), 300), isLectureMode) {
+    const t = isSessionRunning || isLectureMode || isDailyMode && !!window._dailyGameOver;
+    if (t ? e.classList.add("session-running") : e.classList.remove("session-running"), isLectureMode ? e.classList.add("lecture-mode") : e.classList.remove("lecture-mode"), map && setTimeout(() => map.invalidateSize(), 300), isLectureMode) {
       const e2 = document.getElementById("sidebar"), t2 = document.querySelector(".target-panel");
       e2 && t2 && setTimeout(() => {
         e2.scrollTo({ top: t2.offsetTop - 8, behavior: "smooth" });
       }, 120);
     }
-    const t = document.getElementById("lecture-back-btn");
-    if (t) {
+    const r = document.getElementById("lecture-back-btn");
+    if (r) {
       const e2 = window.innerWidth <= 900;
-      isLectureMode && e2 ? (t.style.display = "block", t.__didAutoFocus || (t.__didAutoFocus = true, setTimeout(() => {
+      isLectureMode && e2 ? (r.style.display = "block", r.__didAutoFocus || (r.__didAutoFocus = true, setTimeout(() => {
         try {
-          t.focus({ preventScroll: true });
+          r.focus({ preventScroll: true });
         } catch (e3) {
-          t.focus();
+          r.focus();
         }
-      }, 200))) : (t.style.display = "none", t.__didAutoFocus = false);
+      }, 200))) : (r.style.display = "none", r.__didAutoFocus = false);
     }
     updateDailyResultPanel();
   }
@@ -4854,25 +4856,13 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
           `\u{1F389} BRAVO ! Trouv\xE9 en ${u} essai${u > 1 ? "s" : ""} !`,
           "success"
         ), triggerHaptic("success"), renderDailyGuessHistory({ success: true, attempts: u });
-        setTargetPanelTitleText("\u{1F389} D\xE9fi r\xE9ussi !"), updateTargetItemCounter();
-        const t2 = document.getElementById("restart-btn");
-        t2 && (t2.textContent = "Commencer la session", t2.classList.remove("btn-stop"), t2.classList.add("btn-primary"));
-        const r2 = normalizeName(dailyTargetData.streetName), a3 = allStreetFeatures.find(
-          (e2) => e2.properties && normalizeName(e2.properties.name) === r2
-        );
-        a3 && a3.geometry && highlightDailyTarget(a3.geometry, true);
+        setTargetPanelTitleText("\u{1F389} D\xE9fi r\xE9ussi !"), updateTargetItemCounter(), revealDailyTargetStreet(true);
       } else if (d <= 0) {
         window._dailyGameOver = true, isSessionRunning = false, document.body.classList.add("daily-game-over"), showMessage(
           `\u274C Dommage ! C'\xE9tait \xAB ${dailyTargetData.streetName} \xBB. Fin du d\xE9fi.`,
           "error"
         ), triggerHaptic("error"), renderDailyGuessHistory({ success: false });
-        setTargetPanelTitleText("\u274C D\xE9fi \xE9chou\xE9"), updateTargetItemCounter();
-        const t2 = document.getElementById("restart-btn");
-        t2 && (t2.textContent = "Commencer la session", t2.classList.remove("btn-stop"), t2.classList.add("btn-primary"));
-        const r2 = normalizeName(dailyTargetData.streetName), a3 = allStreetFeatures.find(
-          (e2) => e2.properties && normalizeName(e2.properties.name) === r2
-        );
-        a3 && a3.geometry && highlightDailyTarget(a3.geometry, false);
+        setTargetPanelTitleText("\u274C D\xE9fi \xE9chou\xE9"), updateTargetItemCounter(), revealDailyTargetStreet(false);
       } else
         renderDailyGuessHistory(), triggerHaptic("error"), showMessage(
           `\u274C Rat\xE9 ! Distance : ${s2 >= 1e3 ? `${(s2 / 1e3).toFixed(1)} km` : `${Math.round(s2)} m`}. Plus que ${d} essai${d > 1 ? "s" : ""}.`,
@@ -4890,7 +4880,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
           isSuccess: n2
         })
       }).then((e2) => e2.json()).then((e2) => {
-        dailyTargetData.userStatus = e2, e2.targetGeometry && (e2.success || e2.attempts_count >= 7) && highlightDailyTarget(e2.targetGeometry, !!e2.success);
+        dailyTargetData.userStatus = e2, dailyTargetData.targetGeometry = e2.targetGeometry || dailyTargetData.targetGeometry, e2.targetGeometry && (e2.success || e2.attempts_count >= 7) && highlightDailyTarget(e2.targetGeometry, !!e2.success);
         if (e2.success || e2.attempts_count >= 7) {
           loadAllLeaderboards();
         }
@@ -5376,7 +5366,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     saveDailyMetaToStorage();
     const t = e.userStatus || {};
     let r = false, a = null;
-    t.success ? (r = true, a = { success: true, attempts: t.attempts_count }) : t.attempts_count >= 7 && (r = true, a = { success: false, attempts: t.attempts_count }), isDailyMode = true, isLectureMode = false, setLectureTooltipsEnabled(false), dailyGuessHistory = [], window._dailyGameOver = false, window._dailyGuessInFlight = false;
+    t.success ? (r = true, a = { success: true, attempts: t.attempts_count }) : t.attempts_count >= 7 && (r = true, a = { success: false, attempts: t.attempts_count }), isDailyMode = true, isLectureMode = false, setLectureTooltipsEnabled(false), dailyGuessHistory = [], window._dailyGameOver = r, window._dailyGuessInFlight = false;
     const n = document.getElementById("daily-guesses-history");
     n && (n.style.display = "none", n.innerHTML = ""), r ? restoreDailyGuessesFromStorage(e.date) : (t.attempts_count || 0) > 0 && !t.success && (restoreDailyGuessesFromStorage(e.date), dailyGuessHistory.length > 0 && renderDailyGuessHistory()), cleanOldDailyGuessStorage(e.date), isSessionRunning && endSession(), clearSessionShareSlot(), removeDailyHighlight(), currentZoneMode = "ville";
     const s = document.getElementById("mode-select"), i = document.getElementById("mode-select-button");
@@ -5387,8 +5377,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     setTargetPanelTitleText(u), updateTargetItemCounter(), isSessionRunning = true, refreshLectureStreetSearchForCurrentMode(), updateLayoutSessionState();
     const d = document.getElementById("skip-btn"), c = document.getElementById("pause-btn");
     d && (d.style.display = "none"), c && (c.style.display = "none");
-    const m = document.getElementById("restart-btn");
-    m && (m.textContent = "Quitter le d\xE9fi", m.classList.remove("btn-primary"), m.classList.add("btn-stop"), m.style.display = ""), s && s.dispatchEvent(new Event("change")), r ? (dailyGuessHistory.length > 0 && renderDailyGuessHistory(a), e.targetGeometry && highlightDailyTarget(e.targetGeometry, t.success), t.success ? showMessage(
+    updateStartStopButton(), s && s.dispatchEvent(new Event("change")), r ? (dailyGuessHistory.length > 0 && renderDailyGuessHistory(a), e.targetGeometry && (dailyTargetData.targetGeometry = e.targetGeometry, highlightDailyTarget(e.targetGeometry, t.success)), t.success ? showMessage(
       `\u{1F389} D\xE9j\xE0 r\xE9ussi aujourd'hui en ${t.attempts_count} essai${t.attempts_count > 1 ? "s" : ""} !`,
       "success"
     ) : showMessage(
@@ -5501,6 +5490,14 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       uiTheme: UI_THEME,
       dailyHighlightLayer
     });
+  }
+  function revealDailyTargetStreet(e = false) {
+    if (!dailyTargetData) return;
+    const t = normalizeName(dailyTargetData.streetName), r = t ? allStreetFeatures.find(
+      (e2) => e2.properties && normalizeName(e2.properties.name) === t
+    ) : null;
+    if (r && r.geometry) return void highlightDailyTarget(r.geometry, e);
+    dailyTargetData.targetGeometry && highlightDailyTarget(dailyTargetData.targetGeometry, e);
   }
   function removeDailyHighlight() {
     dailyHighlightLayer = removeDailyHighlightRuntime(map, dailyHighlightLayer);

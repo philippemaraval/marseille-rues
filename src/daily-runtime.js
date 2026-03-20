@@ -727,7 +727,8 @@ export function updateDailyResultPanelRuntime({
       minDistance >= 1000
         ? `${(minDistance / 1000).toFixed(1)} km`
         : `${Math.round(minDistance)} m`;
-    html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${minDistanceLabel} en sept essais</div>`;
+    const targetStreetName = dailyTargetData?.streetName || "Rue inconnue";
+    html += `<div class="daily-result daily-result--fail">Votre meilleur score est ${minDistanceLabel} en sept essais.<br>La rue cible était « ${targetStreetName} ».</div>`;
   }
 
   html += '<div class="daily-share-buttons">';

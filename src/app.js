@@ -1347,7 +1347,11 @@ function initUI() {
       : L(!0),
     e &&
     e.addEventListener("click", () => {
-      isSessionRunning ? stopSessionManually() : startNewSession();
+      isDailyMode && window._dailyGameOver
+        ? stopSessionManually()
+        : isSessionRunning
+          ? stopSessionManually()
+          : startNewSession();
     }),
     updateTargetPanelTitle(),
     s &&
@@ -2106,14 +2110,29 @@ function updateStartStopButton() {
   if (e)
     return "lecture" === getGameMode()
       ? ((e.style.display = "none"), void (t && (t.style.display = "none")))
+      : isDailyMode
+        ? ((e.style.display = ""),
+          void (window._dailyGameOver
+            ? ((e.textContent = "Retour au menu"),
+              e.classList.remove("btn-stop"),
+              e.classList.remove("btn-primary"),
+              e.classList.add("btn-secondary"),
+              t && (t.style.display = "none"))
+            : ((e.textContent = "Quitter le défi"),
+              e.classList.remove("btn-primary"),
+              e.classList.remove("btn-secondary"),
+              e.classList.add("btn-stop"),
+              t && (t.style.display = "none"))))
       : ((e.style.display = ""),
         void (isSessionRunning
           ? ((e.textContent = "Arrêter la session"),
             e.classList.remove("btn-primary"),
+            e.classList.remove("btn-secondary"),
             e.classList.add("btn-stop"),
             t && (t.style.display = "block"))
           : ((e.textContent = "Commencer la session"),
             e.classList.remove("btn-stop"),
+            e.classList.remove("btn-secondary"),
             e.classList.add("btn-primary"),
             t && (t.style.display = "none"))));
 }
@@ -2161,8 +2180,9 @@ function updatePauseButton() {
 function updateLayoutSessionState() {
   const e = document.body;
   if (!e) return;
+  const t = isSessionRunning || isLectureMode || (isDailyMode && !!window._dailyGameOver);
   if (
-    (isSessionRunning || isLectureMode
+    (t
       ? e.classList.add("session-running")
       : e.classList.remove("session-running"),
       isLectureMode
@@ -2179,21 +2199,21 @@ function updateLayoutSessionState() {
         e.scrollTo({ top: t.offsetTop - 8, behavior: "smooth" });
       }, 120);
   }
-  const t = document.getElementById("lecture-back-btn");
-  if (t) {
+  const r = document.getElementById("lecture-back-btn");
+  if (r) {
     const e = window.innerWidth <= 900;
     isLectureMode && e
-      ? ((t.style.display = "block"),
-        t.__didAutoFocus ||
-        ((t.__didAutoFocus = !0),
+      ? ((r.style.display = "block"),
+        r.__didAutoFocus ||
+        ((r.__didAutoFocus = !0),
           setTimeout(() => {
             try {
-              t.focus({ preventScroll: !0 });
+              r.focus({ preventScroll: !0 });
             } catch (e) {
-              t.focus();
+              r.focus();
             }
           }, 200)))
-      : ((t.style.display = "none"), (t.__didAutoFocus = !1));
+      : ((r.style.display = "none"), (r.__didAutoFocus = !1));
   }
   updateDailyResultPanel();
 }
@@ -2275,17 +2295,9 @@ function handleStreetClick(e, t, r) {
         ),
         triggerHaptic('success'),
         renderDailyGuessHistory({ success: !0, attempts: u }));
-      (setTargetPanelTitleText("🎉 Défi réussi !"), updateTargetItemCounter());
-      const t = document.getElementById("restart-btn");
-      t &&
-        ((t.textContent = "Commencer la session"),
-          t.classList.remove("btn-stop"),
-          t.classList.add("btn-primary"));
-      const r = normalizeName(dailyTargetData.streetName),
-        a = allStreetFeatures.find(
-          (e) => e.properties && normalizeName(e.properties.name) === r,
-        );
-      a && a.geometry && highlightDailyTarget(a.geometry, !0);
+      (setTargetPanelTitleText("🎉 Défi réussi !"),
+        updateTargetItemCounter(),
+        revealDailyTargetStreet(!0));
     } else if (d <= 0) {
       ((window._dailyGameOver = !0),
         (isSessionRunning = !1),
@@ -2296,17 +2308,9 @@ function handleStreetClick(e, t, r) {
         ),
         triggerHaptic('error'),
         renderDailyGuessHistory({ success: !1 }));
-      (setTargetPanelTitleText("❌ Défi échoué"), updateTargetItemCounter());
-      const t = document.getElementById("restart-btn");
-      t &&
-        ((t.textContent = "Commencer la session"),
-          t.classList.remove("btn-stop"),
-          t.classList.add("btn-primary"));
-      const r = normalizeName(dailyTargetData.streetName),
-        a = allStreetFeatures.find(
-          (e) => e.properties && normalizeName(e.properties.name) === r,
-        );
-      a && a.geometry && highlightDailyTarget(a.geometry, !1);
+      (setTargetPanelTitleText("❌ Défi échoué"),
+        updateTargetItemCounter(),
+        revealDailyTargetStreet(!1));
     } else
       (renderDailyGuessHistory(),
         triggerHaptic('error'),
@@ -2333,6 +2337,7 @@ function handleStreetClick(e, t, r) {
         .then((e) => e.json())
         .then((e) => {
           ((dailyTargetData.userStatus = e),
+            (dailyTargetData.targetGeometry = e.targetGeometry || dailyTargetData.targetGeometry),
             e.targetGeometry &&
             (e.success || e.attempts_count >= 7) &&
             highlightDailyTarget(e.targetGeometry, !!e.success));
@@ -3103,7 +3108,7 @@ function startDailySession(e) {
     (isLectureMode = !1),
     setLectureTooltipsEnabled(!1),
     (dailyGuessHistory = []),
-    (window._dailyGameOver = !1),
+    (window._dailyGameOver = r),
     (window._dailyGuessInFlight = !1));
   const n = document.getElementById("daily-guesses-history");
   (n && ((n.style.display = "none"), (n.innerHTML = "")),
@@ -3143,16 +3148,13 @@ function startDailySession(e) {
   const d = document.getElementById("skip-btn"),
     c = document.getElementById("pause-btn");
   (d && (d.style.display = "none"), c && (c.style.display = "none"));
-  const m = document.getElementById("restart-btn");
-  (m &&
-    ((m.textContent = "Quitter le défi"),
-      m.classList.remove("btn-primary"),
-      m.classList.add("btn-stop"),
-      (m.style.display = "")),
+  (updateStartStopButton(),
     s && s.dispatchEvent(new Event("change")),
     r
       ? (dailyGuessHistory.length > 0 && renderDailyGuessHistory(a),
-        e.targetGeometry && highlightDailyTarget(e.targetGeometry, t.success),
+        e.targetGeometry &&
+        ((dailyTargetData.targetGeometry = e.targetGeometry),
+          highlightDailyTarget(e.targetGeometry, t.success)),
         t.success
           ? showMessage(
             `🎉 Déjà réussi aujourd'hui en ${t.attempts_count} essai${t.attempts_count > 1 ? "s" : ""} !`,
@@ -3291,6 +3293,17 @@ function highlightDailyTarget(e, t) {
     uiTheme: UI_THEME,
     dailyHighlightLayer,
   });
+}
+function revealDailyTargetStreet(e = !1) {
+  if (!dailyTargetData) return;
+  const t = normalizeName(dailyTargetData.streetName),
+    r = t
+      ? allStreetFeatures.find(
+        (e) => e.properties && normalizeName(e.properties.name) === t,
+      )
+      : null;
+  if (r && r.geometry) return void highlightDailyTarget(r.geometry, e);
+  dailyTargetData.targetGeometry && highlightDailyTarget(dailyTargetData.targetGeometry, e);
 }
 function removeDailyHighlight() {
   dailyHighlightLayer = removeDailyHighlightRuntime(map, dailyHighlightLayer);
