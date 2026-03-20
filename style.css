@@ -194,6 +194,10 @@ body.desktop-map-widgets #map-overlay-widgets {
   z-index: 1;
 }
 
+.map-widget-pill.hidden {
+  display: none !important;
+}
+
 .map-widget-pill .material-symbols-rounded {
   font-size: 15px;
 }
@@ -481,6 +485,10 @@ body.desktop-map-widgets #map-overlay-widgets {
   justify-content: center;
   text-transform: none;
   letter-spacing: 0;
+}
+
+.map-widget-control.hidden {
+  display: none !important;
 }
 
 .map-widget-control .material-symbols-rounded {
