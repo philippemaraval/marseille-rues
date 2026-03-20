@@ -11,7 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Montserrat:wght@600;800&family=Nunito:wght@400;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=20260320p3">
+  <link rel="stylesheet" href="/style.css?v=20260320p2">
 </head>
 
 <body class="meta-page-body">
@@ -29,7 +29,7 @@
 
     <section class="meta-hero">
       <h1 class="meta-title">Profil Joueur</h1>
-      <p class="meta-subtitle">Avatar, succès, statistiques avancées et progression complète.</p>
+      <p class="meta-subtitle">Vos performances globales, votre progression par mode et vos séries Daily.</p>
     </section>
 
     <div id="profile-root" class="meta-grid">
@@ -94,33 +94,6 @@
         },
       };
 
-      const AVATAR_UNLOCKS = [
-        { emoji: "👤", reqTitleIdx: 4 },
-        { emoji: "🧑", reqTitleIdx: 4 },
-        { emoji: "👧", reqTitleIdx: 4 },
-        { emoji: "🧒", reqTitleIdx: 3 },
-        { emoji: "🛴", reqTitleIdx: 3 },
-        { emoji: "🍕", reqTitleIdx: 3 },
-        { emoji: "⚓", reqTitleIdx: 2 },
-        { emoji: "🐟", reqTitleIdx: 2 },
-        { emoji: "⛵", reqTitleIdx: 2 },
-        { emoji: "🌊", reqTitleIdx: 2 },
-        { emoji: "💪", reqTitleIdx: 1 },
-        { emoji: "☀️", reqTitleIdx: 1 },
-        { emoji: "🏖️", reqTitleIdx: 1 },
-        { emoji: "😎", reqTitleIdx: 1 },
-        { emoji: "🏛️", reqTitleIdx: 0 },
-        { emoji: "🦅", reqTitleIdx: 0 },
-        { emoji: "⚽", reqTitleIdx: 0 },
-        { emoji: "👑", reqTitleIdx: 0 },
-      ];
-
-      const state = {
-        currentUser: null,
-        profile: null,
-        notificationStatusText: "Statut du rappel indisponible.",
-      };
-
       function escapeHtml(value) {
         return String(value == null ? "" : value)
           .replace(/&/g, "&amp;")
@@ -135,14 +108,6 @@
           return JSON.parse(window.localStorage.getItem("camino_user") || "null");
         } catch (error) {
           return null;
-        }
-      }
-
-      function saveCurrentUser(user) {
-        try {
-          window.localStorage.setItem("camino_user", JSON.stringify(user));
-        } catch (error) {
-          // ignore localStorage failures
         }
       }
 
@@ -171,6 +136,20 @@
         return Number.isFinite(parsed) ? parsed : parseFloat(highScore) || 0;
       }
 
+      function getPlayerTitle(score, zoneMode, gameType, itemsTotal, itemsCorrect) {
+        const thresholds = getTitleThresholds(zoneMode, gameType || "classique", itemsTotal || 0);
+        const scoreValue = getTitleScoreValue(score, itemsCorrect, gameType || "classique");
+        return scoreValue >= thresholds.MV
+          ? TITLE_NAMES[0]
+          : scoreValue >= thresholds.V
+            ? TITLE_NAMES[1]
+            : scoreValue >= thresholds.H
+              ? TITLE_NAMES[2]
+              : scoreValue >= thresholds.M
+                ? TITLE_NAMES[3]
+                : TITLE_NAMES[4];
+      }
+
       function hasReachedGlobalRank(profile, rankLetter) {
         const scoringGameTypes = ["classique", "marathon", "chrono"];
         const scoringZones = ["rues-celebres", "rues-principales", "quartier", "monuments"];
@@ -192,48 +171,19 @@
         });
       }
 
-      function getGlobalRankLevel(profile) {
-        return hasReachedGlobalRank(profile, "MV")
-          ? 4
-          : hasReachedGlobalRank(profile, "V")
-            ? 3
-            : hasReachedGlobalRank(profile, "H")
-              ? 2
-              : hasReachedGlobalRank(profile, "M")
-                ? 1
-                : 0;
-      }
-
       function getGlobalRankTitle(profile) {
-        const level = getGlobalRankLevel(profile);
-        return level >= 4
-          ? TITLE_NAMES[0]
-          : level >= 3
-            ? TITLE_NAMES[1]
-            : level >= 2
-              ? TITLE_NAMES[2]
-              : level >= 1
-                ? TITLE_NAMES[3]
-                : TITLE_NAMES[4];
+        if (hasReachedGlobalRank(profile, "MV")) return TITLE_NAMES[0];
+        if (hasReachedGlobalRank(profile, "V")) return TITLE_NAMES[1];
+        if (hasReachedGlobalRank(profile, "H")) return TITLE_NAMES[2];
+        if (hasReachedGlobalRank(profile, "M")) return TITLE_NAMES[3];
+        return TITLE_NAMES[4];
       }
 
-      function getGlobalRankLevelForTitleIndex(titleIndex) {
-        const parsed = parseInt(titleIndex, 10);
-        return Math.max(0, 4 - (Number.isNaN(parsed) ? 4 : parsed));
-      }
-
-      function getPlayerTitle(score, zoneMode, gameType, itemsTotal, itemsCorrect) {
-        const thresholds = getTitleThresholds(zoneMode, gameType || "classique", itemsTotal || 0);
-        const scoreValue = getTitleScoreValue(score, itemsCorrect, gameType || "classique");
-        return scoreValue >= thresholds.MV
-          ? TITLE_NAMES[0]
-          : scoreValue >= thresholds.V
-            ? TITLE_NAMES[1]
-            : scoreValue >= thresholds.H
-              ? TITLE_NAMES[2]
-              : scoreValue >= thresholds.M
-                ? TITLE_NAMES[3]
-                : TITLE_NAMES[4];
+      function modeScoreLabel(row) {
+        if ((row.game_type || "") === "classique") {
+          return Number(row.high_score || 0).toFixed(1);
+        }
+        return String(Math.round(Number(row.best_items_correct || row.high_score || 0)));
       }
 
       function formatDate(dateValue) {
@@ -251,167 +201,32 @@
         }
       }
 
-      function modeScoreLabel(row) {
-        if ((row.game_type || "") === "classique") {
-          return Number(row.high_score || 0).toFixed(1);
-        }
-        return String(Math.round(Number(row.best_items_correct || row.high_score || 0)));
-      }
-
-      function computeBadges(profile) {
-        const defs = [
-          { id: "first_game", emoji: "🎮", name: "Première Partie", desc: "Terminer une session", check: (p) => (parseInt(p.overall?.total_games, 10) || 0) >= 1 },
-          { id: "games_25", emoji: "🔟", name: "25 Parties", desc: "Jouer 25 sessions", check: (p) => (parseInt(p.overall?.total_games, 10) || 0) >= 25 },
-          { id: "games_100", emoji: "💯", name: "Habitué", desc: "Jouer 100 sessions", check: (p) => (parseInt(p.overall?.total_games, 10) || 0) >= 100 },
-          { id: "games_250", emoji: "💎", name: "Vétéran", desc: "Jouer 250 sessions", check: (p) => (parseInt(p.overall?.total_games, 10) || 0) >= 250 },
-          { id: "minot", emoji: "🧒", name: "Minot", desc: "Atteindre Minot dans tous les modes/zones", check: (p) => hasReachedGlobalRank(p, "M") },
-          { id: "habitue", emoji: "⚓", name: "Habitué du Vieux-Port", desc: "Atteindre Habitué dans tous les modes/zones", check: (p) => hasReachedGlobalRank(p, "H") },
-          { id: "vrai", emoji: "💪", name: "Vrai Marseillais", desc: "Atteindre Vrai Marseillais dans tous les modes/zones", check: (p) => hasReachedGlobalRank(p, "V") },
-          { id: "maire", emoji: "🏛️", name: "Maire de la Ville", desc: "Atteindre Maire dans tous les modes/zones", check: (p) => hasReachedGlobalRank(p, "MV") },
-          { id: "daily_1", emoji: "📅", name: "Premier Daily", desc: "Réussir un Daily", check: (p) => (parseInt(p.daily?.successes, 10) || 0) >= 1 },
-          { id: "daily_10", emoji: "🔥", name: "Série de 10", desc: "10 Daily d'affilée", check: (p) => (parseInt(p.daily?.max_streak, 10) || 0) >= 10 },
-          { id: "daily_20", emoji: "⚡", name: "Série de 20", desc: "20 Daily d'affilée", check: (p) => (parseInt(p.daily?.max_streak, 10) || 0) >= 20 },
-          { id: "perfect", emoji: "🎯", name: "Sans Faute", desc: "Score de 100 en session", check: (p) => (parseFloat(p.overall?.best_score) || 0) >= 100 },
-        ];
-        return defs.map((def) => ({ ...def, unlocked: def.check(profile) }));
-      }
-
       function renderNotConnected(root) {
         root.innerHTML = `
           <section class="meta-card">
             <h2 class="meta-card-title">Connexion requise</h2>
             <p class="meta-inline-note">Aucun profil détecté dans ce navigateur.</p>
-            <p class="meta-inline-note">Connectez-vous depuis la page de jeu, puis revenez ici.</p>
+            <p class="meta-inline-note">Connectez-vous depuis la page de jeu, puis revenez sur cette page.</p>
             <div style="margin-top: 12px;"><a class="meta-back-link" href="/">Ouvrir le jeu</a></div>
           </section>`;
       }
 
-      function renderAvatarGrid() {
-        const profile = state.profile;
-        const grid = document.getElementById("profile-avatar-grid");
-        if (!grid || !profile) {
-          return;
-        }
-
-        const globalRankLevel = getGlobalRankLevel(profile);
-        const currentAvatar = profile.avatar || "👤";
-
-        grid.innerHTML = AVATAR_UNLOCKS.map((avatarDef) => {
-          const requiredLevel = getGlobalRankLevelForTitleIndex(avatarDef.reqTitleIdx);
-          const unlocked = globalRankLevel >= requiredLevel;
-          const title = unlocked
-            ? "Débloqué"
-            : `Titre requis: ${TITLE_NAMES[avatarDef.reqTitleIdx] || TITLE_NAMES[4]}`;
-          return `
-            <button
-              type="button"
-              class="avatar-item ${unlocked ? "" : "locked"} ${avatarDef.emoji === currentAvatar ? "selected" : ""}"
-              data-avatar="${escapeHtml(avatarDef.emoji)}"
-              ${unlocked ? "" : "disabled"}
-              title="${escapeHtml(title)}"
-              aria-label="Avatar ${escapeHtml(avatarDef.emoji)}"
-            >${escapeHtml(avatarDef.emoji)}</button>`;
-        }).join("");
-
-        grid.querySelectorAll("button[data-avatar]").forEach((button) => {
-          button.addEventListener("click", async () => {
-            const nextAvatar = button.getAttribute("data-avatar") || "";
-            if (!nextAvatar) {
-              return;
-            }
-            await saveAvatar(nextAvatar);
-          });
-        });
-      }
-
-      function openAvatarModal() {
-        const modal = document.getElementById("profile-avatar-modal");
-        if (!modal) {
-          return;
-        }
-        modal.classList.remove("hidden");
-        renderAvatarGrid();
-      }
-
-      function closeAvatarModal() {
-        const modal = document.getElementById("profile-avatar-modal");
-        if (!modal) {
-          return;
-        }
-        modal.classList.add("hidden");
-      }
-
-      async function saveAvatar(avatar) {
-        const user = state.currentUser;
-        if (!user || !user.token) {
-          return;
-        }
-
-        const feedbackEl = document.getElementById("avatar-modal-feedback");
-        if (feedbackEl) {
-          feedbackEl.textContent = "Enregistrement...";
-        }
-
-        try {
-          const response = await fetch(`${API_URL}/api/profile/avatar`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${user.token}`,
-            },
-            body: JSON.stringify({ avatar }),
-          });
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-
-          state.profile.avatar = avatar;
-          state.currentUser.avatar = avatar;
-          saveCurrentUser(state.currentUser);
-          renderProfile(document.getElementById("profile-root"));
-        } catch (error) {
-          if (feedbackEl) {
-            feedbackEl.textContent = "Impossible de mettre à jour l'avatar.";
-          }
-        }
-      }
-
-      function bindProfileEvents() {
-        const openBtn = document.getElementById("profile-change-avatar");
-        const closeBtn = document.getElementById("profile-avatar-close");
-        const backdrop = document.getElementById("profile-avatar-backdrop");
-
-        if (openBtn) {
-          openBtn.addEventListener("click", openAvatarModal);
-        }
-        if (closeBtn) {
-          closeBtn.addEventListener("click", closeAvatarModal);
-        }
-        if (backdrop) {
-          backdrop.addEventListener("click", closeAvatarModal);
-        }
-      }
-
-      function renderProfile(root) {
-        const profile = state.profile;
-        const totalGames = parseInt(profile.overall?.total_games, 10) || 0;
-        const bestScore = Number(profile.overall?.best_score) || 0;
-        const avgScore = Number(profile.overall?.avg_score) || 0;
+      function renderProfile(root, profile, notificationStatusText) {
+        const totalGames = parseInt(profile.overall && profile.overall.total_games, 10) || 0;
+        const bestScore = Number(profile.overall && profile.overall.best_score) || 0;
+        const avgScore = Number(profile.overall && profile.overall.avg_score) || 0;
         const daily = profile.daily || {};
         const globalTitle = getGlobalRankTitle(profile);
 
         const modes = Array.isArray(profile.modes) ? profile.modes.slice() : [];
-        modes.sort((left, right) => Number(right.games_played || 0) - Number(left.games_played || 0));
+        modes.sort((left, right) => {
+          const leftGames = Number(left.games_played || 0);
+          const rightGames = Number(right.games_played || 0);
+          return rightGames - leftGames;
+        });
 
         const weekly = Array.isArray(profile.weekly_progress) ? profile.weekly_progress.slice(-8) : [];
         const weeklyMax = weekly.reduce((max, item) => Math.max(max, Number(item.avg_score || 0)), 0) || 1;
-
-        const quartierStats = Array.isArray(profile.quartier_stats) ? profile.quartier_stats.slice(0, 10) : [];
-        const difficultyStats = Array.isArray(profile.difficulty_stats) ? profile.difficulty_stats.slice() : [];
-
-        const badges = computeBadges(profile);
-        const unlockedCount = badges.filter((badge) => badge.unlocked).length;
 
         root.innerHTML = `
           <div class="meta-grid meta-grid--two">
@@ -423,11 +238,6 @@
                   <div class="profile-title">${escapeHtml(globalTitle)}</div>
                 </div>
               </div>
-
-              <div class="meta-controls-row" style="margin-top: 6px; margin-bottom: 12px;">
-                <button type="button" id="profile-change-avatar" class="btn-secondary">Changer d'avatar</button>
-              </div>
-
               <div class="profile-stats-grid">
                 <div class="profile-stat">
                   <span class="profile-stat-value">${totalGames}</span>
@@ -446,19 +256,16 @@
                   <span class="profile-stat-label">Daily ✅</span>
                 </div>
               </div>
-
               <div class="profile-daily-summary">
                 <span>🔥 Série actuelle : <strong>${Number(daily.current_streak || 0)}</strong></span><br>
                 <span>🏆 Meilleure série : <strong>${Number(daily.max_streak || 0)}</strong></span><br>
                 <span>🎯 Moyenne Daily : <strong>${Number(daily.avg_attempts || 0).toFixed(1)} essais</strong></span>
               </div>
-
               <div class="profile-notification-card">
                 <div class="profile-notification-title">Rappel Daily</div>
-                <p class="profile-notification-status">${escapeHtml(state.notificationStatusText)}</p>
+                <p class="profile-notification-status">${escapeHtml(notificationStatusText)}</p>
                 <p class="meta-inline-note">Gestion complète du rappel depuis la page de jeu.</p>
               </div>
-
               <p class="profile-member-since">Membre depuis le ${escapeHtml(formatDate(profile.memberSince))}</p>
             </section>
 
@@ -473,17 +280,6 @@
           </div>
 
           <section class="meta-card" style="margin-top: 12px;">
-            <h2 class="meta-card-title">Succès (${unlockedCount}/${badges.length})</h2>
-            <div class="profile-badges-grid">
-              ${badges.map((badge) => `
-                <div class="profile-badge ${badge.unlocked ? "unlocked" : "locked"}" title="${escapeHtml(`${badge.name} — ${badge.desc}`)}">
-                  <span class="badge-emoji">${badge.unlocked ? escapeHtml(badge.emoji) : "🔒"}</span>
-                  <span class="badge-name">${escapeHtml(badge.name)}</span>
-                </div>`).join("")}
-            </div>
-          </section>
-
-          <section class="meta-card" style="margin-top: 12px;">
             <h2 class="meta-card-title">Détail par mode</h2>
             ${modes.length ? `<div class="profile-modes">${modes.map((row) => {
           const zoneLabel = ZONE_LABELS[row.mode] || row.mode;
@@ -496,73 +292,17 @@
             row.best_items_correct || 0,
           );
           return `
-                <div class=\"profile-mode-row\">
-                  <div class=\"profile-mode-name\">${escapeHtml(zoneLabel)} — ${escapeHtml(gameLabel)}</div>
-                  <div class=\"profile-mode-details\">
+                <div class="profile-mode-row">
+                  <div class="profile-mode-name">${escapeHtml(zoneLabel)} — ${escapeHtml(gameLabel)}</div>
+                  <div class="profile-mode-details">
                     <span>🏆 ${escapeHtml(modeScoreLabel(row))}</span>
                     <span>📊 Ø${Number(row.avg_score || 0).toFixed(1)}</span>
                     <span>🎮 ${Number(row.games_played || 0)}</span>
                   </div>
-                  <div class=\"profile-mode-title\">${escapeHtml(title)}</div>
+                  <div class="profile-mode-title">${escapeHtml(title)}</div>
                 </div>`;
         }).join("")}</div>` : `<p class="meta-empty">Aucune partie enregistrée pour l'instant.</p>`}
-          </section>
-
-          <div class="meta-grid meta-grid--two" style="margin-top: 12px;">
-            <section class="meta-card">
-              <h2 class="meta-card-title">Quartiers travaillés</h2>
-              ${quartierStats.length ? `
-                <table class="profile-mini-table">
-                  <thead>
-                    <tr><th>Quartier</th><th>Parties</th><th>Réussite</th><th>Temps</th></tr>
-                  </thead>
-                  <tbody>
-                    ${quartierStats.map((row) => `
-                      <tr>
-                        <td>${escapeHtml(row.quartier_name || "—")}</td>
-                        <td>${Number(row.games_played || 0)}</td>
-                        <td>${Number(row.success_rate || 0).toFixed(1)}%</td>
-                        <td>${Number(row.avg_time_sec || 0).toFixed(1)}s</td>
-                      </tr>`).join("")}
-                  </tbody>
-                </table>`
-          : `<p class="meta-empty">Pas encore de données par quartier.</p>`}
-            </section>
-
-            <section class="meta-card">
-              <h2 class="meta-card-title">Performance par zone</h2>
-              ${difficultyStats.length ? `
-                <table class="profile-mini-table">
-                  <thead>
-                    <tr><th>Zone</th><th>Parties</th><th>Réussite</th><th>Temps</th></tr>
-                  </thead>
-                  <tbody>
-                    ${difficultyStats.map((row) => `
-                      <tr>
-                        <td>${escapeHtml(ZONE_LABELS[row.mode] || row.mode || "—")}</td>
-                        <td>${Number(row.games_played || 0)}</td>
-                        <td>${Number(row.success_rate || 0).toFixed(1)}%</td>
-                        <td>${Number(row.avg_time_sec || 0).toFixed(1)}s</td>
-                      </tr>`).join("")}
-                  </tbody>
-                </table>`
-          : `<p class="meta-empty">Pas encore de données avancées.</p>`}
-            </section>
-          </div>
-
-          <div id="profile-avatar-modal" class="meta-avatar-modal hidden" aria-hidden="true">
-            <div id="profile-avatar-backdrop" class="meta-avatar-backdrop"></div>
-            <section class="meta-avatar-dialog" role="dialog" aria-modal="true" aria-label="Choisir un avatar">
-              <div class="avatar-modal-header">
-                <h4>Choisir un avatar</h4>
-                <button id="profile-avatar-close" class="avatar-modal-close" type="button" aria-label="Fermer">×</button>
-              </div>
-              <p id="avatar-modal-feedback" class="meta-inline-note"></p>
-              <div id="profile-avatar-grid" class="avatar-grid"></div>
-            </section>
-          </div>`;
-
-        bindProfileEvents();
+          </section>`;
       }
 
       async function getNotificationStatusText(user) {
@@ -577,12 +317,14 @@
             return "Statut du rappel indisponible.";
           }
           const payload = await response.json();
-          const reminder = payload?.reminder || { hour: 10, minute: 0, timezone: "Europe/Paris" };
+          const reminder = payload && payload.reminder ? payload.reminder : { hour: 10, minute: 0, timezone: "Europe/Paris" };
           const label = `${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")} (${reminder.timezone || "Europe/Paris"})`;
           if (!payload.enabled) {
             return "Rappels push indisponibles côté serveur.";
           }
-          return payload.subscribed ? `Rappel actif tous les jours à ${label}.` : `Rappel inactif (horaire: ${label}).`;
+          return payload.subscribed
+            ? `Rappel actif tous les jours à ${label}.`
+            : `Rappel inactif (horaire: ${label}).`;
         } catch (error) {
           return "Statut du rappel indisponible.";
         }
@@ -590,41 +332,31 @@
 
       async function loadProfilePage() {
         const root = document.getElementById("profile-root");
-        state.currentUser = readCurrentUser();
+        const user = readCurrentUser();
 
-        if (!state.currentUser || !state.currentUser.token) {
+        if (!user || !user.token) {
           renderNotConnected(root);
           return;
         }
 
         try {
-          const [profileResponse, notificationStatusText] = await Promise.all([
-            fetch(`${API_URL}/api/profile`, {
-              headers: { Authorization: `Bearer ${state.currentUser.token}` },
-            }),
-            getNotificationStatusText(state.currentUser),
-          ]);
+          const response = await fetch(`${API_URL}/api/profile`, {
+            headers: { Authorization: `Bearer ${user.token}` },
+          });
 
-          if (profileResponse.status === 401 || profileResponse.status === 403) {
+          if (response.status === 401 || response.status === 403) {
             window.localStorage.removeItem("camino_user");
             renderNotConnected(root);
             return;
           }
 
-          if (!profileResponse.ok) {
-            throw new Error(`HTTP ${profileResponse.status}`);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
           }
 
-          state.profile = await profileResponse.json();
-          state.notificationStatusText = notificationStatusText;
-
-          if (state.currentUser) {
-            state.currentUser.username = state.profile.username || state.currentUser.username;
-            state.currentUser.avatar = state.profile.avatar || state.currentUser.avatar;
-            saveCurrentUser(state.currentUser);
-          }
-
-          renderProfile(root);
+          const profile = await response.json();
+          const notificationStatusText = await getNotificationStatusText(user);
+          renderProfile(root, profile, notificationStatusText);
         } catch (error) {
           console.warn("Profile page load error:", error);
           root.innerHTML = `

@@ -67,28 +67,6 @@
       margin-bottom: 6px;
     }
 
-    .hero-nav {
-      display: inline-flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hero-nav-link {
-      text-decoration: none;
-      color: var(--brand-sea-900);
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 999px;
-      border: 1px solid rgba(18, 41, 122, 0.16);
-      padding: 6px 11px;
-      background: rgba(255, 255, 255, 0.78);
-    }
-
-    .hero-nav-link.is-active {
-      background: rgba(18, 41, 122, 0.12);
-    }
-
     .back-link {
       display: inline-flex;
       align-items: center;
@@ -322,10 +300,6 @@
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
-
-      .hero-nav {
-        width: 100%;
-      }
     }
   </style>
 </head>
@@ -335,13 +309,6 @@
     <header class="hero">
       <div class="hero-top">
         <a class="back-link" href="/">← Retour au jeu</a>
-        <nav class="hero-nav" aria-label="Navigation">
-          <a class="hero-nav-link" href="/">Jeu</a>
-          <a class="hero-nav-link" href="/profil.html">Profil</a>
-          <a class="hero-nav-link" href="/classement.html">Classement</a>
-          <a class="hero-nav-link" href="/daily-resultats.html">Daily</a>
-          <a class="hero-nav-link is-active" href="/regles.html">Règles</a>
-        </nav>
       </div>
       <h1>Règles détaillées et comment jouer à Camino</h1>
       <p class="subtitle">

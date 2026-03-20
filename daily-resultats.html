@@ -11,7 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Montserrat:wght@600;800&family=Nunito:wght@400;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=20260320p3">
+  <link rel="stylesheet" href="/style.css?v=20260320p2">
 </head>
 
 <body class="meta-page-body">
@@ -29,7 +29,7 @@
 
     <section class="meta-hero">
       <h1 class="meta-title">Résultats Daily</h1>
-      <p class="meta-subtitle">Score détaillé du défi du jour, partage texte/image et top du jour.</p>
+      <p class="meta-subtitle">Votre progression quotidienne, la série en cours et le top du jour.</p>
     </section>
 
     <div id="daily-root" class="meta-grid">
@@ -47,14 +47,6 @@
           window.location.protocol === "file:"
           ? "http://localhost:3000"
           : "https://camino2.onrender.com";
-
-      const state = {
-        user: null,
-        dailyData: null,
-        profileData: null,
-        dailyLeaderboard: [],
-        guesses: [],
-      };
 
       function escapeHtml(value) {
         return String(value == null ? "" : value)
@@ -83,40 +75,6 @@
           </section>`;
       }
 
-      function formatDistance(distanceMeters) {
-        const distance = Number(distanceMeters);
-        if (!Number.isFinite(distance) || distance < 0) {
-          return "—";
-        }
-        return distance >= 1000 ? `${(distance / 1000).toFixed(1)} km` : `${Math.round(distance)} m`;
-      }
-
-      function getDailyGuessesStorageKey(date) {
-        return `camino_daily_guesses_${date}`;
-      }
-
-      function loadStoredGuesses(dailyDate) {
-        if (!dailyDate) {
-          return [];
-        }
-        try {
-          const raw = window.localStorage.getItem(getDailyGuessesStorageKey(dailyDate));
-          if (!raw) {
-            return [];
-          }
-          const parsed = JSON.parse(raw);
-          if (!Array.isArray(parsed)) {
-            return [];
-          }
-          return parsed.slice(0, 7).map((guess) => ({
-            distance: Number(guess?.distance || 0),
-            arrow: String(guess?.arrow || "•"),
-          }));
-        } catch (error) {
-          return [];
-        }
-      }
-
       function toParisDate(date) {
         const raw = new Intl.DateTimeFormat("en-CA", {
           timeZone: "Europe/Paris",
@@ -141,264 +99,52 @@
         return days;
       }
 
-      function buildShareText() {
-        const dailyData = state.dailyData || {};
-        const guesses = state.guesses || [];
-        const status = dailyData.userStatus || {};
-        const success = Boolean(status.success);
-        const attempts = Number(status.attempts_count || guesses.length || 0);
-        const scoreLabel = success ? String(attempts) : "X";
-        const dateLabel = dailyData.date || "—";
-        const streetName = dailyData.streetName || "Rue inconnue";
-
-        let text = `🗺️ Camino Daily — ${dateLabel}\n`;
-        text += `📍 Rue: ${streetName}\n`;
-        text += `${success ? "✅" : "❌"} Résultat: ${scoreLabel}/7\n\n`;
-
-        if (guesses.length) {
-          guesses.forEach((guess, index) => {
-            if (success && index === guesses.length - 1) {
-              text += "🟩 🏁\n";
-              return;
-            }
-            let tile = "🟥";
-            if (guess.distance < 500) {
-              tile = "🟩";
-            } else if (guess.distance < 2000) {
-              tile = "🟨";
-            }
-            text += `${tile} ${guess.arrow || "•"}\n`;
-          });
-        } else {
-          text += "Aucun essai enregistré.\n";
+      function formatDistance(distanceMeters) {
+        const distance = Number(distanceMeters);
+        if (!Number.isFinite(distance) || distance < 0) {
+          return "—";
         }
-
-        if (Number.isFinite(Number(status.best_distance_meters))) {
-          text += `\n🎯 Meilleure distance: ${formatDistance(status.best_distance_meters)}\n`;
-        }
-
-        text += "Essaie de faire mieux sur camino-ajm.pages.dev";
-        return text;
+        return distance >= 1000 ? `${(distance / 1000).toFixed(1)} km` : `${Math.round(distance)} m`;
       }
 
-      async function copyShareText() {
-        const text = buildShareText();
-        try {
-          if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-          } else {
-            const textarea = document.createElement("textarea");
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textarea);
-          }
-          return true;
-        } catch (error) {
-          return false;
-        }
-      }
-
-      function buildShareImage() {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1080;
-        canvas.height = 1280;
-
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-          return null;
-        }
-
-        const dailyData = state.dailyData || {};
-        const guesses = state.guesses || [];
-        const status = dailyData.userStatus || {};
-        const success = Boolean(status.success);
-        const attempts = Number(status.attempts_count || guesses.length || 0);
-        const resultLabel = success ? attempts : "X";
-        const streetName = dailyData.streetName || "Rue inconnue";
-        const dateLabel = dailyData.date || "—";
-
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, "#f8dca5");
-        gradient.addColorStop(0.35, "#f2a900");
-        gradient.addColorStop(0.68, "#4057b2");
-        gradient.addColorStop(1, "#12297a");
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "rgba(10, 23, 69, 0.68)";
-        ctx.beginPath();
-        ctx.roundRect(60, 60, canvas.width - 120, canvas.height - 120, 30);
-        ctx.fill();
-
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#f8fafc";
-        ctx.font = '700 62px "Montserrat", sans-serif';
-        ctx.fillText("CAMINO DAILY", canvas.width / 2, 150);
-
-        ctx.font = '500 30px "Nunito", sans-serif';
-        ctx.fillText(`Défi du ${dateLabel}`, canvas.width / 2, 200);
-
-        ctx.font = '700 40px "Nunito", sans-serif';
-        ctx.fillText(streetName, canvas.width / 2, 270);
-
-        ctx.fillStyle = success ? "#1f9d66" : "#d2463c";
-        ctx.beginPath();
-        ctx.roundRect(canvas.width / 2 - 150, 320, 300, 160, 24);
-        ctx.fill();
-
-        ctx.fillStyle = "#ffffff";
-        ctx.font = '700 76px "Montserrat", sans-serif';
-        ctx.fillText(`${resultLabel}/7`, canvas.width / 2, 412);
-        ctx.font = '600 24px "Nunito", sans-serif';
-        ctx.fillText(success ? "Défi réussi" : "Défi non résolu", canvas.width / 2, 450);
-
-        const startY = 530;
-        guesses.slice(0, 7).forEach((guess, index) => {
-          const y = startY + index * 92;
-          ctx.fillStyle = "rgba(15, 23, 42, 0.6)";
-          ctx.beginPath();
-          ctx.roundRect(120, y, canvas.width - 240, 72, 16);
-          ctx.fill();
-
-          ctx.fillStyle = "#e2e8f0";
-          ctx.font = '600 28px "Nunito", sans-serif';
-          ctx.textAlign = "left";
-          ctx.fillText(`#${index + 1}`, 145, y + 46);
-          ctx.fillText(guess.arrow || "•", 230, y + 46);
-          ctx.fillText(formatDistance(guess.distance), 300, y + 46);
-        });
-
-        ctx.textAlign = "center";
-        ctx.fillStyle = "#cbd5e1";
-        ctx.font = '600 24px "Nunito", sans-serif';
-        ctx.fillText("camino-ajm.pages.dev", canvas.width / 2, canvas.height - 120);
-
-        return canvas;
-      }
-
-      async function shareImage() {
-        const canvas = buildShareImage();
-        if (!canvas) {
-          return false;
-        }
-
-        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-        if (!blob) {
-          return false;
-        }
-
-        const file = new File([blob], "camino-daily.png", { type: "image/png" });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              title: "Camino - Défi Quotidien",
-              text: buildShareText(),
-              files: [file],
-            });
-            return true;
-          } catch (error) {
-            if (error?.name === "AbortError") {
-              return true;
-            }
-          }
-        }
-
-        try {
-          if (navigator.clipboard && typeof ClipboardItem !== "undefined") {
-            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-            return true;
-          }
-        } catch (error) {
-          // fallback to download
-        }
-
-        const objectUrl = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = objectUrl;
-        anchor.download = "camino-daily.png";
-        anchor.click();
-        URL.revokeObjectURL(objectUrl);
-        return true;
-      }
-
-      function bindShareButtons() {
-        const copyBtn = document.getElementById("daily-share-text");
-        const imageBtn = document.getElementById("daily-share-image");
-        const feedbackEl = document.getElementById("daily-share-feedback");
-
-        if (copyBtn) {
-          copyBtn.addEventListener("click", async () => {
-            copyBtn.disabled = true;
-            const ok = await copyShareText();
-            copyBtn.disabled = false;
-            if (feedbackEl) {
-              feedbackEl.textContent = ok ? "Texte copié !" : "Impossible de copier le texte.";
-            }
-          });
-        }
-
-        if (imageBtn) {
-          imageBtn.addEventListener("click", async () => {
-            imageBtn.disabled = true;
-            const ok = await shareImage();
-            imageBtn.disabled = false;
-            if (feedbackEl) {
-              feedbackEl.textContent = ok ? "Image prête et partagée/téléchargée." : "Impossible de générer l'image.";
-            }
-          });
-        }
-      }
-
-      function renderDailyPage(root) {
-        const dailyData = state.dailyData || {};
-        const profileData = state.profileData || {};
-        const leaderboardRows = Array.isArray(state.dailyLeaderboard) ? state.dailyLeaderboard : [];
-        const guesses = state.guesses || [];
+      function renderDailyPage(root, context) {
+        const dailyData = context.dailyData || {};
+        const profileData = context.profileData || {};
+        const leaderboardRows = Array.isArray(context.dailyLeaderboard) ? context.dailyLeaderboard : [];
 
         const status = dailyData.userStatus || {};
         const attempts = Number(status.attempts_count || 0);
         const success = Boolean(status.success);
         const remaining = Math.max(0, 7 - attempts);
-        const bestDistance = Number.isFinite(Number(status.best_distance_meters))
-          ? formatDistance(status.best_distance_meters)
-          : "—";
-
         const resultLine = success
           ? `✅ Défi réussi en ${attempts} essai${attempts > 1 ? "s" : ""}.`
           : attempts >= 7
-            ? `❌ Défi terminé (7 essais). Rue cible : « ${escapeHtml(dailyData.streetName || "Rue inconnue")} ».`
-            : `⏳ Défi en cours, ${remaining} essai${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}.`;
+            ? `❌ Défi terminé. Rue cible : « ${escapeHtml(dailyData.streetName || "Rue inconnue")} ».`
+            : `⏳ ${remaining} essai${remaining > 1 ? "s" : ""} restant${remaining > 1 ? "s" : ""}.`;
 
-        const currentStreak = Number(profileData.daily?.current_streak || 0);
-        const maxStreak = Number(profileData.daily?.max_streak || 0);
+        const currentStreak = Number(profileData.daily && profileData.daily.current_streak) || 0;
+        const maxStreak = Number(profileData.daily && profileData.daily.max_streak) || 0;
         const streakDays = buildStreakDays(currentStreak);
 
-        const user = state.user;
-        const currentUsername = String(user?.username || "").trim().toLowerCase();
+        const topRows = leaderboardRows.slice(0, 10);
+        const user = readCurrentUser();
+        const currentUsername = String(user && user.username ? user.username : "").trim().toLowerCase();
         const userIndex = currentUsername
-          ? leaderboardRows.findIndex((row) => String(row?.username || "").trim().toLowerCase() === currentUsername)
+          ? leaderboardRows.findIndex((row) => String(row && row.username ? row.username : "").trim().toLowerCase() === currentUsername)
           : -1;
 
         root.innerHTML = `
           <div class="meta-grid meta-grid--two">
             <section class="meta-card">
-              <h2 class="meta-card-title">Score Daily du jour</h2>
-              <div class="meta-summary-box">
-                <div class="meta-summary-line"><span>Date</span><strong>${escapeHtml(dailyData.date || "—")}</strong></div>
-                <div class="meta-summary-line"><span>Rue cible</span><strong>${escapeHtml(dailyData.streetName || "Inconnue")}</strong></div>
-                <div class="meta-summary-line"><span>Essais</span><strong>${attempts}/7</strong></div>
-                <div class="meta-summary-line"><span>Meilleure distance</span><strong>${escapeHtml(bestDistance)}</strong></div>
+              <h2 class="meta-card-title">Votre Daily du jour</h2>
+              <p class="meta-inline-note">Date : ${escapeHtml(dailyData.date || "—")}</p>
+              <p class="meta-inline-note">Rue cible : ${escapeHtml(dailyData.streetName || "Inconnue")}</p>
+              <p class="meta-inline-note">${resultLine}</p>
+              <p class="meta-inline-note">Meilleure distance : <strong>${escapeHtml(formatDistance(status.best_distance_meters))}</strong></p>
+              <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <a class="meta-back-link" href="/">Lancer le Daily</a>
+                <a class="meta-back-link" href="/classement.html">Voir le classement complet</a>
               </div>
-              <p class="meta-inline-note" style="margin-top: 10px;">${resultLine}</p>
-
-              <div style="margin-top: 12px;" class="meta-controls-row">
-                <button id="daily-share-text" type="button" class="btn-secondary">Copier le texte</button>
-                <button id="daily-share-image" type="button" class="btn-primary">Partager l'image</button>
-              </div>
-              <p id="daily-share-feedback" class="meta-inline-note"></p>
             </section>
 
             <section class="meta-card">
@@ -415,62 +161,35 @@
             </section>
           </div>
 
-          <div class="meta-grid meta-grid--two" style="margin-top: 12px;">
-            <section class="meta-card">
-              <h2 class="meta-card-title">Détail des essais</h2>
-              ${guesses.length ? `
-                <table class="profile-mini-table">
-                  <thead>
-                    <tr><th>#</th><th>Direction</th><th>Distance</th></tr>
-                  </thead>
-                  <tbody>
-                    ${guesses.map((guess, index) => `
-                      <tr>
-                        <td>${index + 1}</td>
-                        <td>${escapeHtml(guess.arrow || "•")}</td>
-                        <td>${escapeHtml(formatDistance(guess.distance))}</td>
-                      </tr>`).join("")}
-                  </tbody>
-                </table>` : `<p class="meta-empty">Aucun essai local enregistré pour aujourd'hui.</p>`}
-            </section>
-
-            <section class="meta-card">
-              <h2 class="meta-card-title">Top du jour</h2>
-              ${leaderboardRows.length ? `
-                <div class="meta-list">
-                  ${leaderboardRows.slice(0, 10).map((row, index) => `
-                    <article class="meta-list-card">
-                      <div class="meta-list-rank">#${index + 1}</div>
-                      <div class="meta-list-player">
-                        <div class="meta-list-name"><span>${escapeHtml(row.avatar || "👤")}</span><span>${escapeHtml(row.username || "Anonyme")}</span></div>
-                        <div class="meta-list-title">${Number(row.attempts_count || 0)} essai${Number(row.attempts_count || 0) > 1 ? "s" : ""}</div>
-                      </div>
-                      <div class="meta-list-score">${Number(row.attempts_count || 0)}/7</div>
-                    </article>
-                  `).join("")}
-                </div>` : `<p class="meta-empty">Le top du jour n'est pas encore disponible.</p>`}
-
-              <p class="meta-inline-note" style="margin-top: 8px;">
-                ${userIndex >= 0 ? `Votre position aujourd'hui : #${userIndex + 1}.` : "Vous n'êtes pas encore classé aujourd'hui."}
-              </p>
-              <div style="margin-top: 8px;"><a class="meta-back-link" href="/classement.html">Voir le classement complet</a></div>
-            </section>
-          </div>`;
-
-        bindShareButtons();
+          <section class="meta-card" style="margin-top: 12px;">
+            <h2 class="meta-card-title">Top du jour</h2>
+            ${topRows.length ? `<div class="meta-list">${topRows.map((row, index) => `
+              <article class="meta-list-card">
+                <div class="meta-list-rank">#${index + 1}</div>
+                <div class="meta-list-player">
+                  <div class="meta-list-name"><span>${escapeHtml(row.avatar || "👤")}</span><span>${escapeHtml(row.username || "Anonyme")}</span></div>
+                  <div class="meta-list-title">${row.success ? "Réussi" : "Non réussi"} · ${Number(row.attempts_count || 0)} essai${Number(row.attempts_count || 0) > 1 ? "s" : ""}</div>
+                </div>
+                <div class="meta-list-score">${escapeHtml(formatDistance(row.best_distance_meters))}</div>
+              </article>
+            `).join("")}</div>` : `<p class="meta-empty">Le top du jour n'est pas encore disponible.</p>`}
+            <p class="meta-inline-note" style="margin-top: 8px;">
+              ${userIndex >= 0 ? `Votre position aujourd'hui : #${userIndex + 1}.` : "Vous n'êtes pas encore classé aujourd'hui."}
+            </p>
+          </section>`;
       }
 
       async function loadDailyPage() {
         const root = document.getElementById("daily-root");
-        state.user = readCurrentUser();
+        const user = readCurrentUser();
 
-        if (!state.user || !state.user.token) {
+        if (!user || !user.token) {
           renderNotConnected(root);
           return;
         }
 
         try {
-          const headers = { Authorization: `Bearer ${state.user.token}` };
+          const headers = { Authorization: `Bearer ${user.token}` };
 
           const [dailyResponse, leaderboardResponse, profileResponse] = await Promise.all([
             fetch(`${API_URL}/api/daily`, { headers }),
@@ -494,12 +213,11 @@
             profileResponse.json(),
           ]);
 
-          state.dailyData = dailyData;
-          state.dailyLeaderboard = Array.isArray(dailyLeaderboard) ? dailyLeaderboard : [];
-          state.profileData = profileData || {};
-          state.guesses = loadStoredGuesses(dailyData?.date);
-
-          renderDailyPage(root);
+          renderDailyPage(root, {
+            dailyData,
+            dailyLeaderboard,
+            profileData,
+          });
         } catch (error) {
           console.warn("Daily result page error:", error);
           root.innerHTML = `

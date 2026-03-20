@@ -11,7 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Montserrat:wght@600;800&family=Nunito:wght@400;600;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="/style.css?v=20260320p3">
+  <link rel="stylesheet" href="/style.css?v=20260320p2">
 </head>
 
 <body class="meta-page-body">
@@ -29,40 +29,28 @@
 
     <section class="meta-hero">
       <h1 class="meta-title">Classement Camino</h1>
-      <p class="meta-subtitle">Sélectionnez la zone et le type de partie pour afficher le podium et le classement détaillé.</p>
+      <p class="meta-subtitle">Podium et classement détaillé par zone et mode de jeu.</p>
     </section>
 
     <section class="meta-card" aria-label="Filtres classement">
-      <h2 class="meta-card-title">Filtres</h2>
+      <h2 class="meta-card-title">Vue</h2>
       <div class="meta-controls-row" id="period-controls">
         <button type="button" class="meta-filter-btn is-active" data-period="all">All-time</button>
         <button type="button" class="meta-filter-btn" data-period="month">Mensuel</button>
       </div>
-      <div class="meta-grid meta-grid--three">
-        <div>
-          <label for="zone-select" class="meta-inline-note">Zone de jeu</label>
-          <select id="zone-select" class="meta-select" aria-label="Sélectionner la zone"></select>
-        </div>
-        <div>
-          <label for="game-select" class="meta-inline-note">Type de partie</label>
-          <select id="game-select" class="meta-select" aria-label="Sélectionner le mode"></select>
-        </div>
-        <div id="quartier-select-wrap" class="hidden">
-          <label for="quartier-select" class="meta-inline-note">Quartier</label>
-          <select id="quartier-select" class="meta-select" aria-label="Sélectionner le quartier"></select>
-        </div>
-      </div>
+      <label for="board-select" class="meta-inline-note">Tableau affiché</label>
+      <select id="board-select" class="meta-select" aria-label="Choisir un tableau de classement"></select>
     </section>
 
     <div class="meta-grid meta-grid--two">
       <section class="meta-card">
         <h2 class="meta-card-title">Podium</h2>
-        <div id="podium" class="meta-podium meta-podium--stage"></div>
+        <div id="podium" class="meta-podium"></div>
       </section>
 
       <section class="meta-card">
-        <h2 class="meta-card-title">Résumé</h2>
-        <div id="board-summary" class="meta-summary-box"></div>
+        <h2 class="meta-card-title">Votre position</h2>
+        <div id="you-rank" class="meta-you-rank">Connectez-vous pour afficher votre rang.</div>
       </section>
     </div>
 
@@ -98,9 +86,6 @@
         lecture: "Lecture",
       };
 
-      const ZONE_ORDER = ["rues-celebres", "rues-principales", "quartier", "ville", "monuments"];
-      const GAME_ORDER = ["classique", "marathon", "chrono", "lecture"];
-
       const TITLE_NAMES = [
         "🏛️ Maire de la Ville",
         "💪 Vrai Marseillais",
@@ -132,22 +117,8 @@
         },
       };
 
-      const state = {
-        period: "all",
-        boards: {},
-        selectedZone: "",
-        selectedGame: "",
-        selectedQuartier: "",
-      };
-
-      const statusEl = document.getElementById("leaderboard-status");
-      const zoneSelect = document.getElementById("zone-select");
-      const gameSelect = document.getElementById("game-select");
-      const quartierWrap = document.getElementById("quartier-select-wrap");
-      const quartierSelect = document.getElementById("quartier-select");
-      const podiumEl = document.getElementById("podium");
-      const boardSummaryEl = document.getElementById("board-summary");
-      const listEl = document.getElementById("leaderboard-list");
+      const zoneOrder = ["rues-celebres", "rues-principales", "quartier", "ville", "monuments"];
+      const gameOrder = ["classique", "marathon", "chrono", "lecture"];
 
       function escapeHtml(value) {
         return String(value == null ? "" : value)
@@ -164,10 +135,6 @@
         } catch (error) {
           return null;
         }
-      }
-
-      function setStatus(message) {
-        statusEl.textContent = message;
       }
 
       function buildQuartierMarathonThresholds(maxItems) {
@@ -209,236 +176,82 @@
                 : TITLE_NAMES[4];
       }
 
+      function sortBoardEntries(entries) {
+        return entries.slice().sort((left, right) => {
+          const [lz, lg, lq] = left[0].split("|");
+          const [rz, rg, rq] = right[0].split("|");
+          const z = zoneOrder.indexOf(lz) - zoneOrder.indexOf(rz);
+          if (z !== 0) return z;
+          const g = gameOrder.indexOf(lg) - gameOrder.indexOf(rg);
+          if (g !== 0) return g;
+          return String(lq || "").localeCompare(String(rq || ""), "fr");
+        });
+      }
+
+      function boardLabel(key) {
+        const parts = key.split("|");
+        const zoneMode = parts[0] || "ville";
+        const gameType = parts[1] || "classique";
+        const quartier = parts[2] && parts[2] !== "null" ? parts[2] : "";
+        const base = (ZONE_LABELS[zoneMode] || zoneMode) + " • " + (GAME_LABELS[gameType] || gameType);
+        return quartier ? base + " • " + quartier : base;
+      }
+
       function formatScore(row, gameType) {
         if (gameType === "classique") {
-          return typeof row.high_score === "number" ? row.high_score.toFixed(1) : Number(row.high_score || 0).toFixed(1);
+          return typeof row.high_score === "number" ? row.high_score.toFixed(1) : "0.0";
         }
-        if (gameType === "chrono") {
-          const found = Number(row.items_correct || 0);
-          const time = Number(row.time_sec || 0).toFixed(1);
-          return `${found} • ${time}s`;
-        }
-        return String(Math.round(Number(row.items_correct || 0)));
+        return String(row.items_correct || 0);
       }
 
-      function parseBoardKey(key) {
-        const parts = String(key || "").split("|");
-        const zone = parts[0] || "";
-        const game = parts[1] || "";
-        const quartier = parts.length > 2 ? parts.slice(2).join("|") : "";
-        return { key, zone, game, quartier };
+      const statusEl = document.getElementById("leaderboard-status");
+      const boardSelect = document.getElementById("board-select");
+      const podiumEl = document.getElementById("podium");
+      const listEl = document.getElementById("leaderboard-list");
+      const youRankEl = document.getElementById("you-rank");
+
+      let currentPeriod = "all";
+      let currentBoards = {};
+
+      function setStatus(message) {
+        statusEl.textContent = message;
       }
 
-      function getBoardEntries() {
-        return Object.entries(state.boards || {})
-          .filter(([, rows]) => Array.isArray(rows) && rows.length > 0)
-          .map(([key, rows]) => ({ ...parseBoardKey(key), rows }));
-      }
-
-      function populateZoneOptions(entries) {
-        const zones = new Set(entries.map((entry) => entry.zone));
-        const orderedZones = Array.from(zones).sort((left, right) => {
-          const leftIndex = ZONE_ORDER.indexOf(left);
-          const rightIndex = ZONE_ORDER.indexOf(right);
-          const a = leftIndex >= 0 ? leftIndex : 999;
-          const b = rightIndex >= 0 ? rightIndex : 999;
-          if (a !== b) return a - b;
-          return left.localeCompare(right, "fr");
-        });
-
-        zoneSelect.innerHTML = orderedZones
-          .map((zone) => `<option value="${escapeHtml(zone)}">${escapeHtml(ZONE_LABELS[zone] || zone)}</option>`)
-          .join("");
-
-        if (!orderedZones.length) {
-          state.selectedZone = "";
-          return;
-        }
-
-        if (!orderedZones.includes(state.selectedZone)) {
-          state.selectedZone = orderedZones[0];
-        }
-        zoneSelect.value = state.selectedZone;
-      }
-
-      function populateGameOptions(entries) {
-        const games = new Set(
-          entries
-            .filter((entry) => entry.zone === state.selectedZone)
-            .map((entry) => entry.game),
-        );
-
-        const orderedGames = Array.from(games).sort((left, right) => {
-          const leftIndex = GAME_ORDER.indexOf(left);
-          const rightIndex = GAME_ORDER.indexOf(right);
-          const a = leftIndex >= 0 ? leftIndex : 999;
-          const b = rightIndex >= 0 ? rightIndex : 999;
-          if (a !== b) return a - b;
-          return left.localeCompare(right, "fr");
-        });
-
-        gameSelect.innerHTML = orderedGames
-          .map((game) => `<option value="${escapeHtml(game)}">${escapeHtml(GAME_LABELS[game] || game)}</option>`)
-          .join("");
-
-        if (!orderedGames.length) {
-          state.selectedGame = "";
-          return;
-        }
-
-        if (!orderedGames.includes(state.selectedGame)) {
-          state.selectedGame = orderedGames[0];
-        }
-        gameSelect.value = state.selectedGame;
-      }
-
-      function populateQuartierOptions(entries) {
-        const needsQuartier = state.selectedZone === "quartier";
-        quartierWrap.classList.toggle("hidden", !needsQuartier);
-
-        if (!needsQuartier) {
-          state.selectedQuartier = "";
-          quartierSelect.innerHTML = "";
-          return;
-        }
-
-        const quartiers = entries
-          .filter((entry) => entry.zone === "quartier" && entry.game === state.selectedGame)
-          .map((entry) => entry.quartier || "")
-          .filter((quartier) => quartier && quartier !== "unknown")
-          .sort((left, right) => left.localeCompare(right, "fr"));
-
-        const uniqueQuartiers = Array.from(new Set(quartiers));
-
-        if (!uniqueQuartiers.length) {
-          quartierSelect.innerHTML = `<option value="unknown">Quartier non renseigné</option>`;
-          state.selectedQuartier = "unknown";
-          quartierSelect.value = state.selectedQuartier;
-          return;
-        }
-
-        quartierSelect.innerHTML = uniqueQuartiers
-          .map((quartier) => `<option value="${escapeHtml(quartier)}">${escapeHtml(quartier)}</option>`)
-          .join("");
-
-        if (!uniqueQuartiers.includes(state.selectedQuartier)) {
-          state.selectedQuartier = uniqueQuartiers[0];
-        }
-        quartierSelect.value = state.selectedQuartier;
-      }
-
-      function getSelectedBoard(entries) {
-        if (!state.selectedZone || !state.selectedGame) {
-          return null;
-        }
-
-        if (state.selectedZone === "quartier") {
-          const exact = entries.find((entry) =>
-            entry.zone === "quartier" &&
-            entry.game === state.selectedGame &&
-            entry.quartier === state.selectedQuartier,
-          );
-          if (exact) {
-            return exact;
-          }
-
-          return entries.find((entry) =>
-            entry.zone === "quartier" &&
-            entry.game === state.selectedGame,
-          ) || null;
-        }
-
-        return entries.find((entry) =>
-          entry.zone === state.selectedZone &&
-          entry.game === state.selectedGame &&
-          !entry.quartier,
-        ) || entries.find((entry) =>
-          entry.zone === state.selectedZone && entry.game === state.selectedGame,
-        ) || null;
-      }
-
-      function renderPodium(rows, zoneMode, gameType) {
+      function renderBoard(selectedKey) {
+        const rows = Array.isArray(currentBoards[selectedKey]) ? currentBoards[selectedKey] : [];
         if (!rows.length) {
           podiumEl.innerHTML = "<p class=\"meta-empty\">Aucun score sur ce tableau.</p>";
+          listEl.innerHTML = "";
+          youRankEl.textContent = "Aucun score trouvé pour ce tableau.";
           return;
         }
 
-        const first = rows[0] || null;
-        const second = rows[1] || null;
-        const third = rows[2] || null;
+        const [zoneMode, gameType] = selectedKey.split("|");
+        const topThree = rows.slice(0, 3);
 
-        const spots = [
-          { rank: 2, row: second, stage: "stage-2" },
-          { rank: 1, row: first, stage: "stage-1" },
-          { rank: 3, row: third, stage: "stage-3" },
-        ];
-
-        podiumEl.innerHTML = `
-          <div class="meta-podium-stage-grid">
-            ${spots.map((spot) => {
-          if (!spot.row) {
-            return `<article class="meta-podium-spot ${spot.stage} is-empty"><div class="meta-podium-plinth"></div></article>`;
-          }
+        podiumEl.innerHTML = topThree.map((row, index) => {
           const title = getPlayerTitle(
-            spot.row.high_score || 0,
+            row.high_score || 0,
             zoneMode,
             gameType,
-            spot.row.items_total || 0,
-            spot.row.items_correct || 0,
+            row.items_total || 0,
+            row.items_correct || 0,
           );
           return `
-                <article class="meta-podium-spot ${spot.stage}">
-                  <div class="meta-podium-rank-badge">#${spot.rank}</div>
-                  <div class="meta-podium-avatar">${escapeHtml(spot.row.avatar || "👤")}</div>
-                  <div class="meta-podium-name">${escapeHtml(spot.row.username || "Anonyme")}</div>
-                  <div class="meta-podium-title">${escapeHtml(title)}</div>
-                  <div class="meta-podium-score">${escapeHtml(formatScore(spot.row, gameType))}</div>
-                  <div class="meta-podium-plinth"></div>
-                </article>`;
-        }).join("")}
-          </div>`;
-      }
-
-      function renderSummary(boardEntry) {
-        const rows = boardEntry.rows;
-        const zoneLabel = ZONE_LABELS[boardEntry.zone] || boardEntry.zone;
-        const gameLabel = GAME_LABELS[boardEntry.game] || boardEntry.game;
-        const boardLabel = `${zoneLabel} • ${gameLabel}${boardEntry.quartier ? ` • ${boardEntry.quartier}` : ""}`;
-
-        const currentUser = readCurrentUser();
-        const currentUsername = String(currentUser && currentUser.username ? currentUser.username : "").trim().toLowerCase();
-        const userIndex = currentUsername
-          ? rows.findIndex((row) => String(row && row.username ? row.username : "").trim().toLowerCase() === currentUsername)
-          : -1;
-        const winner = rows[0] || null;
-
-        const youHtml =
-          !currentUsername
-            ? "Connectez-vous pour afficher votre position."
-            : userIndex >= 0
-              ? `Vous êtes <strong>#${userIndex + 1}</strong> sur ce tableau.`
-              : "Vous n'êtes pas encore classé sur ce tableau.";
-
-        boardSummaryEl.innerHTML = `
-          <div class="meta-summary-line"><span>Tableau</span><strong>${escapeHtml(boardLabel)}</strong></div>
-          <div class="meta-summary-line"><span>Joueurs classés</span><strong>${rows.length}</strong></div>
-          <div class="meta-summary-line"><span>Leader</span><strong>${winner ? escapeHtml(winner.username || "Anonyme") : "—"}</strong></div>
-          <div class="meta-summary-line"><span>Top score</span><strong>${winner ? escapeHtml(formatScore(winner, boardEntry.game)) : "—"}</strong></div>
-          <div class="meta-summary-you">${youHtml}</div>`;
-      }
-
-      function renderList(boardEntry) {
-        const rows = boardEntry.rows;
-        if (!rows.length) {
-          listEl.innerHTML = "<p class=\"meta-empty\">Aucun score enregistré.</p>";
-          return;
-        }
+            <article class="meta-podium-card">
+              <div class="meta-podium-rank">#${index + 1}</div>
+              <div class="meta-podium-avatar">${escapeHtml(row.avatar || "👤")}</div>
+              <div class="meta-podium-name">${escapeHtml(row.username || "Anonyme")}</div>
+              <div class="meta-podium-title">${escapeHtml(title)}</div>
+              <div class="meta-podium-score">${escapeHtml(formatScore(row, gameType))}</div>
+            </article>`;
+        }).join("");
 
         listEl.innerHTML = rows.map((row, index) => {
           const title = getPlayerTitle(
             row.high_score || 0,
-            boardEntry.zone,
-            boardEntry.game,
+            zoneMode,
+            gameType,
             row.items_total || 0,
             row.items_correct || 0,
           );
@@ -449,47 +262,54 @@
                 <div class="meta-list-name"><span>${escapeHtml(row.avatar || "👤")}</span><span>${escapeHtml(row.username || "Anonyme")}</span></div>
                 <div class="meta-list-title">${escapeHtml(title)}</div>
               </div>
-              <div class="meta-list-score">${escapeHtml(formatScore(row, boardEntry.game))}</div>
+              <div class="meta-list-score">${escapeHtml(formatScore(row, gameType))}</div>
             </article>`;
         }).join("");
-      }
 
-      function renderSelectedBoard(entries) {
-        const boardEntry = getSelectedBoard(entries);
-        if (!boardEntry) {
-          podiumEl.innerHTML = "<p class=\"meta-empty\">Aucun classement disponible pour cette sélection.</p>";
-          boardSummaryEl.innerHTML = "<p class=\"meta-empty\">Sélectionnez une autre combinaison zone/mode.</p>";
-          listEl.innerHTML = "";
+        const currentUser = readCurrentUser();
+        const currentUsername = String(currentUser && currentUser.username ? currentUser.username : "").trim().toLowerCase();
+        if (!currentUsername) {
+          youRankEl.textContent = "Connectez-vous pour afficher votre rang sur ce tableau.";
           return;
         }
 
-        renderPodium(boardEntry.rows, boardEntry.zone, boardEntry.game);
-        renderSummary(boardEntry);
-        renderList(boardEntry);
+        const userIndex = rows.findIndex((row) => String(row && row.username ? row.username : "").trim().toLowerCase() === currentUsername);
+        if (userIndex >= 0) {
+          const userRow = rows[userIndex] || {};
+          youRankEl.innerHTML = `Vous êtes <strong>#${userIndex + 1}</strong> (${escapeHtml(formatScore(userRow, gameType))}).`;
+        } else {
+          youRankEl.textContent = "Vous n'êtes pas classé sur ce tableau pour le moment.";
+        }
       }
 
-      function updateSelectorsAndRender() {
-        const entries = getBoardEntries();
+      function applyBoardOptions(entries, preferred) {
+        boardSelect.innerHTML = entries.map(([key]) => `<option value="${escapeHtml(key)}">${escapeHtml(boardLabel(key))}</option>`).join("");
         if (!entries.length) {
-          zoneSelect.innerHTML = "";
-          gameSelect.innerHTML = "";
-          quartierSelect.innerHTML = "";
-          quartierWrap.classList.add("hidden");
-          podiumEl.innerHTML = "<p class=\"meta-empty\">Aucun score enregistré.</p>";
-          boardSummaryEl.innerHTML = "<p class=\"meta-empty\">Aucune donnée.</p>";
-          listEl.innerHTML = "";
-          return;
+          boardSelect.innerHTML = "";
+          return null;
         }
 
-        populateZoneOptions(entries);
-        populateGameOptions(entries);
-        populateQuartierOptions(entries);
-        renderSelectedBoard(entries);
+        if (preferred && entries.some(([key]) => key === preferred)) {
+          boardSelect.value = preferred;
+          return preferred;
+        }
+
+        const defaultKey = [
+          "ville|classique|",
+          "rues-principales|classique|",
+          "quartier|classique|",
+          "rues-celebres|classique|",
+          "monuments|classique|",
+        ].find((candidate) => entries.some(([key]) => key === candidate)) || entries[0][0];
+
+        boardSelect.value = defaultKey;
+        return defaultKey;
       }
 
       async function loadLeaderboards() {
         setStatus("Chargement des classements…");
-        const periodSuffix = state.period === "month" ? "?period=month" : "";
+        const previous = boardSelect.value;
+        const periodSuffix = currentPeriod === "month" ? "?period=month" : "";
 
         try {
           const response = await fetch(`${API_URL}/api/leaderboards${periodSuffix}`);
@@ -497,43 +317,44 @@
             throw new Error(`HTTP ${response.status}`);
           }
 
-          state.boards = await response.json();
-          updateSelectorsAndRender();
+          const payload = await response.json();
+          currentBoards = payload || {};
+          const entries = sortBoardEntries(
+            Object.entries(currentBoards).filter((entry) => Array.isArray(entry[1]) && entry[1].length > 0),
+          );
 
-          const count = getBoardEntries().length;
-          setStatus(count ? `${count} tableaux disponibles (${state.period === "month" ? "mensuel" : "all-time"}).` : "Aucun score enregistré.");
+          if (!entries.length) {
+            podiumEl.innerHTML = "<p class=\"meta-empty\">Aucun score enregistré pour cette période.</p>";
+            listEl.innerHTML = "";
+            youRankEl.textContent = "Aucun classement disponible.";
+            boardSelect.innerHTML = "";
+            setStatus(currentPeriod === "month" ? "Période mensuelle vide." : "Aucun score enregistré.");
+            return;
+          }
+
+          const selectedKey = applyBoardOptions(entries, previous);
+          renderBoard(selectedKey);
+          setStatus(`${entries.length} tableaux disponibles (${currentPeriod === "month" ? "mensuel" : "all-time"}).`);
         } catch (error) {
-          console.warn("Leaderboard page load error:", error);
-          state.boards = {};
-          updateSelectorsAndRender();
+          console.warn("Leaderboard load error:", error);
+          podiumEl.innerHTML = "<p class=\"meta-empty\">Impossible de charger le podium.</p>";
+          listEl.innerHTML = "";
+          youRankEl.textContent = "Classement indisponible.";
           setStatus("Erreur de chargement du classement.");
         }
       }
 
-      zoneSelect.addEventListener("change", () => {
-        state.selectedZone = zoneSelect.value;
-        state.selectedQuartier = "";
-        updateSelectorsAndRender();
-      });
-
-      gameSelect.addEventListener("change", () => {
-        state.selectedGame = gameSelect.value;
-        state.selectedQuartier = "";
-        updateSelectorsAndRender();
-      });
-
-      quartierSelect.addEventListener("change", () => {
-        state.selectedQuartier = quartierSelect.value;
-        updateSelectorsAndRender();
+      boardSelect.addEventListener("change", () => {
+        renderBoard(boardSelect.value);
       });
 
       document.querySelectorAll("#period-controls [data-period]").forEach((button) => {
         button.addEventListener("click", () => {
           const nextPeriod = String(button.getAttribute("data-period") || "all");
-          if (nextPeriod === state.period) {
+          if (nextPeriod === currentPeriod) {
             return;
           }
-          state.period = nextPeriod;
+          currentPeriod = nextPeriod;
           document.querySelectorAll("#period-controls [data-period]").forEach((candidate) => {
             candidate.classList.toggle("is-active", candidate === button);
           });
