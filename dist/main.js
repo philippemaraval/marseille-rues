@@ -72,7 +72,7 @@
     chrono: "Chrono",
     lecture: "Lecture"
   };
-  var ZONE_ORDER = ["rues-celebres", "quartiers-ville", "rues-principales", "quartier", "ville", "monuments"];
+  var ZONE_ORDER = ["rues-celebres", "rues-principales", "quartier", "ville", "monuments", "quartiers-ville"];
   var GAME_ORDER = ["classique", "marathon", "chrono", "lecture"];
   function buildQuartierMarathonThresholds(maxItems) {
     const total = Math.max(1, parseInt(maxItems, 10) || 55);
@@ -4178,10 +4178,11 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     if (!e || !t) return;
     const r = e.value;
     t.classList.remove(
+      "difficulty-pill--very-easy",
       "difficulty-pill--easy",
       "difficulty-pill--medium",
       "difficulty-pill--hard"
-    ), "rues-principales" === r ? (t.textContent = "Facile", t.classList.add("difficulty-pill--easy")) : "quartiers-ville" === r ? (t.textContent = "Facile", t.classList.add("difficulty-pill--easy")) : "quartier" === r || "monuments" === r ? (t.textContent = "Faisable", t.classList.add("difficulty-pill--medium")) : "rues-celebres" === r ? (t.textContent = "Tr\xE8s Facile", t.classList.add("difficulty-pill--easy")) : "ville" === r ? (t.textContent = "Difficile", t.classList.add("difficulty-pill--hard")) : t.textContent = "";
+    ), "rues-principales" === r ? (t.textContent = "Facile", t.classList.add("difficulty-pill--easy")) : "quartiers-ville" === r ? (t.textContent = "Facile", t.classList.add("difficulty-pill--very-easy")) : "quartier" === r || "monuments" === r ? (t.textContent = "Faisable", t.classList.add("difficulty-pill--medium")) : "rues-celebres" === r ? (t.textContent = "Tr\xE8s Facile", t.classList.add("difficulty-pill--very-easy")) : "ville" === r ? (t.textContent = "Difficile", t.classList.add("difficulty-pill--hard")) : t.textContent = "";
   }
   function setTargetPanelTitleText(e) {
     const t = document.getElementById("target-panel-title-text");

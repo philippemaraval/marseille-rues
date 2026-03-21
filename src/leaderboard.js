@@ -53,7 +53,7 @@ export const GAME_LABELS = {
   lecture: "Lecture",
 };
 
-const ZONE_ORDER = ["rues-celebres", "quartiers-ville", "rues-principales", "quartier", "ville", "monuments"];
+const ZONE_ORDER = ["rues-celebres", "rues-principales", "quartier", "ville", "monuments", "quartiers-ville"];
 const GAME_ORDER = ["classique", "marathon", "chrono", "lecture"];
 
 export function buildQuartierMarathonThresholds(maxItems) {

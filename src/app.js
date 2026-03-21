@@ -915,6 +915,7 @@ function updateModeDifficultyPill() {
   if (!e || !t) return;
   const r = e.value;
   (t.classList.remove(
+    "difficulty-pill--very-easy",
     "difficulty-pill--easy",
     "difficulty-pill--medium",
     "difficulty-pill--hard",
@@ -923,17 +924,17 @@ function updateModeDifficultyPill() {
       ? ((t.textContent = "Facile"), t.classList.add("difficulty-pill--easy"))
       : "quartiers-ville" === r
         ? ((t.textContent = "Facile"),
-          t.classList.add("difficulty-pill--easy"))
+          t.classList.add("difficulty-pill--very-easy"))
       : "quartier" === r || "monuments" === r
         ? ((t.textContent = "Faisable"),
           t.classList.add("difficulty-pill--medium"))
-        : "rues-celebres" === r
-          ? ((t.textContent = "Très Facile"),
-            t.classList.add("difficulty-pill--easy"))
-          : "ville" === r
-            ? ((t.textContent = "Difficile"),
-              t.classList.add("difficulty-pill--hard"))
-            : (t.textContent = ""));
+      : "rues-celebres" === r
+        ? ((t.textContent = "Très Facile"),
+          t.classList.add("difficulty-pill--very-easy"))
+        : "ville" === r
+          ? ((t.textContent = "Difficile"),
+            t.classList.add("difficulty-pill--hard"))
+          : (t.textContent = ""));
 }
 function setTargetPanelTitleText(e) {
   const t = document.getElementById("target-panel-title-text");
