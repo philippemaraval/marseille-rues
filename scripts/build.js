@@ -29,6 +29,7 @@ const DIST_INCLUDE = [
   "main.js.min",
   "style.css",
   "style.css.min",
+  "admin",
   "data_rules.js",
   "data_rules.js.min",
   "sw.js",

@@ -98,6 +98,13 @@ import { computeItemPoints, sampleWithoutReplacement, shuffle } from "./session.
 
 let FAMOUS_STREET_INFOS = {};
 let MAIN_STREET_INFOS = {};
+let FAMOUS_STREET_NAMES_RUNTIME = new Set(
+  typeof FAMOUS_STREET_NAMES !== "undefined" ? Array.from(FAMOUS_STREET_NAMES) : [],
+);
+let MAIN_STREET_NAMES_RUNTIME = new Set(
+  typeof MAIN_STREET_NAMES !== "undefined" ? Array.from(MAIN_STREET_NAMES) : [],
+);
+let MONUMENT_NAMES_RUNTIME = new Set();
 const DEFAULT_REMINDER_CONFIG = {
   hour: 10,
   minute: 0,
@@ -110,15 +117,99 @@ const MAP_REGION_MAX_BOUNDS = [
 let swRegistrationPromise = null;
 let notificationConfigCache = null;
 
-async function loadStreetInfos() {
+function normalizeStreetInfoMapPayload(entries) {
+  if (!entries || typeof entries !== "object" || Array.isArray(entries)) {
+    return null;
+  }
+  const normalized = {};
+  Object.entries(entries).forEach(([rawName, rawInfo]) => {
+    const streetName = normalizeName(rawName);
+    if (!streetName || typeof rawInfo !== "string") {
+      return;
+    }
+    const infoText = rawInfo.trim();
+    if (!infoText) {
+      return;
+    }
+    normalized[streetName] = infoText;
+  });
+  return normalized;
+}
+
+function normalizeNameListPayload(entries) {
+  if (!Array.isArray(entries)) {
+    return null;
+  }
+  const normalized = [];
+  const seen = new Set();
+  entries.forEach((value) => {
+    const normalizedValue = normalizeName(value);
+    if (!normalizedValue || seen.has(normalizedValue)) {
+      return;
+    }
+    seen.add(normalizedValue);
+    normalized.push(normalizedValue);
+  });
+  return normalized;
+}
+
+function applyPublicContentPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return;
+  }
+
+  const famousInfos = normalizeStreetInfoMapPayload(payload?.streetInfos?.famous);
+  if (famousInfos) {
+    FAMOUS_STREET_INFOS = famousInfos;
+  }
+
+  const mainInfos = normalizeStreetInfoMapPayload(payload?.streetInfos?.main);
+  if (mainInfos) {
+    MAIN_STREET_INFOS = mainInfos;
+  }
+
+  const famousList = normalizeNameListPayload(payload?.lists?.famousStreets);
+  if (famousList) {
+    FAMOUS_STREET_NAMES_RUNTIME = new Set(famousList);
+  }
+
+  const mainList = normalizeNameListPayload(payload?.lists?.mainStreets);
+  if (mainList) {
+    MAIN_STREET_NAMES_RUNTIME = new Set(mainList);
+  }
+
+  const monumentsList = normalizeNameListPayload(payload?.lists?.monuments);
+  if (monumentsList) {
+    MONUMENT_NAMES_RUNTIME = new Set(monumentsList);
+  }
+}
+
+async function loadStreetInfosFromStaticFile() {
   try {
     const response = await fetch('data/street_infos.json?v=' + Date.now());
     const data = await response.json();
-    FAMOUS_STREET_INFOS = data.famous || {};
-    MAIN_STREET_INFOS = data.main || {};
-    console.log('Street infos loaded');
+    const normalizedFamousInfos = normalizeStreetInfoMapPayload(data?.famous);
+    const normalizedMainInfos = normalizeStreetInfoMapPayload(data?.main);
+    FAMOUS_STREET_INFOS = normalizedFamousInfos || {};
+    MAIN_STREET_INFOS = normalizedMainInfos || {};
+    console.log("Street infos loaded from static file");
   } catch (error) {
-    console.error('Failed to load street infos', error);
+    console.error("Failed to load local street infos", error);
+  }
+}
+
+async function loadStreetInfos() {
+  await loadStreetInfosFromStaticFile();
+  try {
+    const response = await fetch(`${API_URL}/api/content/public`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    applyPublicContentPayload(payload);
+    console.log("Runtime content loaded from API");
+  } catch (error) {
+    console.warn("Runtime content API unavailable, fallback to static content.", error);
   }
 }
 function normalizeName(e) {
@@ -1630,8 +1721,8 @@ function initUI() {
   const I = document.getElementById("summary");
   (I && ((I.classList.add("hidden"), (I.innerHTML = ""))), clearSessionShareSlot());
 }
-document.addEventListener("DOMContentLoaded", () => {
-  loadStreetInfos();
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadStreetInfos();
   (setMapStatus("Chargement", "loading"),
     initMap(),
     initUI(),
@@ -1698,8 +1789,8 @@ function getBaseStreetStyleFromName(e) {
     streetName: e,
     normalizeName,
     uiTheme: UI_THEME,
-    mainStreetNames: MAIN_STREET_NAMES,
-    famousStreetNames: FAMOUS_STREET_NAMES,
+    mainStreetNames: MAIN_STREET_NAMES_RUNTIME,
+    famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME,
   });
 }
 function getBaseStreetStyle(e) {
@@ -1709,8 +1800,8 @@ function getBaseStreetStyle(e) {
     selectedQuartier: getSelectedQuartier(),
     normalizeName,
     uiTheme: UI_THEME,
-    mainStreetNames: MAIN_STREET_NAMES,
-    famousStreetNames: FAMOUS_STREET_NAMES,
+    mainStreetNames: MAIN_STREET_NAMES_RUNTIME,
+    famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME,
   });
 }
 function isStreetVisibleInCurrentMode(e, t) {
@@ -1719,8 +1810,8 @@ function isStreetVisibleInCurrentMode(e, t) {
     normalizedStreetName: e,
     quartierName: t,
     selectedQuartier: getSelectedQuartier(),
-    famousStreetNames: FAMOUS_STREET_NAMES,
-    mainStreetNames: MAIN_STREET_NAMES,
+    famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME,
+    mainStreetNames: MAIN_STREET_NAMES_RUNTIME,
   });
 }
 function getQuartierTargetName(e) {
@@ -1808,6 +1899,7 @@ function loadMonuments() {
     uiTheme: UI_THEME,
     isTouchDevice: IS_TOUCH_DEVICE,
     handleMonumentClick,
+    allowedMonumentNames: MONUMENT_NAMES_RUNTIME,
   })
     .then((result) => {
       allMonuments = result.allMonuments;
@@ -2172,8 +2264,8 @@ function getCurrentZoneStreets() {
     zoneMode: getZoneMode(),
     selectedQuartier: getSelectedQuartier(),
     normalizeName,
-    mainStreetNames: MAIN_STREET_NAMES,
-    famousStreetNames: FAMOUS_STREET_NAMES,
+    mainStreetNames: MAIN_STREET_NAMES_RUNTIME,
+    famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME,
   });
 }
 function buildUniqueStreetList(e) {
@@ -2361,11 +2453,11 @@ function handleStreetClick(e, t, r) {
   if ("monuments" === a || "quartiers-ville" === a) return;
   if ("rues-principales" === a || "main" === a) {
     const t = normalizeName(e.properties.name);
-    if (!MAIN_STREET_NAMES.has(t)) return;
+    if (!MAIN_STREET_NAMES_RUNTIME.has(t)) return;
   }
   if ("rues-celebres" === a) {
     const t = normalizeName(e.properties.name);
-    if (!FAMOUS_STREET_NAMES.has(t)) return;
+    if (!FAMOUS_STREET_NAMES_RUNTIME.has(t)) return;
   }
   if ("quartier" === a) {
     const t = getSelectedQuartier(),
@@ -2707,12 +2799,12 @@ function showStreetInfo(e) {
   let i;
   if (isMain) {
     i = MAIN_STREET_INFOS[s];
-    if (!i && MAIN_STREET_NAMES.has(s)) {
+    if (!i && MAIN_STREET_NAMES_RUNTIME.has(s)) {
       i = "Rue principale : informations historiques à compléter.";
     }
   } else if (isFamous) {
     i = FAMOUS_STREET_INFOS[s];
-    if (!i && FAMOUS_STREET_NAMES.has(s)) {
+    if (!i && FAMOUS_STREET_NAMES_RUNTIME.has(s)) {
       i = "Rue célèbre : informations historiques à compléter.";
     }
   }

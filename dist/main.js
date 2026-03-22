@@ -1939,15 +1939,20 @@
     L: L2,
     uiTheme,
     isTouchDevice,
-    handleMonumentClick: handleMonumentClick2
+    handleMonumentClick: handleMonumentClick2,
+    allowedMonumentNames
   }) {
     const response = await fetch("data/marseille_monuments.geojson?v=2");
     if (!response.ok) {
       throw new Error(`Impossible de charger les monuments (HTTP ${response.status}).`);
     }
     const payload = await response.json();
+    const normalizedAllowedMonumentNames = allowedMonumentNames instanceof Set ? new Set(
+      Array.from(allowedMonumentNames).map((value) => String(value || "").trim().toLowerCase()).filter(Boolean)
+    ) : /* @__PURE__ */ new Set();
+    const hasMonumentFilter = normalizedAllowedMonumentNames.size > 0;
     const allMonuments2 = (payload.features || []).filter(
-      (feature) => feature.geometry && feature.geometry.type === "Point" && feature.properties && typeof feature.properties.name === "string" && feature.properties.name.trim() !== ""
+      (feature) => feature.geometry && feature.geometry.type === "Point" && feature.properties && typeof feature.properties.name === "string" && feature.properties.name.trim() !== "" && (!hasMonumentFilter || normalizedAllowedMonumentNames.has(feature.properties.name.trim().toLowerCase()))
     );
     let monumentsLayer2 = L2.geoJSON(
       { type: "FeatureCollection", features: allMonuments2 },
@@ -3567,6 +3572,13 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   // src/app.js
   var FAMOUS_STREET_INFOS = {};
   var MAIN_STREET_INFOS = {};
+  var FAMOUS_STREET_NAMES_RUNTIME = new Set(
+    typeof FAMOUS_STREET_NAMES !== "undefined" ? Array.from(FAMOUS_STREET_NAMES) : []
+  );
+  var MAIN_STREET_NAMES_RUNTIME = new Set(
+    typeof MAIN_STREET_NAMES !== "undefined" ? Array.from(MAIN_STREET_NAMES) : []
+  );
+  var MONUMENT_NAMES_RUNTIME = /* @__PURE__ */ new Set();
   var DEFAULT_REMINDER_CONFIG = {
     hour: 10,
     minute: 0,
@@ -3580,15 +3592,91 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   ];
   var swRegistrationPromise = null;
   var notificationConfigCache = null;
-  async function loadStreetInfos() {
+  function normalizeStreetInfoMapPayload(entries) {
+    if (!entries || typeof entries !== "object" || Array.isArray(entries)) {
+      return null;
+    }
+    const normalized = {};
+    Object.entries(entries).forEach(([rawName, rawInfo]) => {
+      const streetName = normalizeName(rawName);
+      if (!streetName || typeof rawInfo !== "string") {
+        return;
+      }
+      const infoText = rawInfo.trim();
+      if (!infoText) {
+        return;
+      }
+      normalized[streetName] = infoText;
+    });
+    return normalized;
+  }
+  function normalizeNameListPayload(entries) {
+    if (!Array.isArray(entries)) {
+      return null;
+    }
+    const normalized = [];
+    const seen = /* @__PURE__ */ new Set();
+    entries.forEach((value) => {
+      const normalizedValue = normalizeName(value);
+      if (!normalizedValue || seen.has(normalizedValue)) {
+        return;
+      }
+      seen.add(normalizedValue);
+      normalized.push(normalizedValue);
+    });
+    return normalized;
+  }
+  function applyPublicContentPayload(payload) {
+    var _a, _b, _c, _d, _e;
+    if (!payload || typeof payload !== "object") {
+      return;
+    }
+    const famousInfos = normalizeStreetInfoMapPayload((_a = payload == null ? void 0 : payload.streetInfos) == null ? void 0 : _a.famous);
+    if (famousInfos) {
+      FAMOUS_STREET_INFOS = famousInfos;
+    }
+    const mainInfos = normalizeStreetInfoMapPayload((_b = payload == null ? void 0 : payload.streetInfos) == null ? void 0 : _b.main);
+    if (mainInfos) {
+      MAIN_STREET_INFOS = mainInfos;
+    }
+    const famousList = normalizeNameListPayload((_c = payload == null ? void 0 : payload.lists) == null ? void 0 : _c.famousStreets);
+    if (famousList) {
+      FAMOUS_STREET_NAMES_RUNTIME = new Set(famousList);
+    }
+    const mainList = normalizeNameListPayload((_d = payload == null ? void 0 : payload.lists) == null ? void 0 : _d.mainStreets);
+    if (mainList) {
+      MAIN_STREET_NAMES_RUNTIME = new Set(mainList);
+    }
+    const monumentsList = normalizeNameListPayload((_e = payload == null ? void 0 : payload.lists) == null ? void 0 : _e.monuments);
+    if (monumentsList) {
+      MONUMENT_NAMES_RUNTIME = new Set(monumentsList);
+    }
+  }
+  async function loadStreetInfosFromStaticFile() {
     try {
       const response = await fetch("data/street_infos.json?v=" + Date.now());
       const data = await response.json();
-      FAMOUS_STREET_INFOS = data.famous || {};
-      MAIN_STREET_INFOS = data.main || {};
-      console.log("Street infos loaded");
+      const normalizedFamousInfos = normalizeStreetInfoMapPayload(data == null ? void 0 : data.famous);
+      const normalizedMainInfos = normalizeStreetInfoMapPayload(data == null ? void 0 : data.main);
+      FAMOUS_STREET_INFOS = normalizedFamousInfos || {};
+      MAIN_STREET_INFOS = normalizedMainInfos || {};
+      console.log("Street infos loaded from static file");
     } catch (error) {
-      console.error("Failed to load street infos", error);
+      console.error("Failed to load local street infos", error);
+    }
+  }
+  async function loadStreetInfos() {
+    await loadStreetInfosFromStaticFile();
+    try {
+      const response = await fetch(`${API_URL}/api/content/public`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const payload = await response.json();
+      applyPublicContentPayload(payload);
+      console.log("Runtime content loaded from API");
+    } catch (error) {
+      console.warn("Runtime content API unavailable, fallback to static content.", error);
     }
   }
   function normalizeName(e) {
@@ -4646,8 +4734,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     const I = document.getElementById("summary");
     I && (I.classList.add("hidden"), I.innerHTML = ""), clearSessionShareSlot();
   }
-  document.addEventListener("DOMContentLoaded", () => {
-    loadStreetInfos();
+  document.addEventListener("DOMContentLoaded", async () => {
+    await loadStreetInfos();
     setMapStatus("Chargement", "loading"), initMap(), initUI(), startTimersLoop(), loadStreets(), loadQuartiers(), loadMonuments(), loadAllLeaderboards(), document.body.classList.add("app-ready");
   });
   var infoEl = document.getElementById("street-info");
@@ -4685,8 +4773,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       selectedQuartier: getSelectedQuartier(),
       normalizeName,
       uiTheme: UI_THEME,
-      mainStreetNames: MAIN_STREET_NAMES,
-      famousStreetNames: FAMOUS_STREET_NAMES
+      mainStreetNames: MAIN_STREET_NAMES_RUNTIME,
+      famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME
     });
   }
   function isStreetVisibleInCurrentMode2(e, t) {
@@ -4695,8 +4783,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       normalizedStreetName: e,
       quartierName: t,
       selectedQuartier: getSelectedQuartier(),
-      famousStreetNames: FAMOUS_STREET_NAMES,
-      mainStreetNames: MAIN_STREET_NAMES
+      famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME,
+      mainStreetNames: MAIN_STREET_NAMES_RUNTIME
     });
   }
   function getQuartierTargetName(e) {
@@ -4772,7 +4860,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       L,
       uiTheme: UI_THEME,
       isTouchDevice: IS_TOUCH_DEVICE,
-      handleMonumentClick
+      handleMonumentClick,
+      allowedMonumentNames: MONUMENT_NAMES_RUNTIME
     }).then((result) => {
       allMonuments = result.allMonuments;
       console.log("Nombre de monuments charg\xE9s :", allMonuments.length);
@@ -4971,8 +5060,8 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       zoneMode: getZoneMode(),
       selectedQuartier: getSelectedQuartier(),
       normalizeName,
-      mainStreetNames: MAIN_STREET_NAMES,
-      famousStreetNames: FAMOUS_STREET_NAMES
+      mainStreetNames: MAIN_STREET_NAMES_RUNTIME,
+      famousStreetNames: FAMOUS_STREET_NAMES_RUNTIME
     });
   }
   function buildUniqueStreetList2(e) {
@@ -5065,11 +5154,11 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     if ("monuments" === a || "quartiers-ville" === a) return;
     if ("rues-principales" === a || "main" === a) {
       const t2 = normalizeName(e.properties.name);
-      if (!MAIN_STREET_NAMES.has(t2)) return;
+      if (!MAIN_STREET_NAMES_RUNTIME.has(t2)) return;
     }
     if ("rues-celebres" === a) {
       const t2 = normalizeName(e.properties.name);
-      if (!FAMOUS_STREET_NAMES.has(t2)) return;
+      if (!FAMOUS_STREET_NAMES_RUNTIME.has(t2)) return;
     }
     if ("quartier" === a) {
       const t2 = getSelectedQuartier(), r2 = e.properties && "string" == typeof e.properties.quartier ? e.properties.quartier.trim() : null;
@@ -5264,12 +5353,12 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     let i;
     if (isMain) {
       i = MAIN_STREET_INFOS[s];
-      if (!i && MAIN_STREET_NAMES.has(s)) {
+      if (!i && MAIN_STREET_NAMES_RUNTIME.has(s)) {
         i = "Rue principale : informations historiques \xE0 compl\xE9ter.";
       }
     } else if (isFamous) {
       i = FAMOUS_STREET_INFOS[s];
-      if (!i && FAMOUS_STREET_NAMES.has(s)) {
+      if (!i && FAMOUS_STREET_NAMES_RUNTIME.has(s)) {
         i = "Rue c\xE9l\xE8bre : informations historiques \xE0 compl\xE9ter.";
       }
     }

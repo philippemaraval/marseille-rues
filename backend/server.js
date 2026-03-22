@@ -2,9 +2,16 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const webPush = require('web-push');
 const db = require('./database');
+const {
+    FAMOUS_STREET_NAMES: DEFAULT_FAMOUS_STREET_NAMES,
+    MAIN_STREET_NAMES: DEFAULT_MAIN_STREET_NAMES,
+    MONUMENT_NAMES: DEFAULT_MONUMENT_NAMES,
+    ARRONDISSEMENT_PAR_QUARTIER,
+} = require('../data_rules.js');
 
 function readEnvIntegerInRange(name, fallback, min, max) {
     const raw = Number.parseInt(process.env[name], 10);
@@ -24,6 +31,15 @@ function readFirstDefinedEnv(names, fallback = '') {
     return fallback;
 }
 
+function readEnvCsvSet(name) {
+    return new Set(
+        String(process.env[name] || '')
+            .split(',')
+            .map((entry) => entry.trim().toLowerCase())
+            .filter(Boolean)
+    );
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';
@@ -37,6 +53,7 @@ const DAILY_TIMEZONE = process.env.DAILY_TIMEZONE || PUSH_REMINDER_TIMEZONE || '
 const LOGIN_RATE_LIMIT_WINDOW_MS = readEnvIntegerInRange('LOGIN_RATE_LIMIT_WINDOW_MS', 10 * 60 * 1000, 1_000, 3_600_000);
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = readEnvIntegerInRange('LOGIN_RATE_LIMIT_MAX_ATTEMPTS', 8, 1, 100);
 const LOGIN_RATE_LIMIT_BLOCK_MS = readEnvIntegerInRange('LOGIN_RATE_LIMIT_BLOCK_MS', 10 * 60 * 1000, 1_000, 3_600_000);
+const EDITOR_USERNAMES = readEnvCsvSet('EDITOR_USERNAMES');
 const ENV_VAPID_SUBJECT = readFirstDefinedEnv([
     'VAPID_SUBJECT',
     'WEB_PUSH_VAPID_SUBJECT',
@@ -65,6 +82,17 @@ const pushRuntime = {
 };
 let pushRuntimeSignature = '';
 const loginRateLimitStore = new Map();
+const USER_ROLE_PLAYER = 'player';
+const USER_ROLE_EDITOR = 'editor';
+const USER_ROLE_ADMIN = 'admin';
+const VALID_USER_ROLES = new Set([USER_ROLE_PLAYER, USER_ROLE_EDITOR, USER_ROLE_ADMIN]);
+const CONTENT_EDITOR_ROLES = new Set([USER_ROLE_EDITOR, USER_ROLE_ADMIN]);
+const STREET_INFOS_SETTING_KEY = 'content_street_infos_v1';
+const CONTENT_LISTS_SETTING_KEY = 'content_lists_v1';
+const MAX_STREET_INFO_ENTRIES = 20000;
+const MAX_LIST_ENTRIES = 20000;
+const MAX_NAME_LENGTH = 160;
+const MAX_INFO_LENGTH = 5000;
 
 if (!JWT_SECRET_KEY) {
     if (IS_PRODUCTION) {
@@ -274,16 +302,20 @@ function authenticateToken(req, res, next) {
         return res.status(401).json({ error: 'Missing authentication token', code: 'AUTH_TOKEN_MISSING' });
     }
 
-    jwt.verify(token, EFFECTIVE_JWT_SECRET, (err, user) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                return res.status(403).json({ error: 'Session expired', code: 'AUTH_TOKEN_EXPIRED' });
-            }
-            return res.status(403).json({ error: 'Invalid authentication token', code: 'AUTH_TOKEN_INVALID' });
+    try {
+        const user = jwt.verify(token, EFFECTIVE_JWT_SECRET);
+        req.user = {
+            id: Number.parseInt(user?.id, 10),
+            username: String(user?.username || ''),
+            role: normalizeUserRole(user?.role),
+        };
+        return next();
+    } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+            return res.status(403).json({ error: 'Session expired', code: 'AUTH_TOKEN_EXPIRED' });
         }
-        req.user = user;
-        next();
-    });
+        return res.status(403).json({ error: 'Invalid authentication token', code: 'AUTH_TOKEN_INVALID' });
+    }
 }
 
 function timingSafeSecretMatch(providedValue, expectedValue) {
@@ -315,6 +347,30 @@ function requireAdminApiKey(req, res, next) {
 
     next();
 }
+
+const requireContentEditor = asyncHandler(async (req, res, next) => {
+    const userId = Number.parseInt(req.user?.id, 10);
+    if (!Number.isInteger(userId) || userId <= 0) {
+        return res.status(401).json({ error: 'Invalid authentication token' });
+    }
+
+    const user = await db.getUserById(userId);
+    if (!user) {
+        return res.status(401).json({ error: 'Unknown authenticated user' });
+    }
+
+    req.user = {
+        id: user.id,
+        username: user.username,
+        role: normalizeUserRole(user.role),
+    };
+
+    if (!isEditorIdentity(req.user)) {
+        return res.status(403).json({ error: 'Editor access required' });
+    }
+
+    return next();
+});
 
 function getTimePartsInZone(date, timeZone) {
     const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -392,6 +448,202 @@ function normalizeOptionalText(value, maxLength = 120) {
         return null;
     }
     return trimmed.slice(0, maxLength);
+}
+
+function normalizeUserRole(role) {
+    const candidate = String(role || '').trim().toLowerCase();
+    return VALID_USER_ROLES.has(candidate) ? candidate : USER_ROLE_PLAYER;
+}
+
+function normalizeContentName(name) {
+    return String(name || '').trim().toLowerCase();
+}
+
+function normalizeStreetInfoEntries(rawEntries, maxEntries = MAX_STREET_INFO_ENTRIES) {
+    const normalized = {};
+    if (!rawEntries || typeof rawEntries !== 'object' || Array.isArray(rawEntries)) {
+        return normalized;
+    }
+
+    let entryCount = 0;
+    for (const [rawName, rawInfo] of Object.entries(rawEntries)) {
+        if (entryCount >= maxEntries) {
+            break;
+        }
+        const normalizedName = normalizeContentName(rawName).slice(0, MAX_NAME_LENGTH);
+        if (!normalizedName) {
+            continue;
+        }
+        if (typeof rawInfo !== 'string') {
+            continue;
+        }
+        const infoText = rawInfo.trim();
+        if (!infoText) {
+            continue;
+        }
+        normalized[normalizedName] = infoText.slice(0, MAX_INFO_LENGTH);
+        entryCount += 1;
+    }
+
+    return normalized;
+}
+
+function normalizeNameList(rawList, maxEntries = MAX_LIST_ENTRIES) {
+    if (!Array.isArray(rawList)) {
+        return [];
+    }
+    const normalized = [];
+    const seen = new Set();
+    for (const value of rawList) {
+        const normalizedValue = normalizeContentName(value).slice(0, MAX_NAME_LENGTH);
+        if (!normalizedValue || seen.has(normalizedValue)) {
+            continue;
+        }
+        seen.add(normalizedValue);
+        normalized.push(normalizedValue);
+        if (normalized.length >= maxEntries) {
+            break;
+        }
+    }
+    return normalized;
+}
+
+function cloneStreetInfos(streetInfos) {
+    return {
+        famous: { ...(streetInfos?.famous || {}) },
+        main: { ...(streetInfos?.main || {}) },
+    };
+}
+
+function cloneContentLists(lists) {
+    return {
+        famousStreets: [...(lists?.famousStreets || [])],
+        mainStreets: [...(lists?.mainStreets || [])],
+        monuments: [...(lists?.monuments || [])],
+    };
+}
+
+function parseJsonSetting(rawValue) {
+    if (typeof rawValue !== 'string' || !rawValue.trim()) {
+        return null;
+    }
+    try {
+        return JSON.parse(rawValue);
+    } catch (error) {
+        return null;
+    }
+}
+
+function loadDefaultStreetInfosFromFile() {
+    try {
+        const raw = fs.readFileSync(path.join(__dirname, '..', 'data', 'street_infos.json'), 'utf8');
+        const parsed = JSON.parse(raw);
+        return {
+            famous: normalizeStreetInfoEntries(parsed?.famous),
+            main: normalizeStreetInfoEntries(parsed?.main),
+        };
+    } catch (error) {
+        console.warn('Could not load default street infos file:', error.message);
+        return { famous: {}, main: {} };
+    }
+}
+
+function loadDefaultMonumentNamesFromGeoJson() {
+    try {
+        const raw = fs.readFileSync(path.join(__dirname, '..', 'data', 'marseille_monuments.geojson'), 'utf8');
+        const parsed = JSON.parse(raw);
+        const names = Array.isArray(parsed?.features)
+            ? parsed.features
+                .map((feature) => feature?.properties?.name)
+                .filter((value) => typeof value === 'string' && value.trim())
+            : [];
+        return normalizeNameList(names);
+    } catch (error) {
+        console.warn('Could not load default monument names from GeoJSON:', error.message);
+        return normalizeNameList(Array.from(DEFAULT_MONUMENT_NAMES || []));
+    }
+}
+
+const DEFAULT_CONTENT_SNAPSHOT = (() => {
+    const defaultStreetInfos = loadDefaultStreetInfosFromFile();
+    const defaultLists = {
+        famousStreets: normalizeNameList(Array.from(DEFAULT_FAMOUS_STREET_NAMES || [])),
+        mainStreets: normalizeNameList(Array.from(DEFAULT_MAIN_STREET_NAMES || [])),
+        monuments: loadDefaultMonumentNamesFromGeoJson(),
+    };
+    return {
+        streetInfos: defaultStreetInfos,
+        lists: defaultLists,
+    };
+})();
+
+async function getEffectiveStreetInfos() {
+    const fallback = cloneStreetInfos(DEFAULT_CONTENT_SNAPSHOT.streetInfos);
+    const parsed = parseJsonSetting(await db.getAppSetting(STREET_INFOS_SETTING_KEY));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return fallback;
+    }
+
+    const effective = {
+        famous: Object.prototype.hasOwnProperty.call(parsed, 'famous')
+            ? normalizeStreetInfoEntries(parsed.famous)
+            : fallback.famous,
+        main: Object.prototype.hasOwnProperty.call(parsed, 'main')
+            ? normalizeStreetInfoEntries(parsed.main)
+            : fallback.main,
+    };
+
+    return effective;
+}
+
+async function getEffectiveContentLists() {
+    const fallback = cloneContentLists(DEFAULT_CONTENT_SNAPSHOT.lists);
+    const parsed = parseJsonSetting(await db.getAppSetting(CONTENT_LISTS_SETTING_KEY));
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        return fallback;
+    }
+
+    const effective = {
+        famousStreets: Object.prototype.hasOwnProperty.call(parsed, 'famousStreets')
+            ? normalizeNameList(parsed.famousStreets)
+            : fallback.famousStreets,
+        mainStreets: Object.prototype.hasOwnProperty.call(parsed, 'mainStreets')
+            ? normalizeNameList(parsed.mainStreets)
+            : fallback.mainStreets,
+        monuments: Object.prototype.hasOwnProperty.call(parsed, 'monuments')
+            ? normalizeNameList(parsed.monuments)
+            : fallback.monuments,
+    };
+
+    return effective;
+}
+
+function computeContentStats(streetInfos, lists) {
+    return {
+        famousStreetInfoCount: Object.keys(streetInfos?.famous || {}).length,
+        mainStreetInfoCount: Object.keys(streetInfos?.main || {}).length,
+        famousStreetCount: Array.isArray(lists?.famousStreets) ? lists.famousStreets.length : 0,
+        mainStreetCount: Array.isArray(lists?.mainStreets) ? lists.mainStreets.length : 0,
+        monumentCount: Array.isArray(lists?.monuments) ? lists.monuments.length : 0,
+    };
+}
+
+async function getEffectiveContentSnapshot() {
+    const [streetInfos, lists] = await Promise.all([
+        getEffectiveStreetInfos(),
+        getEffectiveContentLists(),
+    ]);
+    return {
+        streetInfos,
+        lists,
+        stats: computeContentStats(streetInfos, lists),
+    };
+}
+
+function isEditorIdentity(user) {
+    const userRole = normalizeUserRole(user?.role);
+    const username = String(user?.username || '').trim().toLowerCase();
+    return CONTENT_EDITOR_ROLES.has(userRole) || (username && EDITOR_USERNAMES.has(username));
 }
 
 const SCORE_MODE_ALIASES = {
@@ -553,8 +805,9 @@ app.post('/api/register', asyncHandler(async (req, res) => {
 
     try {
         const userId = await db.createUser(username, password);
-        const token = jwt.sign({ id: userId, username }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
-        res.json({ token, username, avatar: '👤' });
+        const role = USER_ROLE_PLAYER;
+        const token = jwt.sign({ id: userId, username, role }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
+        res.json({ token, username, avatar: '👤', role });
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
@@ -583,8 +836,143 @@ app.post('/api/login', asyncHandler(async (req, res) => {
     }
 
     clearLoginRateLimit(rateKey);
-    const token = jwt.sign({ id: user.id, username: user.username }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, username: user.username, avatar: user.avatar || '👤' });
+    const role = normalizeUserRole(user.role);
+    const token = jwt.sign({ id: user.id, username: user.username, role }, EFFECTIVE_JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, username: user.username, avatar: user.avatar || '👤', role });
+}));
+
+function normalizeStreetInfoMode(mode) {
+    const normalizedMode = String(mode || '').trim().toLowerCase();
+    return normalizedMode === 'famous' || normalizedMode === 'main' ? normalizedMode : '';
+}
+
+app.get('/api/content/public', asyncHandler(async (req, res) => {
+    const snapshot = await getEffectiveContentSnapshot();
+    return res.json({
+        streetInfos: snapshot.streetInfos,
+        lists: snapshot.lists,
+    });
+}));
+
+app.get('/api/editor/me', authenticateToken, asyncHandler(async (req, res) => {
+    const user = await db.getUserById(req.user.id);
+    if (!user) {
+        return res.status(401).json({ error: 'Unknown authenticated user' });
+    }
+
+    const payload = {
+        id: user.id,
+        username: user.username,
+        role: normalizeUserRole(user.role),
+    };
+
+    return res.json({
+        ...payload,
+        canEdit: isEditorIdentity(payload),
+    });
+}));
+
+app.get('/api/editor/content', authenticateToken, requireContentEditor, asyncHandler(async (req, res) => {
+    const snapshot = await getEffectiveContentSnapshot();
+    return res.json(snapshot);
+}));
+
+app.put('/api/editor/street-info', authenticateToken, requireContentEditor, asyncHandler(async (req, res) => {
+    const mode = normalizeStreetInfoMode(req.body?.mode);
+    if (!mode) {
+        return res.status(400).json({ error: 'Invalid mode. Use "famous" or "main".' });
+    }
+
+    const streetName = normalizeContentName(req.body?.streetName).slice(0, MAX_NAME_LENGTH);
+    if (!streetName) {
+        return res.status(400).json({ error: 'Missing streetName' });
+    }
+
+    if (typeof req.body?.infoText !== 'string') {
+        return res.status(400).json({ error: 'Missing infoText' });
+    }
+    const infoText = req.body.infoText.trim();
+    if (!infoText) {
+        return res.status(400).json({ error: 'infoText cannot be empty' });
+    }
+
+    const streetInfos = await getEffectiveStreetInfos();
+    streetInfos[mode][streetName] = infoText.slice(0, MAX_INFO_LENGTH);
+    await db.setAppSetting(STREET_INFOS_SETTING_KEY, JSON.stringify(streetInfos));
+
+    const lists = await getEffectiveContentLists();
+    return res.json({
+        success: true,
+        streetInfos,
+        stats: computeContentStats(streetInfos, lists),
+    });
+}));
+
+app.delete('/api/editor/street-info', authenticateToken, requireContentEditor, asyncHandler(async (req, res) => {
+    const mode = normalizeStreetInfoMode(req.body?.mode);
+    if (!mode) {
+        return res.status(400).json({ error: 'Invalid mode. Use "famous" or "main".' });
+    }
+
+    const streetName = normalizeContentName(req.body?.streetName).slice(0, MAX_NAME_LENGTH);
+    if (!streetName) {
+        return res.status(400).json({ error: 'Missing streetName' });
+    }
+
+    const streetInfos = await getEffectiveStreetInfos();
+    delete streetInfos[mode][streetName];
+    await db.setAppSetting(STREET_INFOS_SETTING_KEY, JSON.stringify(streetInfos));
+
+    const lists = await getEffectiveContentLists();
+    return res.json({
+        success: true,
+        streetInfos,
+        stats: computeContentStats(streetInfos, lists),
+    });
+}));
+
+app.put('/api/editor/street-infos', authenticateToken, requireContentEditor, asyncHandler(async (req, res) => {
+    const mode = normalizeStreetInfoMode(req.body?.mode);
+    if (!mode) {
+        return res.status(400).json({ error: 'Invalid mode. Use "famous" or "main".' });
+    }
+    if (!req.body || typeof req.body.entries !== 'object' || Array.isArray(req.body.entries)) {
+        return res.status(400).json({ error: 'entries must be an object map streetName -> infoText' });
+    }
+
+    const streetInfos = await getEffectiveStreetInfos();
+    streetInfos[mode] = normalizeStreetInfoEntries(req.body.entries);
+    await db.setAppSetting(STREET_INFOS_SETTING_KEY, JSON.stringify(streetInfos));
+
+    const lists = await getEffectiveContentLists();
+    return res.json({
+        success: true,
+        streetInfos,
+        stats: computeContentStats(streetInfos, lists),
+    });
+}));
+
+app.put('/api/editor/lists', authenticateToken, requireContentEditor, asyncHandler(async (req, res) => {
+    const hasFamous = Object.prototype.hasOwnProperty.call(req.body || {}, 'famousStreets');
+    const hasMain = Object.prototype.hasOwnProperty.call(req.body || {}, 'mainStreets');
+    const hasMonuments = Object.prototype.hasOwnProperty.call(req.body || {}, 'monuments');
+    if (!hasFamous || !hasMain || !hasMonuments) {
+        return res.status(400).json({ error: 'Missing lists payload. Provide famousStreets, mainStreets and monuments.' });
+    }
+
+    const lists = {
+        famousStreets: normalizeNameList(req.body.famousStreets),
+        mainStreets: normalizeNameList(req.body.mainStreets),
+        monuments: normalizeNameList(req.body.monuments),
+    };
+    await db.setAppSetting(CONTENT_LISTS_SETTING_KEY, JSON.stringify(lists));
+
+    const streetInfos = await getEffectiveStreetInfos();
+    return res.json({
+        success: true,
+        lists,
+        stats: computeContentStats(streetInfos, lists),
+    });
 }));
 
 // ----------------------
@@ -873,7 +1261,6 @@ app.get('/api/visitors/count', async (req, res) => {
 // Daily Challenge Routes
 // ----------------------
 
-const fs = require('fs');
 let streetIndex = [];
 try {
     streetIndex = JSON.parse(
@@ -916,8 +1303,6 @@ function extractStreetGeometry(streetName) {
     }
     return null;
 }
-
-const { ARRONDISSEMENT_PAR_QUARTIER } = require('../data_rules.js');
 
 function dateHash(dateStr) {
     let h = 0;
@@ -1173,6 +1558,28 @@ function startPushReminderScheduler() {
 // ----------------------
 // Admin Routes (Temporary for DB cleanup)
 // ----------------------
+app.post('/api/admin/users/role', requireAdminApiKey, asyncHandler(async (req, res) => {
+    const username = String(req.body?.username || '').trim();
+    const role = String(req.body?.role || '').trim().toLowerCase();
+
+    if (!username) {
+        return res.status(400).json({ error: 'Missing username' });
+    }
+    if (!VALID_USER_ROLES.has(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    const updatedUser = await db.setUserRole(username, role);
+    if (!updatedUser) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({
+        success: true,
+        user: updatedUser,
+    });
+}));
+
 app.post('/api/admin/push/send-daily-now', requireAdminApiKey, async (req, res) => {
     try {
         await ensurePushRuntimeReady();

@@ -233,6 +233,7 @@ export async function loadMonumentsRuntime({
   uiTheme,
   isTouchDevice,
   handleMonumentClick,
+  allowedMonumentNames,
 }) {
   const response = await fetch("data/marseille_monuments.geojson?v=2");
   if (!response.ok) {
@@ -240,13 +241,24 @@ export async function loadMonumentsRuntime({
   }
 
   const payload = await response.json();
+  const normalizedAllowedMonumentNames =
+    allowedMonumentNames instanceof Set
+      ? new Set(
+        Array.from(allowedMonumentNames)
+          .map((value) => String(value || "").trim().toLowerCase())
+          .filter(Boolean),
+      )
+      : new Set();
+  const hasMonumentFilter = normalizedAllowedMonumentNames.size > 0;
   const allMonuments = (payload.features || []).filter(
     (feature) =>
       feature.geometry &&
       feature.geometry.type === "Point" &&
       feature.properties &&
       typeof feature.properties.name === "string" &&
-      feature.properties.name.trim() !== "",
+      feature.properties.name.trim() !== "" &&
+      (!hasMonumentFilter ||
+        normalizedAllowedMonumentNames.has(feature.properties.name.trim().toLowerCase())),
   );
 
   let monumentsLayer = L.geoJSON(

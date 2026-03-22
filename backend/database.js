@@ -18,6 +18,7 @@ async function initDb() {
         id SERIAL PRIMARY KEY,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'player',
         avatar TEXT DEFAULT '👤',
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
@@ -87,6 +88,7 @@ async function initDb() {
     // Migration: add columns if missing (safe to run multiple times)
     const migrations = [
       "ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar TEXT DEFAULT '👤'",
+      "ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'player'",
       'ALTER TABLE scores ADD COLUMN IF NOT EXISTS items_correct INTEGER DEFAULT 0',
       'ALTER TABLE scores ADD COLUMN IF NOT EXISTS items_total INTEGER DEFAULT 0',
       'ALTER TABLE scores ADD COLUMN IF NOT EXISTS time_sec REAL DEFAULT 0',
@@ -99,6 +101,12 @@ async function initDb() {
     for (const sql of migrations) {
       try { await client.query(sql); } catch (e) { /* already exists */ }
     }
+
+    await client.query(`
+      UPDATE users
+      SET role = 'player'
+      WHERE role IS NULL OR TRIM(role) = ''
+    `);
 
     await client.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_scores_user_id_session_id
@@ -178,6 +186,35 @@ async function createUser(username, password) {
 async function getUser(username) {
   const res = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
   return res.rows[0] || null;
+}
+
+async function getUserById(userId) {
+  const normalizedUserId = Number.parseInt(userId, 10);
+  if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
+    return null;
+  }
+  const res = await pool.query('SELECT * FROM users WHERE id = $1', [normalizedUserId]);
+  return res.rows[0] || null;
+}
+
+async function setUserRole(username, role) {
+  const normalizedUsername = String(username || '').trim();
+  const normalizedRole = String(role || '').trim().toLowerCase();
+  if (!normalizedUsername) {
+    throw new Error('Missing username');
+  }
+  if (!normalizedRole) {
+    throw new Error('Missing role');
+  }
+
+  const result = await pool.query(
+    `UPDATE users
+     SET role = $1
+     WHERE username = $2
+     RETURNING id, username, role`,
+    [normalizedRole, normalizedUsername]
+  );
+  return result.rows[0] || null;
 }
 
 function verifyPassword(user, password) {
@@ -884,6 +921,7 @@ module.exports = {
   initDb,
   createUser,
   getUser,
+  getUserById,
   verifyPassword,
   addScore,
   getLeaderboard,
@@ -910,5 +948,6 @@ module.exports = {
   setAppSetting,
   setAppSettingIfMissing,
   clearAllScores,
-  updateUserAvatar
+  updateUserAvatar,
+  setUserRole
 };
