@@ -1269,6 +1269,41 @@
     const dist2 = (pxMeters - projX) * (pxMeters - projX) + (pyMeters - projY) * (pyMeters - projY);
     return Math.sqrt(dist2);
   }
+  function isPointInRing(lon, lat, ringCoords) {
+    if (!Array.isArray(ringCoords) || ringCoords.length < 3) {
+      return false;
+    }
+    let inside = false;
+    for (let i = 0, j = ringCoords.length - 1; i < ringCoords.length; j = i++) {
+      const [xi, yi] = ringCoords[i];
+      const [xj, yj] = ringCoords[j];
+      const crossesLatitude = yi > lat !== yj > lat;
+      if (!crossesLatitude) {
+        continue;
+      }
+      const edgeDenominator = yj - yi;
+      const intersectionLon = (xj - xi) * (lat - yi) / (edgeDenominator || Number.EPSILON) + xi;
+      if (lon < intersectionLon) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+  function isPointInsidePolygon(lon, lat, polygonCoords) {
+    if (!Array.isArray(polygonCoords) || polygonCoords.length === 0) {
+      return false;
+    }
+    const [outerRing, ...holeRings] = polygonCoords;
+    if (!isPointInRing(lon, lat, outerRing)) {
+      return false;
+    }
+    for (const holeRing of holeRings) {
+      if (isPointInRing(lon, lat, holeRing)) {
+        return false;
+      }
+    }
+    return true;
+  }
   function getDistanceToFeature(lat, lon, geometry) {
     if (!geometry) {
       return 0;
@@ -1290,6 +1325,18 @@
       geometry.coordinates.forEach(inspectLine);
     } else if (geometry.type === "Point") {
       minDistance = getDistanceMeters(lat, lon, geometry.coordinates[1], geometry.coordinates[0]);
+    } else if (geometry.type === "Polygon") {
+      if (isPointInsidePolygon(lon, lat, geometry.coordinates)) {
+        return 0;
+      }
+      geometry.coordinates.forEach(inspectLine);
+    } else if (geometry.type === "MultiPolygon") {
+      for (const polygonCoords of geometry.coordinates) {
+        if (isPointInsidePolygon(lon, lat, polygonCoords)) {
+          return 0;
+        }
+        polygonCoords.forEach(inspectLine);
+      }
     }
     return Number.isFinite(minDistance) ? minDistance : 0;
   }
@@ -1335,6 +1382,10 @@
       coordinates = geometry.coordinates;
     } else if (geometry.type === "MultiLineString") {
       coordinates = geometry.coordinates.flat();
+    } else if (geometry.type === "Polygon") {
+      coordinates = geometry.coordinates[0] || [];
+    } else if (geometry.type === "MultiPolygon") {
+      coordinates = geometry.coordinates.flatMap((polygonCoords) => polygonCoords[0] || []);
     } else if (geometry.type === "Point") {
       return geometry.coordinates;
     } else {
