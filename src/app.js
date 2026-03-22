@@ -466,7 +466,7 @@ async function refreshDailyReminderControls() {
     const browserEndpoint = typeof browserSubscription?.endpoint === "string" ? browserSubscription.endpoint : "";
     const isSubscribed = Boolean(serverSubscribed && browserEndpoint && browserEndpoint === serverEndpoint);
     if (isSubscribed) {
-      setDailyReminderStatus("Rappel actif tous les jours.", "success");
+      setDailyReminderStatus("Rappel quotidien actif.", "success");
       setDailyReminderButtons({ canEnable: false, canDisable: true, loading: false });
     } else if (serverSubscribed) {
       setDailyReminderStatus(

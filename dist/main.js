@@ -1035,7 +1035,7 @@
             <div class="profile-notification-title">Rappel Daily</div>
             <p id="daily-reminder-status" class="profile-notification-status">Chargement\u2026</p>
             <div class="profile-notification-actions">
-              <button type="button" id="daily-reminder-enable-btn" class="btn-secondary">Activer le rappel</button>
+              <button type="button" id="daily-reminder-enable-btn" class="btn-secondary">Activer le rappel quotidien</button>
               <button type="button" id="daily-reminder-disable-btn" class="btn-tertiary hidden">D\xE9sactiver</button>
             </div>
           </section>`;
@@ -3895,7 +3895,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       const browserEndpoint = typeof (browserSubscription == null ? void 0 : browserSubscription.endpoint) === "string" ? browserSubscription.endpoint : "";
       const isSubscribed = Boolean(serverSubscribed && browserEndpoint && browserEndpoint === serverEndpoint);
       if (isSubscribed) {
-        setDailyReminderStatus("Rappel actif tous les jours.", "success");
+        setDailyReminderStatus("Rappel quotidien actif.", "success");
         setDailyReminderButtons({ canEnable: false, canDisable: true, loading: false });
       } else if (serverSubscribed) {
         setDailyReminderStatus(

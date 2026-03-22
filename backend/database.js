@@ -738,11 +738,18 @@ async function removePushSubscriptionByEndpoint(endpoint) {
 
 async function listPushSubscriptionsDueForDate(dateStr) {
   const res = await pool.query(
-    `SELECT endpoint, subscription_json
-     FROM push_subscriptions
-     WHERE enabled = TRUE
-       AND (last_notified_on IS NULL OR last_notified_on < $1::date)
-     ORDER BY updated_at ASC`,
+    `SELECT ps.endpoint, ps.subscription_json
+     FROM push_subscriptions ps
+     WHERE ps.enabled = TRUE
+       AND (ps.last_notified_on IS NULL OR ps.last_notified_on < $1::date)
+       AND NOT EXISTS (
+         SELECT 1
+         FROM daily_user_attempts dua
+         WHERE dua.user_id = ps.user_id
+           AND dua.date = $1
+           AND COALESCE(dua.attempts_count, 0) > 0
+       )
+     ORDER BY ps.updated_at ASC`,
     [dateStr]
   );
   return res.rows;

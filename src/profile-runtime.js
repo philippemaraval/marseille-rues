@@ -644,7 +644,7 @@ export function loadProfileRuntime({
             <div class="profile-notification-title">Rappel Daily</div>
             <p id="daily-reminder-status" class="profile-notification-status">Chargement…</p>
             <div class="profile-notification-actions">
-              <button type="button" id="daily-reminder-enable-btn" class="btn-secondary">Activer le rappel</button>
+              <button type="button" id="daily-reminder-enable-btn" class="btn-secondary">Activer le rappel quotidien</button>
               <button type="button" id="daily-reminder-disable-btn" class="btn-tertiary hidden">Désactiver</button>
             </div>
           </section>`;
