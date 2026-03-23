@@ -148,7 +148,7 @@ export function getGlobalRankMeta(userStats) {
   return { level, title: getGlobalRankTitleFromLevel(level) };
 }
 
-function hasReachedVilleRank(userStats, rankLetter) {
+export function hasReachedVilleRank(userStats, rankLetter) {
   const combos = buildScoringComboMap(userStats);
   return SCORING_GAME_TYPES.every((gameType) => {
     const combo = combos.get(`ville|${gameType}`);
@@ -188,25 +188,25 @@ export const AVATAR_UNLOCKS = [
   {
     emoji: "🚀",
     name: "Astronaute",
-    desc: "Atteindre Minot sur la Ville Entière (Tous modes)",
+    desc: "Atteindre Minot sur la Ville entière (Classique, Marathon, Chrono)",
     check: (userStats) => hasReachedVilleRank(userStats, "M"),
   },
   {
     emoji: "⭐️",
     name: "Étoile",
-    desc: "Atteindre Habitué sur la Ville Entière (Tous modes)",
+    desc: "Atteindre Habitué sur la Ville entière (Classique, Marathon, Chrono)",
     check: (userStats) => hasReachedVilleRank(userStats, "H"),
   },
   {
     emoji: "🛸",
     name: "Extraterrestre",
-    desc: "Atteindre Vrai Marseillais sur la Ville Entière (Tous modes)",
+    desc: "Atteindre Vrai Marseillais sur la Ville entière (Classique, Marathon, Chrono)",
     check: (userStats) => hasReachedVilleRank(userStats, "V"),
   },
   {
     emoji: "👽",
-    name: "Ovni",
-    desc: "Atteindre Maire sur la Ville Entière (Tous modes)",
+    name: "L'Ovni",
+    desc: "Atteindre Maire sur la Ville entière (Classique, Marathon, Chrono)",
     check: (userStats) => hasReachedVilleRank(userStats, "MV"),
   },
 ];

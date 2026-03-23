@@ -168,25 +168,25 @@
     {
       emoji: "\u{1F680}",
       name: "Astronaute",
-      desc: "Atteindre Minot sur la Ville Enti\xE8re (Tous modes)",
+      desc: "Atteindre Minot sur la Ville enti\xE8re (Classique, Marathon, Chrono)",
       check: (userStats) => hasReachedVilleRank(userStats, "M")
     },
     {
       emoji: "\u2B50\uFE0F",
       name: "\xC9toile",
-      desc: "Atteindre Habitu\xE9 sur la Ville Enti\xE8re (Tous modes)",
+      desc: "Atteindre Habitu\xE9 sur la Ville enti\xE8re (Classique, Marathon, Chrono)",
       check: (userStats) => hasReachedVilleRank(userStats, "H")
     },
     {
       emoji: "\u{1F6F8}",
       name: "Extraterrestre",
-      desc: "Atteindre Vrai Marseillais sur la Ville Enti\xE8re (Tous modes)",
+      desc: "Atteindre Vrai Marseillais sur la Ville enti\xE8re (Classique, Marathon, Chrono)",
       check: (userStats) => hasReachedVilleRank(userStats, "V")
     },
     {
       emoji: "\u{1F47D}",
-      name: "Ovni",
-      desc: "Atteindre Maire sur la Ville Enti\xE8re (Tous modes)",
+      name: "L'Ovni",
+      desc: "Atteindre Maire sur la Ville enti\xE8re (Classique, Marathon, Chrono)",
       check: (userStats) => hasReachedVilleRank(userStats, "MV")
     }
   ];
@@ -437,7 +437,7 @@
   }
 
   // src/profile-runtime.js
-  function getBadgeDefinitions(hasReachedGlobalRank2) {
+  function getBadgeDefinitions(hasReachedGlobalRank2, hasReachedVilleRank2) {
     return [
       {
         id: "first_game",
@@ -483,29 +483,57 @@
         id: "minot",
         emoji: "\u{1F9D2}",
         name: "Minot",
-        desc: "Atteindre Minot dans tous les modes et toutes les zones",
+        desc: "Atteindre Minot dans tous les modes et toutes les zones globales (hors Ville enti\xE8re)",
         check: (profile) => hasReachedGlobalRank2(profile, "M")
       },
       {
         id: "habitue",
         emoji: "\u2693",
         name: "Habitu\xE9 du Vieux-Port",
-        desc: "Atteindre Habitu\xE9 dans tous les modes et toutes les zones",
+        desc: "Atteindre Habitu\xE9 dans tous les modes et toutes les zones globales (hors Ville enti\xE8re)",
         check: (profile) => hasReachedGlobalRank2(profile, "H")
       },
       {
         id: "vrai",
         emoji: "\u{1F4AA}",
         name: "Vrai Marseillais",
-        desc: "Atteindre Vrai Marseillais dans tous les modes et toutes les zones",
+        desc: "Atteindre Vrai Marseillais dans tous les modes et toutes les zones globales (hors Ville enti\xE8re)",
         check: (profile) => hasReachedGlobalRank2(profile, "V")
       },
       {
         id: "maire",
         emoji: "\u{1F3DB}\uFE0F",
         name: "Maire de la Ville",
-        desc: "Atteindre Maire dans tous les modes et toutes les zones",
+        desc: "Atteindre Maire dans tous les modes et toutes les zones globales (hors Ville enti\xE8re)",
         check: (profile) => hasReachedGlobalRank2(profile, "MV")
+      },
+      {
+        id: "ville_minot",
+        emoji: "\u{1F680}",
+        name: "Astronaute",
+        desc: "Atteindre Minot sur Ville enti\xE8re (Classique, Marathon, Chrono)",
+        check: (profile) => hasReachedVilleRank2(profile, "M")
+      },
+      {
+        id: "ville_habitue",
+        emoji: "\u2B50\uFE0F",
+        name: "\xC9toile",
+        desc: "Atteindre Habitu\xE9 sur Ville enti\xE8re (Classique, Marathon, Chrono)",
+        check: (profile) => hasReachedVilleRank2(profile, "H")
+      },
+      {
+        id: "ville_vrai",
+        emoji: "\u{1F6F8}",
+        name: "Extraterrestre",
+        desc: "Atteindre Vrai Marseillais sur Ville enti\xE8re (Classique, Marathon, Chrono)",
+        check: (profile) => hasReachedVilleRank2(profile, "V")
+      },
+      {
+        id: "ville_maire",
+        emoji: "\u{1F47D}",
+        name: "L'Ovni",
+        desc: "Atteindre Maire sur Ville enti\xE8re (Classique, Marathon, Chrono)",
+        check: (profile) => hasReachedVilleRank2(profile, "MV")
       },
       {
         id: "celebres",
@@ -604,8 +632,8 @@
       }
     ];
   }
-  function computeBadgesRuntime(profile, hasReachedGlobalRank2) {
-    return getBadgeDefinitions(hasReachedGlobalRank2).map((definition) => ({
+  function computeBadgesRuntime(profile, hasReachedGlobalRank2, hasReachedVilleRank2) {
+    return getBadgeDefinitions(hasReachedGlobalRank2, hasReachedVilleRank2).map((definition) => ({
       ...definition,
       unlocked: definition.check(profile)
     }));
@@ -901,6 +929,7 @@
     zoneLabels,
     gameLabels,
     hasReachedGlobalRank: hasReachedGlobalRank2,
+    hasReachedVilleRank: hasReachedVilleRank2,
     initAvatarSelector: initAvatarSelector2,
     onProfileRendered,
     onAuthFailure
@@ -1039,7 +1068,7 @@
               <button type="button" id="daily-reminder-disable-btn" class="btn-tertiary hidden">D\xE9sactiver</button>
             </div>
           </section>`;
-        const badges = computeBadgesRuntime(profile, hasReachedGlobalRank2);
+        const badges = computeBadgesRuntime(profile, hasReachedGlobalRank2, hasReachedVilleRank2);
         const unlocked = badges.filter((badge) => badge.unlocked);
         const locked = badges.filter((badge) => !badge.unlocked);
         html += `<details class="profile-section-collapsible">`;
@@ -6345,6 +6374,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
       zoneLabels: ZONE_LABELS,
       gameLabels: GAME_LABELS,
       hasReachedGlobalRank,
+      hasReachedVilleRank,
       initAvatarSelector,
       onProfileRendered: initDailyReminderControls,
       onAuthFailure: () => {

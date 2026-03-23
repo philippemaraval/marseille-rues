@@ -1,4 +1,4 @@
-function getBadgeDefinitions(hasReachedGlobalRank) {
+function getBadgeDefinitions(hasReachedGlobalRank, hasReachedVilleRank) {
   return [
     {
       id: "first_game",
@@ -32,29 +32,57 @@ function getBadgeDefinitions(hasReachedGlobalRank) {
       id: "minot",
       emoji: "🧒",
       name: "Minot",
-      desc: "Atteindre Minot dans tous les modes et toutes les zones",
+      desc: "Atteindre Minot dans tous les modes et toutes les zones globales (hors Ville entière)",
       check: (profile) => hasReachedGlobalRank(profile, "M"),
     },
     {
       id: "habitue",
       emoji: "⚓",
       name: "Habitué du Vieux-Port",
-      desc: "Atteindre Habitué dans tous les modes et toutes les zones",
+      desc: "Atteindre Habitué dans tous les modes et toutes les zones globales (hors Ville entière)",
       check: (profile) => hasReachedGlobalRank(profile, "H"),
     },
     {
       id: "vrai",
       emoji: "💪",
       name: "Vrai Marseillais",
-      desc: "Atteindre Vrai Marseillais dans tous les modes et toutes les zones",
+      desc: "Atteindre Vrai Marseillais dans tous les modes et toutes les zones globales (hors Ville entière)",
       check: (profile) => hasReachedGlobalRank(profile, "V"),
     },
     {
       id: "maire",
       emoji: "🏛️",
       name: "Maire de la Ville",
-      desc: "Atteindre Maire dans tous les modes et toutes les zones",
+      desc: "Atteindre Maire dans tous les modes et toutes les zones globales (hors Ville entière)",
       check: (profile) => hasReachedGlobalRank(profile, "MV"),
+    },
+    {
+      id: "ville_minot",
+      emoji: "🚀",
+      name: "Astronaute",
+      desc: "Atteindre Minot sur Ville entière (Classique, Marathon, Chrono)",
+      check: (profile) => hasReachedVilleRank(profile, "M"),
+    },
+    {
+      id: "ville_habitue",
+      emoji: "⭐️",
+      name: "Étoile",
+      desc: "Atteindre Habitué sur Ville entière (Classique, Marathon, Chrono)",
+      check: (profile) => hasReachedVilleRank(profile, "H"),
+    },
+    {
+      id: "ville_vrai",
+      emoji: "🛸",
+      name: "Extraterrestre",
+      desc: "Atteindre Vrai Marseillais sur Ville entière (Classique, Marathon, Chrono)",
+      check: (profile) => hasReachedVilleRank(profile, "V"),
+    },
+    {
+      id: "ville_maire",
+      emoji: "👽",
+      name: "L'Ovni",
+      desc: "Atteindre Maire sur Ville entière (Classique, Marathon, Chrono)",
+      check: (profile) => hasReachedVilleRank(profile, "MV"),
     },
     {
       id: "celebres",
@@ -139,8 +167,8 @@ function getBadgeDefinitions(hasReachedGlobalRank) {
   ];
 }
 
-export function computeBadgesRuntime(profile, hasReachedGlobalRank) {
-  return getBadgeDefinitions(hasReachedGlobalRank).map((definition) => ({
+export function computeBadgesRuntime(profile, hasReachedGlobalRank, hasReachedVilleRank) {
+  return getBadgeDefinitions(hasReachedGlobalRank, hasReachedVilleRank).map((definition) => ({
     ...definition,
     unlocked: definition.check(profile),
   }));
@@ -492,6 +520,7 @@ export function loadProfileRuntime({
   zoneLabels,
   gameLabels,
   hasReachedGlobalRank,
+  hasReachedVilleRank,
   initAvatarSelector,
   onProfileRendered,
   onAuthFailure,
@@ -649,7 +678,7 @@ export function loadProfileRuntime({
             </div>
           </section>`;
 
-        const badges = computeBadgesRuntime(profile, hasReachedGlobalRank);
+        const badges = computeBadgesRuntime(profile, hasReachedGlobalRank, hasReachedVilleRank);
         const unlocked = badges.filter((badge) => badge.unlocked);
         const locked = badges.filter((badge) => !badge.unlocked);
 

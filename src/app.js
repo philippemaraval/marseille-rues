@@ -16,6 +16,7 @@ import {
   getGlobalRankLevelForTitleIndex,
   getGlobalRankMeta,
   hasReachedGlobalRank,
+  hasReachedVilleRank,
   getPlayerTitle,
   getTitleThresholds,
   loadAllLeaderboards,
@@ -4104,6 +4105,7 @@ function loadProfile() {
     zoneLabels: ZONE_LABELS,
     gameLabels: GAME_LABELS,
     hasReachedGlobalRank,
+    hasReachedVilleRank,
     initAvatarSelector,
     onProfileRendered: initDailyReminderControls,
     onAuthFailure: () => {
