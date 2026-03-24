@@ -112,8 +112,17 @@
     .rank-nav {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 6px;
       margin-bottom: 8px;
+    }
+
+    .rank-nav-arrow {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      line-height: 1;
+      user-select: none;
     }
 
     .rank-tab {
@@ -187,6 +196,21 @@
       display: flex;
       justify-content: center;
       margin-bottom: 6px;
+    }
+
+    .rank-pair-mobile {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .rank-pair-arrow {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-muted);
+      line-height: 1;
     }
 
     .tree-body {
@@ -304,9 +328,9 @@
     }
 
     .mode-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 4px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-start;
     }
 
     .mode-card {
@@ -315,6 +339,8 @@
       padding: 4px;
       background: rgba(245, 248, 255, 0.9);
       min-height: 54px;
+      width: 92px;
+      flex: 0 0 auto;
     }
 
     .mode-card.done {
@@ -415,6 +441,19 @@
         grid-template-columns: 1fr;
       }
 
+      .desktop-only {
+        display: none !important;
+      }
+
+      .rank-pair-mobile {
+        display: flex;
+      }
+
+      .rank-pair-mobile .rank-node {
+        width: auto;
+        min-width: 120px;
+      }
+
       .tree-current-col::after {
         display: none;
       }
@@ -425,6 +464,10 @@
 
       .tree-branches {
         padding-left: 14px;
+      }
+
+      .mode-grid {
+        justify-content: center;
       }
 
       .rank-tab {
@@ -706,7 +749,8 @@
 
       function renderRankNav() {
         const nav = document.getElementById("rank-nav");
-        const buttonsHtml = RANK_FLOW.map((rank, index) => {
+        let buttonsHtml = "";
+        RANK_FLOW.forEach((rank, index) => {
           const classes = ["rank-tab"];
           if (index === currentRankLevel) {
             classes.push("rank-tab--current");
@@ -714,8 +758,11 @@
           if (index === activeTargetIndex) {
             classes.push("rank-tab--active");
           }
-          return `<button type="button" class="${classes.join(" ")}" data-rank-index="${index}">${escapeHtml(rank.label)}</button>`;
-        }).join("");
+          buttonsHtml += `<button type="button" class="${classes.join(" ")}" data-rank-index="${index}">${escapeHtml(rank.label)}</button>`;
+          if (index < RANK_FLOW.length - 1) {
+            buttonsHtml += '<span class="rank-nav-arrow" aria-hidden="true">→</span>';
+          }
+        });
 
         nav.innerHTML = buttonsHtml;
         nav.querySelectorAll(".rank-tab").forEach((button) => {
@@ -736,8 +783,9 @@
           return;
         }
 
-        const currentRank = RANK_FLOW[currentRankLevel];
         const targetRank = RANK_FLOW[activeTargetIndex] || RANK_FLOW[0];
+        const displayedCurrentIndex = activeTargetIndex > 0 ? activeTargetIndex - 1 : 0;
+        const currentRank = RANK_FLOW[displayedCurrentIndex] || RANK_FLOW[0];
         const progress = computeProgress(loadedProfile, targetRank);
         const pct = progress.total > 0 ? Math.round((progress.doneTotal / progress.total) * 100) : 0;
 
@@ -790,11 +838,16 @@
 
         const tree = document.getElementById("tree");
         tree.innerHTML = `
-          <div class="tree-target-row">
+          <div class="tree-target-row desktop-only">
+            <div class="rank-node rank-node--target">${escapeHtml(targetRank.label)}</div>
+          </div>
+          <div class="rank-pair-mobile">
+            <div class="rank-node rank-node--current">${escapeHtml(currentRank.label)}</div>
+            <span class="rank-pair-arrow" aria-hidden="true">→</span>
             <div class="rank-node rank-node--target">${escapeHtml(targetRank.label)}</div>
           </div>
           <div class="tree-body">
-            <div class="tree-current-col">
+            <div class="tree-current-col desktop-only">
               <div class="rank-node rank-node--current">${escapeHtml(currentRank.label)}</div>
             </div>
             <div class="tree-branches">${zonesHtml}</div>
