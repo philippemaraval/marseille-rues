@@ -752,10 +752,29 @@ select:focus {
   font-size: 11px;
   font-weight: 700;
   user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  list-style: none;
 }
 
-.daily-image-hint-summary::-webkit-details-marker {
+.daily-image-hint-summary::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 12px;
+  color: #7a4720;
+  transform: translateY(-0.5px);
+  transition: transform var(--motion-fast) var(--easing-standard);
+}
+
+.daily-image-hint[open] .daily-image-hint-summary::before {
+  transform: rotate(90deg) translateY(-0.5px);
+}
+
+.daily-image-hint-summary::-webkit-details-marker,
+.daily-image-hint-summary::marker {
   display: none;
+  content: "";
 }
 
 .daily-image-hint[open] .daily-image-hint-summary {

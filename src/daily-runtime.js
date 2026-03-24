@@ -248,7 +248,7 @@ export function renderDailyGuessHistoryRuntime({
           ? `Photo indice de ${dailyTargetData.streetName}`
           : "Photo indice du Daily";
         html += `<details class="daily-image-hint"${dailyImageHintOpenByDefault ? " open" : ""}>`;
-        html += '<summary class="daily-image-hint-summary">🖼️ Photo indice (repliable)</summary>';
+        html += '<summary class="daily-image-hint-summary">🖼️ Photo indice</summary>';
         html += '<div class="daily-image-hint-body">';
         html += `<img src="${escapeHtml(dailyImageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" decoding="async">`;
         html += "</div>";

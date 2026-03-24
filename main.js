@@ -3169,7 +3169,7 @@ Essaie de faire mieux sur ${host}`;
         if (shouldShowVisualHint) {
           const imageAlt = dailyTargetData2.streetName ? `Photo indice de ${dailyTargetData2.streetName}` : "Photo indice du Daily";
           html += `<details class="daily-image-hint"${dailyImageHintOpenByDefault ? " open" : ""}>`;
-          html += '<summary class="daily-image-hint-summary">\u{1F5BC}\uFE0F Photo indice (repliable)</summary>';
+          html += '<summary class="daily-image-hint-summary">\u{1F5BC}\uFE0F Photo indice</summary>';
           html += '<div class="daily-image-hint-body">';
           html += `<img src="${escapeHtml2(dailyImageUrl)}" alt="${escapeHtml2(imageAlt)}" loading="lazy" decoding="async">`;
           html += "</div>";
