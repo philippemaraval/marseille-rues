@@ -375,6 +375,25 @@ const requireContentEditor = asyncHandler(async (req, res, next) => {
     return next();
 });
 
+async function getCurrentAuthenticatedUser(authUser) {
+    const userId = Number.parseInt(authUser?.id, 10);
+    if (!Number.isInteger(userId) || userId <= 0) {
+        return null;
+    }
+
+    const user = await db.getUserById(userId);
+    if (!user) {
+        return null;
+    }
+
+    return {
+        id: user.id,
+        username: String(user.username || ''),
+        role: normalizeUserRole(user.role),
+        avatar: user.avatar || '👤',
+    };
+}
+
 function getTimePartsInZone(date, timeZone) {
     const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone,
@@ -1480,9 +1499,14 @@ app.post('/api/scores', authenticateToken, asyncHandler(async (req, res) => {
         return res.status(400).json({ error: parsed.error });
     }
 
+    const currentUser = await getCurrentAuthenticatedUser(req.user);
+    if (!currentUser) {
+        return res.status(401).json({ error: 'Unknown authenticated user' });
+    }
+
     const saved = await db.addScore(
-        req.user.id,
-        req.user.username,
+        currentUser.id,
+        currentUser.username,
         parsed.value.mode,
         parsed.value.gameType,
         parsed.value.score,
@@ -1502,6 +1526,11 @@ app.post('/api/friend-challenges', authenticateToken, asyncHandler(async (req, r
         return res.status(400).json({ error: parsed.error });
     }
 
+    const currentUser = await getCurrentAuthenticatedUser(req.user);
+    if (!currentUser) {
+        return res.status(401).json({ error: 'Unknown authenticated user' });
+    }
+
     const lists = await getEffectiveContentLists();
     const built = await buildFriendChallengeTargets({
         mode: parsed.value.mode,
@@ -1519,8 +1548,8 @@ app.post('/api/friend-challenges', authenticateToken, asyncHandler(async (req, r
         try {
             created = await db.createFriendChallenge({
                 code,
-                createdByUserId: req.user.id,
-                createdByUsername: req.user.username,
+                createdByUserId: currentUser.id,
+                createdByUsername: currentUser.username,
                 mode: built.value.mode,
                 gameType: built.value.gameType,
                 quartierName: built.value.quartierName,
@@ -1642,30 +1671,26 @@ function getEmptyProfileStats() {
 }
 
 app.get('/api/profile', authenticateToken, async (req, res) => {
+    const currentUser = await getCurrentAuthenticatedUser(req.user);
+    if (!currentUser) {
+        return res.status(401).json({ error: 'Unknown authenticated user' });
+    }
+
     const payload = {
-        username: req.user.username,
-        avatar: '👤',
+        username: currentUser.username,
+        avatar: currentUser.avatar || '👤',
         ...getEmptyProfileStats(),
     };
 
     try {
-        const user = await db.getUser(req.user.username);
-        if (user?.avatar) {
-            payload.avatar = user.avatar;
-        }
-    } catch (err) {
-        console.warn('Profile user lookup error:', err?.message || err);
-    }
-
-    try {
-        const stats = await db.getUserStats(req.user.id);
+        const stats = await db.getUserStats(currentUser.id);
         if (stats && typeof stats === 'object') {
             Object.assign(payload, stats);
         }
     } catch (err) {
         console.error('Profile stats error:', {
-            userId: req.user.id,
-            username: req.user.username,
+            userId: currentUser.id,
+            username: currentUser.username,
             message: err?.message || 'Unknown profile stats error',
         });
         payload.profileWarning = 'partial_profile_stats_unavailable';
