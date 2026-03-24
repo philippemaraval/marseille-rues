@@ -297,8 +297,14 @@
         <li><a href="#daily">6. Défi Daily</a></li>
         <li><a href="#rangs">7. Rangs, seuils et avatars</a></li>
         <li><a href="#classements">8. Classements</a></li>
-        <li><a href="#conseils">9. Conseils pour progresser</a></li>
-        <li><a href="#faq">10. FAQ rapide</a></li>
+        <li><a href="#compte">9. Compte et sauvegarde</a></li>
+        <li><a href="#defi-amis">10. Défi amis</a></li>
+        <li><a href="#limites">11. Limites de session</a></li>
+        <li><a href="#daily-avance">12. Daily avancé</a></li>
+        <li><a href="#notifications-offline">13. Notifications et hors-ligne</a></li>
+        <li><a href="#coherence-score">14. Cohérence du score</a></li>
+        <li><a href="#conseils">15. Conseils pour progresser</a></li>
+        <li><a href="#faq">16. FAQ rapide</a></li>
       </ul>
     </header>
 
@@ -626,8 +632,83 @@
       </p>
     </section>
 
+    <section id="compte">
+      <h2>9. Compte joueur et sauvegarde</h2>
+      <ul>
+        <li>Sans connexion, vous pouvez jouer, mais les résultats ne sont pas envoyés au serveur.</li>
+        <li>Avec connexion, les scores de session sont enregistrés pour les classements, les rangs et le profil.</li>
+        <li>Le Daily nécessite un profil connecté.</li>
+        <li>Le profil conserve aussi les avatars, badges, statistiques et progression par mode/zone.</li>
+      </ul>
+      <div class="highlight">
+        En mode hors-ligne, la bannière de l'application indique que les scores ne seront pas sauvegardés.
+      </div>
+    </section>
+
+    <section id="defi-amis">
+      <h2>10. Défi amis</h2>
+      <p>
+        Le mode Défi amis permet de créer un challenge partageable depuis votre configuration actuelle.
+      </p>
+      <ul>
+        <li>Disponible uniquement en <strong>Classique</strong>, <strong>Marathon</strong> et <strong>Chrono</strong>.</li>
+        <li>Le défi verrouille les paramètres (zone/mode) pendant qu'il est actif.</li>
+        <li>Un lien/code de défi est généré pour inviter vos amis.</li>
+        <li>Le défi expire automatiquement après environ <strong>24 heures</strong>.</li>
+        <li>Le mini leaderboard du défi est visible après la première partie terminée sur ce défi.</li>
+      </ul>
+    </section>
+
+    <section id="limites">
+      <h2>11. Limites de session (détails)</h2>
+      <ul>
+        <li><strong>Classique</strong>: jusqu'à 20 items (moins si le pool disponible est inférieur).</li>
+        <li><strong>Marathon</strong>: arrêt à la 3e erreur.</li>
+        <li>En Marathon, le bouton <strong>Passer</strong> consomme une erreur.</li>
+        <li><strong>Chrono</strong>: 60 secondes, puis fin de session.</li>
+        <li>En Marathon/Chrono, une limite technique de sécurité existe (temps maximal de session).</li>
+      </ul>
+      <p>
+        Le bouton <strong>Pause</strong> fige les chronos de session (et le compte à rebours Chrono) jusqu'à reprise.
+      </p>
+    </section>
+
+    <section id="daily-avance">
+      <h2>12. Daily avancé</h2>
+      <ul>
+        <li>Après un essai raté, vous obtenez la <strong>distance</strong> et une <strong>flèche de direction</strong>.</li>
+        <li>Des indices progressifs peuvent apparaître selon l'avancement (arrondissement, quartier, longueur de rue).</li>
+        <li>Un indice visuel (photo) peut être proposé selon la rue du jour.</li>
+        <li>En fin de Daily, un panneau récapitulatif permet de partager le résultat (texte/image).</li>
+      </ul>
+      <p>
+        Le Daily du jour est commun aux joueurs et se renouvelle sur la date serveur du jeu (timezone Europe/Paris par défaut).
+      </p>
+    </section>
+
+    <section id="notifications-offline">
+      <h2>13. Notifications et mode hors-ligne</h2>
+      <ul>
+        <li>Un rappel push Daily peut être activé depuis le profil (si navigateur/appareil compatible).</li>
+        <li>Sur iPhone/iPad, l'app doit être installée sur l'écran d'accueil pour les notifications push.</li>
+        <li>En cas de perte de connexion, vous pouvez continuer à jouer localement.</li>
+        <li>Les classements et sauvegardes serveur nécessitent une connexion active.</li>
+      </ul>
+    </section>
+
+    <section id="coherence-score">
+      <h2>14. Référence officielle du score pondéré</h2>
+      <p>
+        La référence officielle de Camino pour le mode Classique est:
+      </p>
+      <div class="formula">points = max(0, 10 - floor(temps_en_secondes / 2))</div>
+      <p>
+        Donc: <strong>1 point perdu toutes les 2 secondes</strong>, et <strong>0 point à partir de 20 secondes</strong>.
+      </p>
+    </section>
+
     <section id="conseils">
-      <h2>9. Conseils pour progresser</h2>
+      <h2>15. Conseils pour progresser</h2>
       <ol>
         <li>Commencez par <strong>Rues célèbres + Classique</strong> pour apprendre les repères rapidement.</li>
         <li>Passez ensuite sur <strong>Rues principales</strong> puis <strong>Rues par quartier</strong>.</li>
@@ -638,7 +719,7 @@
     </section>
 
     <section id="faq">
-      <h2>10. FAQ rapide</h2>
+      <h2>16. FAQ rapide</h2>
       <h3>Le mode Lecture donne-t-il un score ?</h3>
       <p>Non, c'est un mode d'entraînement et de reconnaissance de la carte.</p>
       <h3>Le mode Chrono dure combien de temps ?</h3>
