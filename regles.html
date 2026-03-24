@@ -283,451 +283,243 @@
       <div class="hero-top">
         <a class="back-link" href="/">← Retour au jeu</a>
       </div>
-      <h1>Règles détaillées et comment jouer à Camino</h1>
+      <h1>Règles rapides de Camino</h1>
       <p class="subtitle">
-        Cette page explique précisément comment lancer une session, ce que fait chaque mode, comment le score est
-        calculé et comment progresser rapidement.
+        Version courte et pratique: l'essentiel pour jouer vite, comprendre le score, le Daily et les classements.
       </p>
       <ul class="toc" aria-label="Sommaire">
-        <li><a href="#objectif">1. Objectif du jeu</a></li>
-        <li><a href="#demarrage">2. Démarrer une partie</a></li>
-        <li><a href="#zones">3. Zones de jeu</a></li>
-        <li><a href="#modes">4. Modes de partie</a></li>
-        <li><a href="#score">5. Score pondéré (Classique)</a></li>
-        <li><a href="#daily">6. Défi Daily</a></li>
-        <li><a href="#rangs">7. Rangs, seuils et avatars</a></li>
-        <li><a href="#classements">8. Classements</a></li>
-        <li><a href="#compte">9. Compte et sauvegarde</a></li>
-        <li><a href="#defi-amis">10. Défi amis</a></li>
-        <li><a href="#limites">11. Limites de session</a></li>
-        <li><a href="#daily-avance">12. Daily avancé</a></li>
-        <li><a href="#notifications-offline">13. Notifications et hors-ligne</a></li>
-        <li><a href="#coherence-score">14. Cohérence du score</a></li>
-        <li><a href="#conseils">15. Conseils pour progresser</a></li>
-        <li><a href="#faq">16. FAQ rapide</a></li>
+        <li><a href="#essentiel">1. À retenir en 30 secondes</a></li>
+        <li><a href="#jouer">2. Comment jouer</a></li>
+        <li><a href="#zones-modes">3. Zones et modes</a></li>
+        <li><a href="#daily">4. Défi Daily</a></li>
+        <li><a href="#rangs">5. Rangs et avatars</a></li>
+        <li><a href="#classements">6. Classements</a></li>
+        <li><a href="#compte">7. Connexion, sauvegarde et rappels</a></li>
+        <li><a href="#faq">8. FAQ courte</a></li>
       </ul>
     </header>
 
-    <section id="objectif">
-      <h2>1. Objectif du jeu</h2>
-      <p>
-        Camino est un jeu de géographie locale: vous devez retrouver l'emplacement d'une rue (ou d'un monument) sur
-        la carte de Marseille.
-      </p>
+    <section id="essentiel">
+      <h2>1. À retenir en 30 secondes</h2>
       <div class="highlight">
-        Une réponse correcte rapporte des points ou fait avancer votre progression selon le mode choisi. Plus vous êtes
-        rapide en mode Classique, plus votre score est élevé.
+        <ul>
+          <li>Classique: jusqu'à 20 items, score pondéré par vitesse.</li>
+          <li>Marathon: fin de partie à la 3e erreur (le bouton Passer compte comme erreur).</li>
+          <li>Chrono: 60 secondes pour trouver un maximum d'items.</li>
+          <li>Daily: 1 rue commune par jour, 7 essais max.</li>
+          <li>Formule Classique officielle: <code>points = max(0, 10 - floor(temps / 2))</code>.</li>
+        </ul>
       </div>
     </section>
 
-    <section id="demarrage">
-      <h2>2. Démarrer une partie pas à pas</h2>
+    <section id="jouer">
+      <h2>2. Comment jouer</h2>
       <ol>
-        <li>Choisissez une <strong>zone de jeu</strong> (rues célèbres, rues principales, rues par quartier, ville entière, monuments ou quartiers de la ville).</li>
-        <li>Choisissez un <strong>type de partie</strong> (Classique, Marathon, Chrono ou Lecture).</li>
+        <li>Choisissez une zone puis un mode.</li>
         <li>Cliquez sur <strong>Commencer la session</strong>.</li>
-        <li>Lisez l'objectif affiché dans le panneau <strong>Rue à trouver</strong>.</li>
-        <li>Cliquez sur la carte pour répondre (ou utilisez la recherche en mode Lecture).</li>
+        <li>Trouvez l'item affiché sur la carte.</li>
       </ol>
       <p>
-        En session active, les panneaux affichent votre progression, vos chronos et un résumé final détaillé.
+        Vocabulaire: dans cette page, <strong>item</strong> = rue, monument ou quartier selon la zone sélectionnée.
       </p>
+      <h3>Conseils express</h3>
+      <ul>
+        <li>Débutez en Rues célèbres + Classique.</li>
+        <li>En Classique, la vitesse est clé dans les 10 premières secondes.</li>
+        <li>Utilisez Lecture pour mémoriser sans pression.</li>
+        <li>Jouez le Daily régulièrement pour progresser en précision.</li>
+      </ul>
     </section>
 
-    <section id="zones">
-      <h2>3. Zones de jeu</h2>
-      <table aria-label="Zones de jeu disponibles">
+    <section id="zones-modes">
+      <h2>3. Zones et modes</h2>
+      <table aria-label="Zones de jeu">
         <thead>
           <tr>
             <th>Zone</th>
-            <th>Niveau</th>
-            <th>Description</th>
+            <th>Usage conseillé</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Rues célèbres</td>
-            <td>Facile</td>
-            <td>Sélection de rues connues, idéale pour débuter.</td>
-          </tr>
-          <tr>
-            <td>Rues principales</td>
-            <td>Moins facile</td>
-            <td>Réseau plus large de grands axes et rues importantes.</td>
-          </tr>
-          <tr>
-            <td>Rues par quartier</td>
-            <td>Intermédiaire</td>
-            <td>Partie ciblée sur un quartier choisi, avec des rues uniquement.</td>
-          </tr>
-          <tr>
-            <td>Ville entière</td>
-            <td>Difficile</td>
-            <td>Couverture globale de Marseille.</td>
-          </tr>
-          <tr>
-            <td>Monuments</td>
-            <td>Intermédiaire</td>
-            <td>Vous retrouvez des points d'intérêt plutôt que des rues.</td>
-          </tr>
-          <tr>
-            <td>Quartiers de la ville</td>
-            <td>Facile</td>
-            <td>Objectif = trouver le bon quartier parmi les 111 polygones officiels de Marseille.</td>
-          </tr>
+          <tr><td>Rues célèbres</td><td>Découverte rapide</td></tr>
+          <tr><td>Rues principales</td><td>Niveau intermédiaire</td></tr>
+          <tr><td>Rues par quartier</td><td>Travail ciblé par secteur</td></tr>
+          <tr><td>Ville entière</td><td>Mode expert</td></tr>
+          <tr><td>Monuments</td><td>Repères culturels</td></tr>
+          <tr><td>Quartiers de la ville</td><td>Apprendre les 111 quartiers</td></tr>
         </tbody>
       </table>
-    </section>
-
-    <section id="modes">
-      <h2>4. Modes de partie</h2>
-      <table aria-label="Modes de jeu disponibles">
+      <table aria-label="Modes de partie">
         <thead>
           <tr>
             <th>Mode</th>
-            <th>But</th>
-            <th>Règles clés</th>
+            <th>Règle clé</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td><span class="pill pill-score">Classique</span></td>
-            <td>Faire le meilleur score pondéré</td>
-            <td>Session de 20 items. Chaque bonne réponse vaut jusqu'à 10 points selon votre rapidité.</td>
-          </tr>
-          <tr>
-            <td><span class="pill pill-danger">Marathon</span></td>
-            <td>Aller le plus loin possible</td>
-            <td>La partie s'arrête à la 3e erreur.</td>
-          </tr>
-          <tr>
-            <td><span class="pill pill-info">Chrono</span></td>
-            <td>Trouver un maximum en temps limité</td>
-            <td>Vous avez 60 secondes pour enchaîner les bonnes réponses.</td>
-          </tr>
-          <tr>
-            <td><span class="pill pill-info">Lecture</span></td>
-            <td>Apprendre sans pression</td>
-            <td>Mode libre de découverte (pas de score compétitif).</td>
-          </tr>
+          <tr><td>Classique</td><td>Jusqu'à 20 items, score pondéré.</td></tr>
+          <tr><td>Marathon</td><td>Fin à la 3e erreur.</td></tr>
+          <tr><td>Chrono</td><td>60 secondes.</td></tr>
+          <tr><td>Lecture</td><td>Apprentissage libre, sans score compétitif.</td></tr>
         </tbody>
       </table>
-      <h3>Pause et bouton Passer</h3>
       <p>
-        Le bouton <strong>Pause</strong> permet d'interrompre temporairement la session active. Le bouton
-        <strong>Passer</strong> peut être utilisé pour avancer au prochain objectif dans les modes où il est disponible.
+        Le bouton <strong>Pause</strong> fige les chronos; <strong>Passer</strong> avance au prochain objectif.
       </p>
-    </section>
-
-    <section id="score">
-      <h2>5. Score pondéré en mode Classique</h2>
-      <p>
-        La formule appliquée pour chaque bonne réponse est la suivante:
-      </p>
+      <h3>Score Classique (référence officielle)</h3>
       <div class="formula">points = max(0, 10 - floor(temps_en_secondes / 2))</div>
-      <p>
-        Cela signifie que vous perdez <strong>1 point toutes les 2 secondes</strong>. Le minimum est 0 point.
-      </p>
-      <table aria-label="Exemples de points par temps de réponse">
-        <thead>
-          <tr>
-            <th>Temps de réponse</th>
-            <th>Points gagnés</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>0.0 s à 1.9 s</td>
-            <td>10</td>
-          </tr>
-          <tr>
-            <td>2.0 s à 3.9 s</td>
-            <td>9</td>
-          </tr>
-          <tr>
-            <td>4.0 s à 5.9 s</td>
-            <td>8</td>
-          </tr>
-          <tr>
-            <td>...</td>
-            <td>...</td>
-          </tr>
-          <tr>
-            <td>18.0 s à 19.9 s</td>
-            <td>1</td>
-          </tr>
-          <tr>
-            <td>20.0 s et plus</td>
-            <td>0</td>
-          </tr>
-        </tbody>
-      </table>
-      <h3>Exemple de mini session</h3>
-      <p>
-        Si vous trouvez 3 rues en 1.2 s, 6.7 s et 12.4 s, vous gagnez respectivement 10, 7 et 4 points, soit
-        <strong>21 points</strong> au total sur ces 3 réponses.
-      </p>
+      <ul>
+        <li>Exemple rapide: 1.2 s → 10 points.</li>
+        <li>Exemple moyen: 6.7 s → 7 points.</li>
+        <li>Exemple lent: 12.4 s → 4 points.</li>
+      </ul>
+      <p>À partir de 20 secondes: 0 point.</p>
     </section>
 
     <section id="daily">
-      <h2>6. Défi Daily</h2>
-      <p>
-        Le Daily est un défi quotidien sur une rue unique, avec un nombre d'essais limité.
-      </p>
+      <h2>4. Défi Daily</h2>
+      <h3>Règles</h3>
       <ul>
-        <li>Le défi du jour propose une seule cible pour tous les joueurs.</li>
-        <li>Vous avez <strong>7 essais maximum</strong>.</li>
-        <li>Après chaque essai raté, la distance est affichée pour vous guider.</li>
-        <li>Le Daily nécessite une connexion au profil joueur.</li>
+        <li>Une cible commune par jour pour tous les joueurs.</li>
+        <li>Maximum <strong>7 essais</strong>.</li>
+        <li>Connexion au profil requise.</li>
       </ul>
-      <div class="highlight">
-        Le but n'est pas la vitesse, mais la précision progressive: utilisez la distance et la logique géographique pour
-        converger vers la bonne rue.
-      </div>
+      <h3>Indices et partage</h3>
+      <ul>
+        <li>Après un raté: distance + flèche de direction.</li>
+        <li>Indices progressifs possibles: arrondissement, quartier, longueur de rue.</li>
+        <li>Indice visuel (photo) possible selon la rue du jour.</li>
+        <li>En fin de Daily: partage texte/image.</li>
+      </ul>
     </section>
 
     <section id="rangs">
-      <h2>7. Rangs, seuils et avatars</h2>
+      <h2>5. Rangs et avatars</h2>
       <p>
-        Les rangs de joueur sont: <strong>Minot</strong>, <strong>Habitué du Vieux-Port</strong>,
-        <strong>Vrai Marseillais</strong> et <strong>Maire de la Ville</strong>.
+        Rangs: <strong>Minot</strong>, <strong>Habitué du Vieux-Port</strong>, <strong>Vrai Marseillais</strong>,
+        <strong>Maire de la Ville</strong>.
       </p>
-      <div class="highlight">
-        Pour valider un rang global joueur, vous devez atteindre ce rang sur les <strong>5 zones globales</strong>
-        (Rues célèbres, Rues principales, Rues par quartier, Monuments, Quartiers de la ville) et sur
-        <strong>chaque mode compétitif</strong> (Classique, Marathon, Chrono).
-      </div>
-
-      <h3>Score pris en compte selon le mode</h3>
       <ul>
-        <li><strong>Classique</strong> : score pondéré (points).</li>
-        <li><strong>Marathon</strong> : nombre d'items trouvés avant 3 erreurs.</li>
-        <li><strong>Chrono</strong> : nombre d'items trouvés en 60 s.</li>
+        <li>Rang global: valider les 5 zones globales sur Classique + Marathon + Chrono.</li>
+        <li>Exception: <strong>Ville entière</strong> donne des badges dédiés, séparés du rang global.</li>
       </ul>
 
-      <h3>Seuils de rang - Classique (score pondéré)</h3>
-      <table aria-label="Seuils de rang en mode Classique">
-        <thead>
-          <tr>
-            <th>Zone</th>
-            <th>Minot (M)</th>
-            <th>Habitué (H)</th>
-            <th>Vrai (V)</th>
-            <th>Maire (MV)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Rues célèbres</td><td>60</td><td>100</td><td>140</td><td>180</td></tr>
-          <tr><td>Rues principales</td><td>50</td><td>90</td><td>130</td><td>170</td></tr>
-          <tr><td>Rues par quartier</td><td>40</td><td>80</td><td>120</td><td>160</td></tr>
-          <tr><td>Monuments</td><td>40</td><td>80</td><td>120</td><td>160</td></tr>
-          <tr><td>Quartiers de la ville</td><td>60</td><td>100</td><td>140</td><td>180</td></tr>
-        </tbody>
-      </table>
+      <details>
+        <summary>Seuils détaillés Classique</summary>
+        <table aria-label="Seuils Classique">
+          <thead>
+            <tr><th>Zone</th><th>M</th><th>H</th><th>V</th><th>MV</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Rues célèbres</td><td>60</td><td>100</td><td>140</td><td>180</td></tr>
+            <tr><td>Rues principales</td><td>50</td><td>90</td><td>130</td><td>170</td></tr>
+            <tr><td>Rues par quartier</td><td>40</td><td>80</td><td>120</td><td>160</td></tr>
+            <tr><td>Monuments</td><td>40</td><td>80</td><td>120</td><td>160</td></tr>
+            <tr><td>Quartiers de la ville</td><td>60</td><td>100</td><td>140</td><td>180</td></tr>
+          </tbody>
+        </table>
+      </details>
 
-      <h3>Seuils de rang - Marathon (items trouvés)</h3>
-      <table aria-label="Seuils de rang en mode Marathon">
-        <thead>
-          <tr>
-            <th>Zone</th>
-            <th>Minot (M)</th>
-            <th>Habitué (H)</th>
-            <th>Vrai (V)</th>
-            <th>Maire (MV)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Rues célèbres</td><td>10</td><td>20</td><td>35</td><td>55</td></tr>
-          <tr><td>Rues principales</td><td>9</td><td>18</td><td>30</td><td>48</td></tr>
-          <tr><td>Rues par quartier</td><td>10%</td><td>20%</td><td>35%</td><td>55%</td></tr>
-          <tr><td>Monuments</td><td>9</td><td>18</td><td>30</td><td>46</td></tr>
-          <tr><td>Quartiers de la ville</td><td>10</td><td>20</td><td>35</td><td>55</td></tr>
-        </tbody>
-      </table>
-      <p>
-        En <strong>Rues par quartier</strong> (Marathon), les seuils sont dynamiques selon la taille du pool de la
-        session (arrondi supérieur, avec progression stricte). Exemple sur 55 rues: <strong>6 / 11 / 20 / 31</strong>.
-      </p>
+      <details>
+        <summary>Seuils détaillés Marathon</summary>
+        <table aria-label="Seuils Marathon">
+          <thead>
+            <tr><th>Zone</th><th>M</th><th>H</th><th>V</th><th>MV</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Rues célèbres</td><td>10</td><td>20</td><td>35</td><td>55</td></tr>
+            <tr><td>Rues principales</td><td>9</td><td>18</td><td>30</td><td>48</td></tr>
+            <tr><td>Rues par quartier</td><td>10%</td><td>20%</td><td>35%</td><td>55%</td></tr>
+            <tr><td>Monuments</td><td>9</td><td>18</td><td>30</td><td>46</td></tr>
+            <tr><td>Quartiers de la ville</td><td>10</td><td>20</td><td>35</td><td>55</td></tr>
+          </tbody>
+        </table>
+        <p>Rues par quartier: seuils dynamiques selon la taille du pool.</p>
+      </details>
 
-      <h3>Seuils de rang - Chrono (items trouvés en 60 s)</h3>
-      <table aria-label="Seuils de rang en mode Chrono">
-        <thead>
-          <tr>
-            <th>Zone</th>
-            <th>Minot (M)</th>
-            <th>Habitué (H)</th>
-            <th>Vrai (V)</th>
-            <th>Maire (MV)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Rues célèbres</td><td>7</td><td>11</td><td>16</td><td>22</td></tr>
-          <tr><td>Rues principales</td><td>6</td><td>10</td><td>14</td><td>19</td></tr>
-          <tr><td>Rues par quartier</td><td>5</td><td>8</td><td>12</td><td>16</td></tr>
-          <tr><td>Monuments</td><td>5</td><td>8</td><td>12</td><td>16</td></tr>
-          <tr><td>Quartiers de la ville</td><td>7</td><td>11</td><td>16</td><td>22</td></tr>
-        </tbody>
-      </table>
+      <details>
+        <summary>Seuils détaillés Chrono</summary>
+        <table aria-label="Seuils Chrono">
+          <thead>
+            <tr><th>Zone</th><th>M</th><th>H</th><th>V</th><th>MV</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Rues célèbres</td><td>7</td><td>11</td><td>16</td><td>22</td></tr>
+            <tr><td>Rues principales</td><td>6</td><td>10</td><td>14</td><td>19</td></tr>
+            <tr><td>Rues par quartier</td><td>5</td><td>8</td><td>12</td><td>16</td></tr>
+            <tr><td>Monuments</td><td>5</td><td>8</td><td>12</td><td>16</td></tr>
+            <tr><td>Quartiers de la ville</td><td>7</td><td>11</td><td>16</td><td>22</td></tr>
+          </tbody>
+        </table>
+      </details>
 
-      <h3>Rang global joueur et exception Ville entière</h3>
-      <ul>
-        <li>Le <strong>rang global joueur</strong> (Minot/Habitué/Vrai/Maire) se gagne en validant le rang sur chaque combinaison:
-          Rues célèbres, Rues principales, Rues par quartier, Monuments, Quartiers de la ville × (Classique, Marathon, Chrono).</li>
-        <li>En <strong>Rues par quartier</strong>, un seul quartier validé suffit pour remplir la zone.</li>
-        <li><strong>Ville entière</strong> est traitée à part: elle ne compte pas dans le rang global, mais confère ses propres rangs et badges multi-modes.</li>
-      </ul>
-
-      <h3>Rangs dédiés Ville entière (badges et avatars spéciaux)</h3>
-      <p>
-        Les seuils Ville entière sont indépendants du rang global:
-      </p>
-      <table aria-label="Seuils Ville entière">
-        <thead>
-          <tr>
-            <th>Mode</th>
-            <th>Minot (M)</th>
-            <th>Habitué (H)</th>
-            <th>Vrai (V)</th>
-            <th>Maire (MV)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Classique</td><td>30</td><td>70</td><td>110</td><td>150</td></tr>
-          <tr><td>Marathon</td><td>8</td><td>16</td><td>28</td><td>44</td></tr>
-          <tr><td>Chrono</td><td>4</td><td>7</td><td>10</td><td>14</td></tr>
-        </tbody>
-      </table>
-      <table aria-label="Rangs spéciaux Ville entière">
-        <thead>
-          <tr>
-            <th>Badge</th>
-            <th>Nom</th>
-            <th>Condition</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>🚀</td><td>Astronaute</td><td>Atteindre Minot sur Ville entière en Classique, Marathon et Chrono</td></tr>
-          <tr><td>⭐️</td><td>Étoile</td><td>Atteindre Habitué sur Ville entière en Classique, Marathon et Chrono</td></tr>
-          <tr><td>🛸</td><td>Extraterrestre</td><td>Atteindre Vrai Marseillais sur Ville entière en Classique, Marathon et Chrono</td></tr>
-          <tr><td>👽</td><td>L'Ovni</td><td>Atteindre Maire sur Ville entière en Classique, Marathon et Chrono</td></tr>
-        </tbody>
-      </table>
-      <p>
-        Les rangs débloquent des badges et des avatars supplémentaires visibles dans le profil.
-      </p>
+      <details>
+        <summary>Ville entière: badges spéciaux</summary>
+        <table aria-label="Seuils Ville entière">
+          <thead>
+            <tr><th>Mode</th><th>M</th><th>H</th><th>V</th><th>MV</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Classique</td><td>30</td><td>70</td><td>110</td><td>150</td></tr>
+            <tr><td>Marathon</td><td>8</td><td>16</td><td>28</td><td>44</td></tr>
+            <tr><td>Chrono</td><td>4</td><td>7</td><td>10</td><td>14</td></tr>
+          </tbody>
+        </table>
+        <table aria-label="Badges Ville entière">
+          <thead>
+            <tr><th>Badge</th><th>Nom</th><th>Condition</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>🚀</td><td>Astronaute</td><td>Minot sur Ville entière en Classique + Marathon + Chrono</td></tr>
+            <tr><td>⭐️</td><td>Étoile</td><td>Habitué sur Ville entière en Classique + Marathon + Chrono</td></tr>
+            <tr><td>🛸</td><td>Extraterrestre</td><td>Vrai sur Ville entière en Classique + Marathon + Chrono</td></tr>
+            <tr><td>👽</td><td>L'Ovni</td><td>Maire sur Ville entière en Classique + Marathon + Chrono</td></tr>
+          </tbody>
+        </table>
+      </details>
     </section>
 
     <section id="classements">
-      <h2>8. Classements et résultats</h2>
-      <p>
-        Les classements (leaderboard) permettent de comparer les performances par zone et par mode.
-      </p>
+      <h2>6. Classements</h2>
       <ul>
-        <li>Un classement global est affiché dans l'application.</li>
-        <li>Un classement mensuel est aussi disponible.</li>
-        <li>Les parties Daily ont leur propre classement.</li>
+        <li>Classement global par zone et mode.</li>
+        <li>Classement mensuel dédié.</li>
+        <li>Classement Daily séparé.</li>
+        <li>Fin de session: récap complet (temps, score, détail des réponses).</li>
       </ul>
-      <p>
-        En fin de session, un récap détaille vos réponses, votre temps et votre score.
-      </p>
+      <details>
+        <summary>Défi amis (avancé)</summary>
+        <ul>
+          <li>Création depuis la configuration courante (hors Lecture).</li>
+          <li>Paramètres verrouillés pendant le défi.</li>
+          <li>Lien partageable avec code de défi.</li>
+          <li>Expiration automatique (environ 24 h).</li>
+          <li>Mini leaderboard du défi après première partie terminée.</li>
+        </ul>
+      </details>
     </section>
 
     <section id="compte">
-      <h2>9. Compte joueur et sauvegarde</h2>
+      <h2>7. Connexion, sauvegarde et rappels</h2>
       <ul>
-        <li>Sans connexion, vous pouvez jouer, mais les résultats ne sont pas envoyés au serveur.</li>
-        <li>Avec connexion, les scores de session sont enregistrés pour les classements, les rangs et le profil.</li>
-        <li>Le Daily nécessite un profil connecté.</li>
-        <li>Le profil conserve aussi les avatars, badges, statistiques et progression par mode/zone.</li>
+        <li>Connecté: scores enregistrés (classements, rangs, stats, avatars, badges).</li>
+        <li>Non connecté: jeu possible, mais pas d'envoi de scores serveur.</li>
+        <li>Mode hors-ligne: possible de jouer, sauvegarde serveur indisponible.</li>
+        <li>Rappel push Daily activable depuis le profil (si navigateur/appareil compatible).</li>
+        <li>Sur iPhone/iPad: installation écran d'accueil requise pour les notifications push.</li>
       </ul>
-      <div class="highlight">
-        En mode hors-ligne, la bannière de l'application indique que les scores ne seront pas sauvegardés.
-      </div>
-    </section>
-
-    <section id="defi-amis">
-      <h2>10. Défi amis</h2>
-      <p>
-        Le mode Défi amis permet de créer un challenge partageable depuis votre configuration actuelle.
-      </p>
-      <ul>
-        <li>Disponible uniquement en <strong>Classique</strong>, <strong>Marathon</strong> et <strong>Chrono</strong>.</li>
-        <li>Le défi verrouille les paramètres (zone/mode) pendant qu'il est actif.</li>
-        <li>Un lien/code de défi est généré pour inviter vos amis.</li>
-        <li>Le défi expire automatiquement après environ <strong>24 heures</strong>.</li>
-        <li>Le mini leaderboard du défi est visible après la première partie terminée sur ce défi.</li>
-      </ul>
-    </section>
-
-    <section id="limites">
-      <h2>11. Limites de session (détails)</h2>
-      <ul>
-        <li><strong>Classique</strong>: jusqu'à 20 items (moins si le pool disponible est inférieur).</li>
-        <li><strong>Marathon</strong>: arrêt à la 3e erreur.</li>
-        <li>En Marathon, le bouton <strong>Passer</strong> consomme une erreur.</li>
-        <li><strong>Chrono</strong>: 60 secondes, puis fin de session.</li>
-        <li>En Marathon/Chrono, une limite technique de sécurité existe (temps maximal de session).</li>
-      </ul>
-      <p>
-        Le bouton <strong>Pause</strong> fige les chronos de session (et le compte à rebours Chrono) jusqu'à reprise.
-      </p>
-    </section>
-
-    <section id="daily-avance">
-      <h2>12. Daily avancé</h2>
-      <ul>
-        <li>Après un essai raté, vous obtenez la <strong>distance</strong> et une <strong>flèche de direction</strong>.</li>
-        <li>Des indices progressifs peuvent apparaître selon l'avancement (arrondissement, quartier, longueur de rue).</li>
-        <li>Un indice visuel (photo) peut être proposé selon la rue du jour.</li>
-        <li>En fin de Daily, un panneau récapitulatif permet de partager le résultat (texte/image).</li>
-      </ul>
-      <p>
-        Le Daily du jour est commun aux joueurs et se renouvelle sur la date serveur du jeu (timezone Europe/Paris par défaut).
-      </p>
-    </section>
-
-    <section id="notifications-offline">
-      <h2>13. Notifications et mode hors-ligne</h2>
-      <ul>
-        <li>Un rappel push Daily peut être activé depuis le profil (si navigateur/appareil compatible).</li>
-        <li>Sur iPhone/iPad, l'app doit être installée sur l'écran d'accueil pour les notifications push.</li>
-        <li>En cas de perte de connexion, vous pouvez continuer à jouer localement.</li>
-        <li>Les classements et sauvegardes serveur nécessitent une connexion active.</li>
-      </ul>
-    </section>
-
-    <section id="coherence-score">
-      <h2>14. Référence officielle du score pondéré</h2>
-      <p>
-        La référence officielle de Camino pour le mode Classique est:
-      </p>
-      <div class="formula">points = max(0, 10 - floor(temps_en_secondes / 2))</div>
-      <p>
-        Donc: <strong>1 point perdu toutes les 2 secondes</strong>, et <strong>0 point à partir de 20 secondes</strong>.
-      </p>
-    </section>
-
-    <section id="conseils">
-      <h2>15. Conseils pour progresser</h2>
-      <ol>
-        <li>Commencez par <strong>Rues célèbres + Classique</strong> pour apprendre les repères rapidement.</li>
-        <li>Passez ensuite sur <strong>Rues principales</strong> puis <strong>Rues par quartier</strong>.</li>
-        <li>Travaillez votre vitesse: en Classique, les 2 premières secondes sont les plus rentables.</li>
-        <li>Utilisez le mode <strong>Lecture</strong> pour mémoriser sans pression.</li>
-        <li>Jouez régulièrement le Daily pour améliorer votre précision spatiale.</li>
-      </ol>
     </section>
 
     <section id="faq">
-      <h2>16. FAQ rapide</h2>
-      <h3>Le mode Lecture donne-t-il un score ?</h3>
-      <p>Non, c'est un mode d'entraînement et de reconnaissance de la carte.</p>
+      <h2>8. FAQ courte</h2>
+      <h3>Le mode Lecture donne-t-il un score compétitif ?</h3>
+      <p>Non.</p>
       <h3>Le mode Chrono dure combien de temps ?</h3>
       <p>60 secondes.</p>
-      <h3>Quand une partie Marathon s'arrête-t-elle ?</h3>
-      <p>À la 3e erreur.</p>
-      <h3>Comment maximiser mon score Classique ?</h3>
-      <p>Répondre juste et vite: chaque tranche de 2 secondes fait perdre 1 point sur la réponse en cours.</p>
+      <h3>Quand le Marathon s'arrête-t-il ?</h3>
+      <p>À la 3e erreur (Passer consomme aussi une erreur).</p>
+      <h3>La connexion est-elle obligatoire ?</h3>
+      <p>Obligatoire pour Daily, classements et progression serveur; facultative pour jouer localement.</p>
     </section>
 
     <div class="footer-nav">
