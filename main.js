@@ -3115,13 +3115,18 @@ Essaie de faire mieux sur ${host}`;
     allStreetFeatures: allStreetFeatures2,
     normalizeName: normalizeName2
   }) {
+    var _a;
     try {
       const historyRoot = document.getElementById("daily-guesses-history");
       const targetPanelEl = document.querySelector(".target-panel");
       if (!historyRoot) {
         return;
       }
+      const previousDailyImageHintEl = historyRoot.querySelector(".daily-image-hint");
+      const previousDailyImageHintOpen = previousDailyImageHintEl ? previousDailyImageHintEl.open : null;
       const dailyImageUrl = typeof (dailyTargetData2 == null ? void 0 : dailyTargetData2.dailyImageUrl) === "string" ? dailyTargetData2.dailyImageUrl.trim() : "";
+      const persistedDailyImageHintOpen = typeof (dailyTargetData2 == null ? void 0 : dailyTargetData2.dailyImageHintOpen) === "boolean" ? dailyTargetData2.dailyImageHintOpen : null;
+      const dailyImageHintOpenByDefault = (_a = persistedDailyImageHintOpen != null ? persistedDailyImageHintOpen : previousDailyImageHintOpen) != null ? _a : true;
       const shouldShowVisualHint = Boolean(dailyImageUrl && !finalStatus);
       const shouldShowHistory = dailyGuessHistory2.length !== 0 || finalStatus && finalStatus.success || shouldShowVisualHint;
       if (!shouldShowHistory) {
@@ -3163,7 +3168,7 @@ Essaie de faire mieux sur ${host}`;
         html += '<div class="daily-hints-title">\u{1F4A1} Indices</div>';
         if (shouldShowVisualHint) {
           const imageAlt = dailyTargetData2.streetName ? `Photo indice de ${dailyTargetData2.streetName}` : "Photo indice du Daily";
-          html += '<details class="daily-image-hint" open>';
+          html += `<details class="daily-image-hint"${dailyImageHintOpenByDefault ? " open" : ""}>`;
           html += '<summary class="daily-image-hint-summary">\u{1F5BC}\uFE0F Photo indice (repliable)</summary>';
           html += '<div class="daily-image-hint-body">';
           html += `<img src="${escapeHtml2(dailyImageUrl)}" alt="${escapeHtml2(imageAlt)}" loading="lazy" decoding="async">`;
@@ -3208,6 +3213,9 @@ Essaie de faire mieux sur ${host}`;
       const dailyImageHintEl = historyRoot.querySelector(".daily-image-hint");
       if (targetPanelEl) {
         const syncDailyImageOpenClass = () => {
+          if (dailyTargetData2 && typeof dailyTargetData2 === "object" && dailyImageHintEl) {
+            dailyTargetData2.dailyImageHintOpen = dailyImageHintEl.open;
+          }
           targetPanelEl.classList.toggle(
             "target-panel--daily-image-open",
             Boolean(dailyImageHintEl && dailyImageHintEl.open)

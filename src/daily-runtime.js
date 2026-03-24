@@ -176,10 +176,21 @@ export function renderDailyGuessHistoryRuntime({
       return;
     }
 
+    const previousDailyImageHintEl = historyRoot.querySelector(".daily-image-hint");
+    const previousDailyImageHintOpen = previousDailyImageHintEl
+      ? previousDailyImageHintEl.open
+      : null;
+
     const dailyImageUrl =
       typeof dailyTargetData?.dailyImageUrl === "string"
         ? dailyTargetData.dailyImageUrl.trim()
         : "";
+    const persistedDailyImageHintOpen =
+      typeof dailyTargetData?.dailyImageHintOpen === "boolean"
+        ? dailyTargetData.dailyImageHintOpen
+        : null;
+    const dailyImageHintOpenByDefault =
+      persistedDailyImageHintOpen ?? previousDailyImageHintOpen ?? true;
     const shouldShowVisualHint = Boolean(dailyImageUrl && !finalStatus);
     const shouldShowHistory =
       dailyGuessHistory.length !== 0 || (finalStatus && finalStatus.success) || shouldShowVisualHint;
@@ -236,7 +247,7 @@ export function renderDailyGuessHistoryRuntime({
         const imageAlt = dailyTargetData.streetName
           ? `Photo indice de ${dailyTargetData.streetName}`
           : "Photo indice du Daily";
-        html += '<details class="daily-image-hint" open>';
+        html += `<details class="daily-image-hint"${dailyImageHintOpenByDefault ? " open" : ""}>`;
         html += '<summary class="daily-image-hint-summary">🖼️ Photo indice (repliable)</summary>';
         html += '<div class="daily-image-hint-body">';
         html += `<img src="${escapeHtml(dailyImageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" decoding="async">`;
@@ -290,6 +301,9 @@ export function renderDailyGuessHistoryRuntime({
     const dailyImageHintEl = historyRoot.querySelector(".daily-image-hint");
     if (targetPanelEl) {
       const syncDailyImageOpenClass = () => {
+        if (dailyTargetData && typeof dailyTargetData === "object" && dailyImageHintEl) {
+          dailyTargetData.dailyImageHintOpen = dailyImageHintEl.open;
+        }
         targetPanelEl.classList.toggle(
           "target-panel--daily-image-open",
           Boolean(dailyImageHintEl && dailyImageHintEl.open),
