@@ -57,6 +57,85 @@ const FREE_MODE_EXCLUDED_KEYWORDS = [
   "complexe",
 ];
 
+const FREE_MODE_SAFE_PREFIXES = new Set([
+  "rue",
+  "boulevard",
+  "bd",
+  "avenue",
+  "av",
+  "cours",
+  "place",
+  "chemin",
+  "traverse",
+  "impasse",
+  "montee",
+  "quai",
+  "route",
+  "corniche",
+  "square",
+  "promenade",
+  "rond-point",
+  "esplanade",
+  "tunnel",
+  "pont",
+  "viaduc",
+  "autoroute",
+  "escaliers",
+  "escalier",
+  "passerelle",
+  "bretelle",
+  "vallon",
+  "clos",
+  "carrefour",
+  "echangeur",
+  "ancien",
+  "ancienne",
+  "plage",
+  "rampe",
+  "passage",
+  "allee",
+  "allees",
+]);
+
+const FREE_MODE_WHITELIST = new Set([
+  "parvis madeleine et andre villard",
+  "parvis saint-laurent",
+  "pas d'ai de l'eboulis",
+  "pavillon des intendants",
+  "pavillon du parc",
+  "placette ange-marius michel",
+  "plateau cherchell chaix bryan",
+  "plateau sacoman",
+  "plateau de malmousque",
+  "plateau de l'eglise",
+  "plateau des marguerites",
+  "plateau des martegaux",
+  "plateau du peintre",
+  "porte d'air bel",
+  "porte de la castellane",
+  "porte de la pomme",
+  "ront-point robert dor",
+  "rond-point robert dor",
+  "ront-point abbe jean marcorelles",
+  "rond-point abbe jean marcorelles",
+  "ront-point monique gallician",
+  "rond-point monique gallician",
+  "rotonde pierre estrangin",
+  "ruelle saint-charles",
+  "vieux chemin d'endoume",
+  "digue berry",
+  "digue est",
+  "digue sainte-marie",
+  "digue du fort saint-jean",
+  "boulevard de la colline",
+  "bouvelard de la colline",
+  "voie saint-theodore",
+  "voie saint -theodore",
+  "grand rue",
+  "la canebiere",
+  "l2",
+]);
+
 function normalizeStreetTextForFilters(streetName) {
   return (streetName || "")
     .toString()
@@ -64,8 +143,10 @@ function normalizeStreetTextForFilters(streetName) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9' ]+/g, " ")
     .replace(/’/g, "'")
+    .replace(/[-‐‑‒–—]/g, "-")
+    .replace(/\s*-\s*/g, "-")
+    .replace(/[^a-z0-9' -]+/g, " ")
     .replace(/\s+/g, " ");
 }
 
@@ -80,11 +161,27 @@ function isExcludedFromVilleAndQuartier(streetName) {
     return true;
   }
 
+  if (normalized === "l2" || normalized.startsWith("l2 ")) {
+    return false;
+  }
+
+  if (FREE_MODE_WHITELIST.has(normalized)) {
+    return false;
+  }
+
   if (FREE_MODE_EXCLUDED_PREFIXES.has(firstToken)) {
     return true;
   }
 
-  return FREE_MODE_EXCLUDED_KEYWORDS.some((keyword) => normalized.includes(keyword));
+  if (FREE_MODE_EXCLUDED_KEYWORDS.some((keyword) => normalized.includes(keyword))) {
+    return true;
+  }
+
+  if (!FREE_MODE_SAFE_PREFIXES.has(firstToken)) {
+    return true;
+  }
+
+  return false;
 }
 
 export function createArrondissementByQuartierMap(arrondissementByQuartier) {

@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const webPush = require('web-push');
 const db = require('./database');
+const { shouldKeepStreetForGame } = require('../street_filter');
 const {
     FAMOUS_STREET_NAMES: DEFAULT_FAMOUS_STREET_NAMES,
     MAIN_STREET_NAMES: DEFAULT_MAIN_STREET_NAMES,
@@ -1788,10 +1789,18 @@ let streetChallengeIndex = [];
 let quartierChallengeIndex = [];
 let monumentChallengeIndex = [];
 try {
-    streetIndex = JSON.parse(
+    const rawStreetIndex = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'data', 'streets_index.json'), 'utf8')
     );
-    console.log(`Loaded ${streetIndex.length} streets from index for daily challenges.`);
+    console.log(`Loaded ${rawStreetIndex.length} streets from index for daily challenges.`);
+    streetIndex = rawStreetIndex.filter((entry) =>
+        shouldKeepStreetForGame({
+            name: entry?.name,
+        })
+    );
+    if (streetIndex.length !== rawStreetIndex.length) {
+        console.log(`[Daily] Excluded ${rawStreetIndex.length - streetIndex.length} streets from daily index using gameplay filter.`);
+    }
     streetChallengeIndex = streetIndex
         .map((entry) => ({
             name: String(entry?.name || '').trim(),
@@ -1981,6 +1990,10 @@ function dateHash(dateStr) {
 async function ensureDailyTarget() {
     const date = getDateKeyInZone(DAILY_TIMEZONE);
     let target = await db.getDailyTarget(date);
+    if (target && !shouldKeepStreetForGame({ name: target.street_name })) {
+        console.warn(`[Daily] Existing target excluded by filter for ${date}: "${target.street_name}". Regenerating.`);
+        target = null;
+    }
     
     if (!target && streetIndex.length > 0) {
         // Find recent arrondissements to avoid

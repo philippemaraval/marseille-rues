@@ -17,6 +17,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const osmtogeojson = require('osmtogeojson');
+const { shouldKeepStreetForGame } = require('../street_filter');
 
 // ── Chemins ──
 const PROJECT_DIR = path.resolve(__dirname, '..');
@@ -270,103 +271,16 @@ async function main() {
         features: features.map(f => f.full)
     };
 
-    // Filtre des noms indésirables pour le jeu
-    const excludedPrefixes = new Set([
-        'résidence', 'lotissement', 'domaine', 
-        'gare', 'station', 'métro', 
-        'cité', 'accès', 'campagne', 
-        'parc', 'sentier', 'cour'
-    ]);
-    
-    // Mots-clés qui excluent la voie peu importe où ils se trouvent dans le nom (sous-catégories)
-    const excludedKeywords = [
-        'hameau', 'parking', 'groupe', 'entrée', 'entree', 
-        'dépose', 'depose', 'copropriété', 'copropriete', 
-        'lycée', 'lycee', 'hlm', 'hôpital', 'hopital', 
-        'centre', 'complexe'
-    ];
-
-    const whitelist = new Set([
-        "parvis madeleine et andré villard",
-        "parvis saint-laurent",
-        "pas d'ai de l'éboulis",
-        "pavillon des intendants",
-        "pavillon du parc",
-        "placette ange-marius michel",
-        "plateau cherchell chaix bryan",
-        "plateau sacoman",
-        "plateau de malmousque",
-        "plateau de l'église",
-        "plateau des marguerites",
-        "plateau des martégaux",
-        "plateau du peintre",
-        "porte d'air bel",
-        "porte de la castellane",
-        "porte de la pomme",
-        "ront-point robert dor",
-        "rond-point robert dor",
-        "ront-point abbé jean marcorelles",
-        "rond-point abbé jean marcorelles",
-        "ront-point monique gallician",
-        "rond-point monique gallician",
-        "rotonde pierre estrangin",
-        "ruelle saint-charles",
-        "vieux chemin d'endoume",
-        "digue berry",
-        "digue est",
-        "digue sainte-marie",
-        "digue du fort saint-jean",
-        "boulevard de la colline",
-        "bouvelard de la colline",
-        "voie saint -théodore",
-        "voie saint-théodore",
-        "grand rue",
-        "la canebière",
-        "l2"
-    ]);
-
-    const safePrefixes = new Set([
-        'rue', 'boulevard', 'bd', 'avenue', 'av', 'cours', 'place', 'chemin', 'traverse',
-        'impasse', 'montée', 'quai', 'route', 'corniche', 'square', 'promenade', 'rond-point',
-        'esplanade', 'tunnel', 'pont', 'viaduc', 'autoroute', 'escaliers', 'escalier',
-        'passerelle', 'bretelle', 'vallon', 'clos', 'carrefour', 'échangeur',
-        'ancien', 'ancienne', 'plage', 'rampe',
-        // Conservés explicitement par l'utilisateur:
-        'passage', 'allée', 'allées'
-    ]);
-
-    const lightFeatures = features.filter(f => {
-        if (!f.name) return false;
-        
-        // Always exclude platform (bus/metro stops)
-        if (f.light.properties.highway === 'platform') return false;
-
-        let lowerName = f.name.toLowerCase();
-        let firstWord = f.name.trim().split(/[\s']/)[0].toLowerCase();
-        
-        if (lowerName === "l2" || lowerName.startsWith("l2 ")) firstWord = "autoroute";
-
-        // Whitelist absolue (pour les pistes, autres et voies à sauver)
-        if (whitelist.has(lowerName)) return true;
-
-        if (excludedPrefixes.has(firstWord)) return false;
-
-        for (const kw of excludedKeywords) {
-            // Regex to ensure we match whole words for short acronyms like HLM to prevent matching e.g. "Vehlmann"
-            if (kw === 'hlm') {
-                 if (/\bhlm\b/.test(lowerName)) return false;
-            } else {
-                 if (lowerName.includes(kw)) return false;
-            }
-        }
-
-        // On supprime toutes les autres "Voies", "Pistes" et "Autres" (ie. qui ne sont pas dans safePrefixes)
-        if (!safePrefixes.has(firstWord)) {
-            return false;
-        }
-
-        return true;
-    }).map(f => f.light);
+    const filteredEntries = features.filter((entry) =>
+        shouldKeepStreetForGame({
+            name: entry?.name,
+            highway: entry?.light?.properties?.highway,
+        })
+    );
+    const lightFeatures = filteredEntries.map((entry) => entry.light);
+    console.log(
+        `   Filtre gameplay : ${filteredEntries.length} segments gardés, ${features.length - filteredEntries.length} exclus.`
+    );
 
     const lightCollection = {
         type: 'FeatureCollection',
@@ -390,7 +304,7 @@ async function main() {
     console.log(`   ✅ ${BACKEND_LIGHT} (copie)`);
 
     // Streets index for Daily Challenge
-    const streetsIndex = features.map(f => ({
+    const streetsIndex = filteredEntries.map(f => ({
         name: f.name,
         quartier: f.quartier,
         centroid: f.centroid
