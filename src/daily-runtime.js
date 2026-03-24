@@ -175,7 +175,15 @@ export function renderDailyGuessHistoryRuntime({
       return;
     }
 
-    if (!(dailyGuessHistory.length !== 0 || (finalStatus && finalStatus.success))) {
+    const dailyImageUrl =
+      typeof dailyTargetData?.dailyImageUrl === "string"
+        ? dailyTargetData.dailyImageUrl.trim()
+        : "";
+    const shouldShowVisualHint = Boolean(dailyImageUrl && !finalStatus);
+    const shouldShowHistory =
+      dailyGuessHistory.length !== 0 || (finalStatus && finalStatus.success) || shouldShowVisualHint;
+
+    if (!shouldShowHistory) {
       historyRoot.style.display = "none";
       historyRoot.innerHTML = "";
       return;
@@ -216,15 +224,11 @@ export function renderDailyGuessHistoryRuntime({
     }
 
     const guessCount = dailyGuessHistory.length;
-    if (guessCount >= 2 && dailyTargetData && !finalStatus) {
+    if (dailyTargetData && !finalStatus && (shouldShowVisualHint || guessCount >= 2)) {
       html += '<div class="daily-hints">';
       html += '<div class="daily-hints-title">💡 Indices</div>';
 
-      const dailyImageUrl =
-        typeof dailyTargetData.dailyImageUrl === "string"
-          ? dailyTargetData.dailyImageUrl.trim()
-          : "";
-      if (dailyImageUrl) {
+      if (shouldShowVisualHint) {
         const imageAlt = dailyTargetData.streetName
           ? `Photo indice de ${dailyTargetData.streetName}`
           : "Photo indice du Daily";

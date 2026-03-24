@@ -4403,7 +4403,8 @@ function startDailySession(e) {
             `❌ Plus d'essais pour aujourd'hui. La rue était « ${e.streetName} ».`,
             "error",
           ))
-      : showMessage(`Trouvez : ${e.streetName} (${o} essais restants)`, "info"),
+      : (renderDailyGuessHistory(),
+        showMessage(`Trouvez : ${e.streetName} (${o} essais restants)`, "info")),
     updateDailyUI());
 }
 function endDailySession() {

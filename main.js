@@ -3120,7 +3120,10 @@ Essaie de faire mieux sur ${host}`;
       if (!historyRoot) {
         return;
       }
-      if (!(dailyGuessHistory2.length !== 0 || finalStatus && finalStatus.success)) {
+      const dailyImageUrl = typeof (dailyTargetData2 == null ? void 0 : dailyTargetData2.dailyImageUrl) === "string" ? dailyTargetData2.dailyImageUrl.trim() : "";
+      const shouldShowVisualHint = Boolean(dailyImageUrl && !finalStatus);
+      const shouldShowHistory = dailyGuessHistory2.length !== 0 || finalStatus && finalStatus.success || shouldShowVisualHint;
+      if (!shouldShowHistory) {
         historyRoot.style.display = "none";
         historyRoot.innerHTML = "";
         return;
@@ -3151,11 +3154,10 @@ Essaie de faire mieux sur ${host}`;
         html += "</tbody></table>";
       }
       const guessCount = dailyGuessHistory2.length;
-      if (guessCount >= 2 && dailyTargetData2 && !finalStatus) {
+      if (dailyTargetData2 && !finalStatus && (shouldShowVisualHint || guessCount >= 2)) {
         html += '<div class="daily-hints">';
         html += '<div class="daily-hints-title">\u{1F4A1} Indices</div>';
-        const dailyImageUrl = typeof dailyTargetData2.dailyImageUrl === "string" ? dailyTargetData2.dailyImageUrl.trim() : "";
-        if (dailyImageUrl) {
+        if (shouldShowVisualHint) {
           const imageAlt = dailyTargetData2.streetName ? `Photo indice de ${dailyTargetData2.streetName}` : "Photo indice du Daily";
           html += '<details class="daily-image-hint" open>';
           html += '<summary class="daily-image-hint-summary">\u{1F5BC}\uFE0F Photo indice (repliable)</summary>';
@@ -6780,7 +6782,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     ) : showMessage(
       `\u274C Plus d'essais pour aujourd'hui. La rue \xE9tait \xAB ${e.streetName} \xBB.`,
       "error"
-    )) : showMessage(`Trouvez : ${e.streetName} (${o} essais restants)`, "info"), updateDailyUI();
+    )) : (renderDailyGuessHistory(), showMessage(`Trouvez : ${e.streetName} (${o} essais restants)`, "info")), updateDailyUI();
   }
   function endDailySession() {
     document.body.classList.remove("daily-game-over");
