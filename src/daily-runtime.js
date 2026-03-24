@@ -171,6 +171,7 @@ export function renderDailyGuessHistoryRuntime({
 }) {
   try {
     const historyRoot = document.getElementById("daily-guesses-history");
+    const targetPanelEl = document.querySelector(".target-panel");
     if (!historyRoot) {
       return;
     }
@@ -184,6 +185,9 @@ export function renderDailyGuessHistoryRuntime({
       dailyGuessHistory.length !== 0 || (finalStatus && finalStatus.success) || shouldShowVisualHint;
 
     if (!shouldShowHistory) {
+      if (targetPanelEl) {
+        targetPanelEl.classList.remove("target-panel--daily-image-open");
+      }
       historyRoot.style.display = "none";
       historyRoot.innerHTML = "";
       return;
@@ -242,11 +246,13 @@ export function renderDailyGuessHistoryRuntime({
 
       const quartierName = dailyTargetData.quartier || "";
       try {
-        const normalizedQuartier = normalizeQuartierKey(quartierName);
-        if (arrondissementByQuartier && arrondissementByQuartier.has(normalizedQuartier)) {
-          const arrondissement = arrondissementByQuartier.get(normalizedQuartier);
-          if (arrondissement) {
-            html += `<div class="daily-hint">📍 Arrondissement : <strong>${arrondissement}</strong></div>`;
+        if (guessCount >= 2) {
+          const normalizedQuartier = normalizeQuartierKey(quartierName);
+          if (arrondissementByQuartier && arrondissementByQuartier.has(normalizedQuartier)) {
+            const arrondissement = arrondissementByQuartier.get(normalizedQuartier);
+            if (arrondissement) {
+              html += `<div class="daily-hint">📍 Arrondissement : <strong>${arrondissement}</strong></div>`;
+            }
           }
         }
       } catch (error) {
@@ -281,10 +287,24 @@ export function renderDailyGuessHistoryRuntime({
 
     historyRoot.innerHTML = html;
 
-    const targetPanel = document.querySelector(".target-panel");
-    if (targetPanel) {
+    const dailyImageHintEl = historyRoot.querySelector(".daily-image-hint");
+    if (targetPanelEl) {
+      const syncDailyImageOpenClass = () => {
+        targetPanelEl.classList.toggle(
+          "target-panel--daily-image-open",
+          Boolean(dailyImageHintEl && dailyImageHintEl.open),
+        );
+      };
+
+      if (dailyImageHintEl) {
+        dailyImageHintEl.addEventListener("toggle", syncDailyImageOpenClass);
+        syncDailyImageOpenClass();
+      } else {
+        targetPanelEl.classList.remove("target-panel--daily-image-open");
+      }
+
       requestAnimationFrame(() => {
-        targetPanel.scrollTop = targetPanel.scrollHeight;
+        targetPanelEl.scrollTop = targetPanelEl.scrollHeight;
       });
     }
   } catch (error) {

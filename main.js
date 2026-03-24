@@ -3117,6 +3117,7 @@ Essaie de faire mieux sur ${host}`;
   }) {
     try {
       const historyRoot = document.getElementById("daily-guesses-history");
+      const targetPanelEl = document.querySelector(".target-panel");
       if (!historyRoot) {
         return;
       }
@@ -3124,6 +3125,9 @@ Essaie de faire mieux sur ${host}`;
       const shouldShowVisualHint = Boolean(dailyImageUrl && !finalStatus);
       const shouldShowHistory = dailyGuessHistory2.length !== 0 || finalStatus && finalStatus.success || shouldShowVisualHint;
       if (!shouldShowHistory) {
+        if (targetPanelEl) {
+          targetPanelEl.classList.remove("target-panel--daily-image-open");
+        }
         historyRoot.style.display = "none";
         historyRoot.innerHTML = "";
         return;
@@ -3168,11 +3172,13 @@ Essaie de faire mieux sur ${host}`;
         }
         const quartierName = dailyTargetData2.quartier || "";
         try {
-          const normalizedQuartier = normalizeQuartierKey2(quartierName);
-          if (arrondissementByQuartier2 && arrondissementByQuartier2.has(normalizedQuartier)) {
-            const arrondissement = arrondissementByQuartier2.get(normalizedQuartier);
-            if (arrondissement) {
-              html += `<div class="daily-hint">\u{1F4CD} Arrondissement : <strong>${arrondissement}</strong></div>`;
+          if (guessCount >= 2) {
+            const normalizedQuartier = normalizeQuartierKey2(quartierName);
+            if (arrondissementByQuartier2 && arrondissementByQuartier2.has(normalizedQuartier)) {
+              const arrondissement = arrondissementByQuartier2.get(normalizedQuartier);
+              if (arrondissement) {
+                html += `<div class="daily-hint">\u{1F4CD} Arrondissement : <strong>${arrondissement}</strong></div>`;
+              }
             }
           }
         } catch (error) {
@@ -3199,10 +3205,22 @@ Essaie de faire mieux sur ${host}`;
         html += "</div>";
       }
       historyRoot.innerHTML = html;
-      const targetPanel = document.querySelector(".target-panel");
-      if (targetPanel) {
+      const dailyImageHintEl = historyRoot.querySelector(".daily-image-hint");
+      if (targetPanelEl) {
+        const syncDailyImageOpenClass = () => {
+          targetPanelEl.classList.toggle(
+            "target-panel--daily-image-open",
+            Boolean(dailyImageHintEl && dailyImageHintEl.open)
+          );
+        };
+        if (dailyImageHintEl) {
+          dailyImageHintEl.addEventListener("toggle", syncDailyImageOpenClass);
+          syncDailyImageOpenClass();
+        } else {
+          targetPanelEl.classList.remove("target-panel--daily-image-open");
+        }
         requestAnimationFrame(() => {
-          targetPanel.scrollTop = targetPanel.scrollHeight;
+          targetPanelEl.scrollTop = targetPanelEl.scrollHeight;
         });
       }
     } catch (error) {

@@ -121,7 +121,7 @@ body {
   gap: 12px;
   z-index: 10;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.02);
-  overflow-x: visible;
+  overflow-x: hidden;
 }
 
 #sidebar-content {
@@ -535,6 +535,8 @@ select:focus {
   margin-top: 10px;
   position: relative;
   z-index: 1;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .daily-history-title {
@@ -549,6 +551,7 @@ select:focus {
 .daily-history-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: var(--fs-xs);
   font-family: var(--font-body);
 }
@@ -572,6 +575,27 @@ select:focus {
   padding: 5px 6px;
   color: var(--text-primary);
   border-bottom: 1px solid #f1f5f9;
+}
+
+.daily-history-table th:nth-child(1),
+.daily-history-table td:nth-child(1) {
+  width: 24px;
+}
+
+.daily-history-table th:nth-child(2),
+.daily-history-table td:nth-child(2) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.daily-history-table th:nth-child(3),
+.daily-history-table td:nth-child(3) {
+  width: 88px;
+}
+
+.daily-history-table th:nth-child(4),
+.daily-history-table td:nth-child(4) {
+  width: 30px;
 }
 
 .daily-history-table td:first-child {
@@ -694,6 +718,8 @@ select:focus {
   border: 1px solid #f2d09b;
   border-radius: var(--radius-sm);
   animation: dailyRowSlide 0.3s ease-out;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .daily-hints-title {
@@ -743,12 +769,14 @@ select:focus {
 
 .daily-image-hint-body img {
   width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
+  height: auto;
+  max-height: 420px;
+  object-fit: contain;
   border-radius: 9px;
   border: 1px solid rgba(138, 83, 18, 0.24);
   box-shadow: 0 6px 14px rgba(15, 23, 42, 0.16);
   display: block;
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .panel {
@@ -851,7 +879,8 @@ button {
   border-left: 6px solid var(--primary);
   padding: 20px;
   position: relative;
-  overflow: visible;
+  overflow-y: visible;
+  overflow-x: hidden;
 }
 
 .target-panel::after {
@@ -1511,6 +1540,10 @@ button {
     overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch;
     overflow-anchor: none;
+  }
+
+  body.session-running .target-panel.target-panel--daily-image-open {
+    max-height: 68vh;
   }
 
   body.session-running .target-panel.pulse {
