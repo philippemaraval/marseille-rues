@@ -4625,6 +4625,15 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
   var PULL_TO_REFRESH_THRESHOLD_PX = 92;
   var PULL_TO_REFRESH_TOP_ZONE_PX = 96;
   var PULL_TO_REFRESH_TOP_ZONE_STANDALONE_PX = 220;
+  var DISCRETE_ZOOM_STEP = 1;
+  var DESKTOP_WHEEL_IDLE_MS = 170;
+  var DESKTOP_WHEEL_THRESHOLD_PX = 90;
+  var DESKTOP_LINE_DELTA_PX = 40;
+  var MOBILE_TWO_FINGER_TAP_MAX_DURATION_MS = 260;
+  var MOBILE_TWO_FINGER_TAP_MAX_MOVE_PX = 24;
+  var MOBILE_TWO_FINGER_DOUBLE_TAP_DELAY_MS = 340;
+  var MOBILE_TWO_FINGER_DOUBLE_TAP_MAX_DISTANCE_PX = 56;
+  var MOBILE_TWO_FINGER_SUPPRESS_DBLCLICK_MS = 380;
   var isPullToRefreshBound = false;
   function isStandaloneDisplayMode2() {
     if (window.navigator.standalone === true) return true;
@@ -5555,16 +5564,227 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
     }
     map.panInsideBounds(e, { animate: false });
   }
+  function clientPointToContainerPoint(clientX, clientY) {
+    if (!map || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return null;
+    const container = map.getContainer();
+    if (!container) return null;
+    const rect = container.getBoundingClientRect();
+    return L.point(clientX - rect.left, clientY - rect.top);
+  }
+  function zoomMapBySingleStep(direction, aroundPoint = null) {
+    if (!map || !Number.isFinite(direction) || 0 === direction) return false;
+    const step = direction > 0 ? DISCRETE_ZOOM_STEP : -DISCRETE_ZOOM_STEP;
+    const minZoom = map.getMinZoom();
+    const maxZoom = map.getMaxZoom();
+    const currentZoom = map.getZoom();
+    const targetZoom = Math.max(minZoom, Math.min(maxZoom, currentZoom + step));
+    if (targetZoom === currentZoom) return false;
+    aroundPoint && "function" == typeof map.setZoomAround ? map.setZoomAround(aroundPoint, targetZoom, { animate: true }) : map.setZoom(targetZoom, { animate: true });
+    return true;
+  }
+  function initDesktopDiscreteZoomControls() {
+    if (!map || IS_TOUCH_DEVICE) return;
+    const container = map.getContainer();
+    if (!container || container.__caminoDesktopDiscreteZoomBound) return;
+    container.__caminoDesktopDiscreteZoomBound = true;
+    let wheelAccumPx = 0;
+    let wheelDirection = 0;
+    let wheelResetTimeoutId = null;
+    let pinchDirection = 0;
+    let pinchResetTimeoutId = null;
+    let gestureStartScale = null;
+    let lastPinchZoomAt = 0;
+    const resetWheelGesture = () => {
+      wheelAccumPx = 0;
+      wheelDirection = 0;
+      wheelResetTimeoutId = null;
+    };
+    const resetPinchGesture = () => {
+      pinchDirection = 0;
+      pinchResetTimeoutId = null;
+    };
+    const scheduleWheelReset = () => {
+      null !== wheelResetTimeoutId && clearTimeout(wheelResetTimeoutId);
+      wheelResetTimeoutId = setTimeout(resetWheelGesture, DESKTOP_WHEEL_IDLE_MS);
+    };
+    const schedulePinchReset = () => {
+      null !== pinchResetTimeoutId && clearTimeout(pinchResetTimeoutId);
+      pinchResetTimeoutId = setTimeout(resetPinchGesture, DESKTOP_WHEEL_IDLE_MS);
+    };
+    const normalizeWheelDeltaPx = (event) => {
+      if (1 === event.deltaMode) return event.deltaY * DESKTOP_LINE_DELTA_PX;
+      if (2 === event.deltaMode) return event.deltaY * window.innerHeight;
+      return event.deltaY;
+    };
+    container.addEventListener(
+      "wheel",
+      (event) => {
+        if (!map || !map._loaded || !Number.isFinite(event.deltaY) || 0 === event.deltaY) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const direction = event.deltaY < 0 ? 1 : -1;
+        const aroundPoint = map.mouseEventToContainerPoint(event);
+        if (event.ctrlKey) {
+          if (pinchDirection !== direction) {
+            pinchDirection = direction;
+            zoomMapBySingleStep(direction, aroundPoint) && (lastPinchZoomAt = performance.now());
+          }
+          schedulePinchReset();
+          return;
+        }
+        const deltaPx = normalizeWheelDeltaPx(event);
+        if (!Number.isFinite(deltaPx) || 0 === deltaPx) return;
+        if (wheelDirection !== direction) {
+          wheelDirection = direction;
+          wheelAccumPx = 0;
+        }
+        wheelAccumPx += Math.abs(deltaPx);
+        if (wheelAccumPx >= DESKTOP_WHEEL_THRESHOLD_PX) {
+          zoomMapBySingleStep(direction, aroundPoint), wheelAccumPx = 0;
+        }
+        scheduleWheelReset();
+      },
+      { passive: false }
+    );
+    container.addEventListener(
+      "gesturestart",
+      (event) => {
+        if (!map || !map._loaded || "number" != typeof event.scale) return;
+        event.preventDefault();
+        gestureStartScale = event.scale || 1;
+      },
+      { passive: false }
+    );
+    container.addEventListener(
+      "gestureend",
+      (event) => {
+        if (!map || !map._loaded || "number" != typeof event.scale || null === gestureStartScale) {
+          gestureStartScale = null;
+          return;
+        }
+        event.preventDefault();
+        const now = performance.now();
+        if (now - lastPinchZoomAt < DESKTOP_WHEEL_IDLE_MS) {
+          gestureStartScale = null;
+          return;
+        }
+        const ratio = event.scale / gestureStartScale;
+        const direction = ratio > 1.04 ? 1 : ratio < 0.96 ? -1 : 0;
+        if (0 !== direction) {
+          const aroundPoint = clientPointToContainerPoint(event.clientX, event.clientY) || map.getSize().divideBy(2);
+          zoomMapBySingleStep(direction, aroundPoint);
+        }
+        gestureStartScale = null;
+      },
+      { passive: false }
+    );
+  }
+  function initMobileTwoFingerDoubleTapZoomOut() {
+    if (!map || !IS_TOUCH_DEVICE) return;
+    const container = map.getContainer();
+    if (!container || container.__caminoMobileTwoFingerDoubleTapBound) return;
+    container.__caminoMobileTwoFingerDoubleTapBound = true;
+    let activeTwoFingerTap = null;
+    let lastTwoFingerTap = null;
+    container.addEventListener(
+      "touchstart",
+      (event) => {
+        if (2 !== event.touches.length) {
+          activeTwoFingerTap = null;
+          return;
+        }
+        const starts = Array.from(event.touches).map((touch) => ({
+          id: touch.identifier,
+          x: touch.clientX,
+          y: touch.clientY
+        }));
+        activeTwoFingerTap = {
+          startedAt: performance.now(),
+          starts,
+          moved: false
+        };
+      },
+      { passive: true }
+    );
+    container.addEventListener(
+      "touchmove",
+      (event) => {
+        if (!activeTwoFingerTap || 2 !== event.touches.length) return;
+        const startsById = new Map(activeTwoFingerTap.starts.map((entry) => [entry.id, entry]));
+        Array.from(event.touches).forEach((touch) => {
+          const start = startsById.get(touch.identifier);
+          if (!start) {
+            activeTwoFingerTap.moved = true;
+            return;
+          }
+          const dx = touch.clientX - start.x;
+          const dy = touch.clientY - start.y;
+          Math.hypot(dx, dy) > MOBILE_TWO_FINGER_TAP_MAX_MOVE_PX && (activeTwoFingerTap.moved = true);
+        });
+      },
+      { passive: true }
+    );
+    container.addEventListener(
+      "touchend",
+      (event) => {
+        if (!activeTwoFingerTap) return;
+        if (event.touches.length > 0) return;
+        const elapsedMs = performance.now() - activeTwoFingerTap.startedAt;
+        const isTap = !activeTwoFingerTap.moved && elapsedMs <= MOBILE_TWO_FINGER_TAP_MAX_DURATION_MS;
+        const center = L.point(
+          (activeTwoFingerTap.starts[0].x + activeTwoFingerTap.starts[1].x) / 2,
+          (activeTwoFingerTap.starts[0].y + activeTwoFingerTap.starts[1].y) / 2
+        );
+        activeTwoFingerTap = null;
+        if (!isTap) {
+          lastTwoFingerTap = null;
+          return;
+        }
+        const now = performance.now();
+        if (lastTwoFingerTap && now - lastTwoFingerTap.time <= MOBILE_TWO_FINGER_DOUBLE_TAP_DELAY_MS && center.distanceTo(lastTwoFingerTap.center) <= MOBILE_TWO_FINGER_DOUBLE_TAP_MAX_DISTANCE_PX) {
+          event.preventDefault();
+          event.stopPropagation();
+          const aroundPoint = clientPointToContainerPoint(center.x, center.y);
+          map.__caminoSuppressDblClickZoomUntil = now + MOBILE_TWO_FINGER_SUPPRESS_DBLCLICK_MS;
+          zoomMapBySingleStep(-1, aroundPoint);
+          lastTwoFingerTap = null;
+          return;
+        }
+        lastTwoFingerTap = {
+          time: now,
+          center
+        };
+      },
+      { passive: false }
+    );
+    container.addEventListener(
+      "touchcancel",
+      () => {
+        activeTwoFingerTap = null;
+      },
+      { passive: true }
+    );
+  }
+  function initDiscreteDoubleTapZoomControls() {
+    if (!map || map.__caminoDiscreteDblClickBound) return;
+    map.__caminoDiscreteDblClickBound = true;
+    map.on("dblclick", (event) => {
+      const now = performance.now();
+      if (now < (map.__caminoSuppressDblClickZoomUntil || 0)) return;
+      const originalEvent = (event == null ? void 0 : event.originalEvent) || null;
+      const direction = (originalEvent == null ? void 0 : originalEvent.shiftKey) ? -1 : 1;
+      const aroundPoint = originalEvent ? map.mouseEventToContainerPoint(originalEvent) : (event == null ? void 0 : event.latlng) ? map.latLngToContainerPoint(event.latlng) : null;
+      zoomMapBySingleStep(direction, aroundPoint);
+    });
+  }
   function initMap() {
     if (map = L.map("map", {
       tap: true,
       tapTolerance: IS_TOUCH_DEVICE ? 25 : 15,
-      doubleTapZoom: true,
-      scrollWheelZoom: true,
-      zoomSnap: 0,
+      doubleClickZoom: false,
+      scrollWheelZoom: false,
+      zoomSnap: 1,
       zoomDelta: 1,
-      wheelDebounceTime: 4,
-      wheelPxPerZoomLevel: 8,
       maxBounds: MAP_REGION_MAX_BOUNDS,
       maxBoundsViscosity: 1,
       renderer: L.canvas({ padding: 0.5 })
@@ -5588,7 +5808,7 @@ Essaie de faire mieux sur camino-ajm.pages.dev`,
         collapsedHeight: 24
       }).addTo(map);
     }
-    map.whenReady(enforceRegionalMapBounds), map.on("resize", enforceRegionalMapBounds);
+    initDiscreteDoubleTapZoomControls(), initDesktopDiscreteZoomControls(), initMobileTwoFingerDoubleTapZoomOut(), map.whenReady(enforceRegionalMapBounds), map.on("resize", enforceRegionalMapBounds);
   }
   function initUI() {
     IS_TOUCH_DEVICE && document.body.classList.add("touch-mode"), initMobilePullToRefresh();
