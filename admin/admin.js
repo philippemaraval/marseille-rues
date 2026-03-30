@@ -1,9 +1,9 @@
-const API_URL =
+const API_BASE_CANDIDATES =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1" ||
   window.location.protocol === "file:"
-    ? "http://localhost:3000"
-    : "https://camino2.onrender.com";
+    ? ["http://localhost:3000"]
+    : [window.location.origin, "https://camino2.onrender.com"];
 
 const STORAGE_KEY = "camino_editor_user";
 
@@ -120,11 +120,34 @@ async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let response = null;
+  let lastNetworkError = null;
+  for (let index = 0; index < API_BASE_CANDIDATES.length; index += 1) {
+    const base = API_BASE_CANDIDATES[index];
+    try {
+      response = await fetch(`${base}${path}`, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      });
+      if (response.status === 404 || response.status === 405) {
+        if (index < API_BASE_CANDIDATES.length - 1) {
+          continue;
+        }
+      }
+      break;
+    } catch (error) {
+      lastNetworkError = error;
+      if (index < API_BASE_CANDIDATES.length - 1) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  if (!response) {
+    throw lastNetworkError || new Error("No API response");
+  }
 
   const text = await response.text();
   let payload = null;
