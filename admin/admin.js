@@ -121,20 +121,46 @@ async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
   }
 
   let response = null;
+  let responsePayload = null;
+  let responseText = "";
   let lastNetworkError = null;
   for (let index = 0; index < API_BASE_CANDIDATES.length; index += 1) {
     const base = API_BASE_CANDIDATES[index];
     try {
-      response = await fetch(`${base}${path}`, {
+      const candidateResponse = await fetch(`${base}${path}`, {
         method,
         headers,
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
-      if (response.status === 404 || response.status === 405) {
+      const candidateText = await candidateResponse.text();
+      let candidatePayload = null;
+      if (candidateText) {
+        try {
+          candidatePayload = JSON.parse(candidateText);
+        } catch (error) {
+          candidatePayload = null;
+        }
+      }
+
+      const contentType = String(candidateResponse.headers.get("content-type") || "").toLowerCase();
+      const isJsonResponse =
+        contentType.includes("application/json") || contentType.includes("+json");
+      const looksLikeHtml = /^\s*</.test(candidateText || "");
+      const canFallback = index < API_BASE_CANDIDATES.length - 1;
+
+      if (candidateResponse.status === 404 || candidateResponse.status === 405) {
         if (index < API_BASE_CANDIDATES.length - 1) {
           continue;
         }
       }
+
+      if (candidateResponse.ok && !isJsonResponse && (looksLikeHtml || candidatePayload === null) && canFallback) {
+        continue;
+      }
+
+      response = candidateResponse;
+      responsePayload = candidatePayload;
+      responseText = candidateText;
       break;
     } catch (error) {
       lastNetworkError = error;
@@ -149,24 +175,17 @@ async function apiRequest(path, { method = "GET", body, auth = true } = {}) {
     throw lastNetworkError || new Error("No API response");
   }
 
-  const text = await response.text();
-  let payload = null;
-  if (text) {
-    try {
-      payload = JSON.parse(text);
-    } catch (error) {
-      payload = null;
-    }
-  }
-
   if (!response.ok) {
-    const error = new Error(payload?.error || `HTTP ${response.status}`);
+    const error = new Error(responsePayload?.error || `HTTP ${response.status}`);
     error.status = response.status;
-    error.payload = payload;
+    error.payload = responsePayload;
     throw error;
   }
 
-  return payload;
+  if (responsePayload === null && responseText) {
+    throw new Error("API response is not valid JSON");
+  }
+  return responsePayload;
 }
 
 function parseListTextarea(value) {
